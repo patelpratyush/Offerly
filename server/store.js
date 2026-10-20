@@ -1,6 +1,8 @@
 import { DatabaseSync } from "node:sqlite";
 import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
+import { recordManualLocks } from "./recruiting.js";
+import { reconcileReminders } from "./reminders.js";
 import { HttpError } from "./security.js";
 export const stages = [
   "Saved",
@@ -194,7 +196,25 @@ export function createStore(path) {
             );
         }
       }
+      if (kind === "application")
+        recordManualLocks(
+          store,
+          user,
+          old ? JSON.parse(old.data) : null,
+          data,
+          key,
+          actor,
+        );
+      reconcileReminders(
+        store,
+        user,
+        kind,
+        old ? JSON.parse(old.data) : null,
+        data,
+        key,
+      );
       return { ...data, id: key, version: (old?.version || 0) + 1 };
     });
-  return { db, list, get, save, atomic };
+  const store = { db, list, get, save, atomic };
+  return store;
 }

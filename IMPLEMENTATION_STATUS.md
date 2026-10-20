@@ -38,7 +38,7 @@ No external credentials, model provider, source permission decisions, or labeled
 
 ## Recommended next implementation slice
 
-Follow step 2 in `docs/DELIVERY_STEPS.md`: build durable recruiting review/jobs, evidence, corrections and field locks before live provider automation. Step 1 manual-tracker details are implemented; deployment readiness remains a separate step.
+Steps 1 and the scoped step 2 foundation are implemented. Follow step 3 in `docs/DELIVERY_STEPS.md`: configure Gmail OAuth and consented fixtures before provider ingestion. Deployment readiness remains a separate step.
 
 For Gmail: provision a Gmail OAuth client and consented test mailbox; decide retained-content window and provider processing policy. Implement durable jobs and a review-only ingestion path before enabling automatic changes. Evaluate ambiguous same-company roles, duplicate replay, out-of-order events, disconnect/delete during import, and untrusted email content using synthetic/consented fixtures. Keep the manual workspace available during provider failures.
 
@@ -105,3 +105,15 @@ Closed the remaining manual-tracker gaps:
 Step 1 is complete for the manual pilot. Step 2 (durable recruiting review/jobs) is next. Gmail, discovery, recommendations, generated documents, extension support and public launch remain outside this completed slice. The public-production prerequisites in `SECURITY.md` still apply.
 
 Final verification: `npm run check` passed (52 backend/API/security/recovery tests, ESLint, strict TypeScript, production build and dependency audit with zero known vulnerabilities). `npm run test:e2e` passed all 24 desktop/mobile scenarios in one clean run. Populated contact and application editors passed focused WCAG 2 A/AA checks; desktop/mobile screenshots were inspected. These checks do not constitute full accessibility certification or a zero-risk security guarantee. Synthetic previews: `docs/screenshots/contact-editor-mobile.png` and `docs/screenshots/listing-history-desktop.png`. Changes remain local; no deployment performed.
+
+### Step 2 — recruiting review foundation
+
+Implemented a manual evidence path into durable queued jobs and a Reviews page. Pasted evidence, source references, explicit-offset effective timestamps and user-proposed changes remain immutable. A separate Node worker runs outside API requests, claims bounded jobs with leases, recovers abandoned leases, backs off failures, stops after three attempts and supports explicit retry/cancel. Owner-scoped operation receipts prevent duplicate ingestion and decisions; conflicting operation/source IDs return conflicts.
+
+Reviews show candidate applications and matching rationale; they never apply automatically. Accept/reject/correct and undo preserve append-only history. Stage/response-owner manual edits and corrected proposals set field locks. Older evidence, protected fields and terminal reopening require an explicit per-decision override. Application versions and field-decision versions prevent stale edits or undo from overwriting subsequent work. Account deletion cascades jobs, evidence, decisions, locks, reminders and receipts. Full JSON export retains them.
+
+Added date-only in-app reminders on application follow-ups, rounds, assessments and tasks, with snooze/dismiss/cancel and history. The scheduler uses workspace-local calendar dates without inventing midnight timestamps. Source changes cancel obsolete reminders within the source edit transaction; closed applications cancel general follow-ups while explicit tasks remain until completed. Worker failure isolation and bounded scans keep one account's failed reminder from blocking later records. Today refreshes while visible.
+
+Scope: user-proposed stage/response-owner changes only, manual evidence only, no extraction confidence claims, no Gmail connection, no automatic status changes, no outgoing notifications. Gmail event extraction, provider-specific disconnect behavior and precision evaluation remain step 3/M2 work. Public deployment prerequisites remain unchanged.
+
+Verification: all 62 backend/API/security/recovery tests and all 26 desktop/mobile browser scenarios passed. Final mobile form refinement and stronger cross-account scheduler failure test passed the 10 focused backend tests and both review/reminder browser scenarios again. ESLint, strict TypeScript, production build and dependency audit passed (zero known dependency vulnerabilities). Focused WCAG 2 A/AA review-page checks passed; screenshots were inspected and saved under `docs/screenshots/recruiting-{desktop,mobile}.png`. These are scoped checks, not production certification. Verification completed before committing Step 2. No deployment was performed.

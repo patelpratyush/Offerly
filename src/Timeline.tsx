@@ -11,6 +11,11 @@ const names: Record<string, string> = {
   listing_snapshot: "Listing snapshot",
   assessment: "Assessment",
   duplicate_review: "Duplicate review",
+  recruiting_review: "Evidence review",
+  recruiting_clock: "Evidence chronology",
+  field_lock: "Field protection",
+  reminder: "Reminder",
+  recruiting_evidence: "Source evidence",
 };
 export function Timeline({
   events,
@@ -69,6 +74,10 @@ export function Timeline({
                   "targetVersion",
                   "provenance",
                   "undo",
+                  "lockSnapshots",
+                  "clockSnapshots",
+                  "beforeApplication",
+                  "sourceSignature",
                 ].includes(k),
             )
           : [];
@@ -85,7 +94,9 @@ export function Timeline({
                     ? "Kept both applications"
                     : after.decision === "undone"
                       ? "Review undone"
-                      : "Archived duplicate")}
+                      : kind === "duplicate_review"
+                        ? "Archived duplicate"
+                        : after.field || "Recorded update")}
               </p>
             )}
             <small>
@@ -98,7 +109,11 @@ export function Timeline({
                     ? "Manual merge"
                     : e.actor === "manual_merge_undo"
                       ? "Merge reversed"
-                      : "Manual"}
+                      : e.actor.startsWith("recruiting")
+                        ? "Reviewed evidence / field protection"
+                        : e.actor.startsWith("reminder")
+                          ? "In-app reminder"
+                          : "Manual"}
             </small>
             {kind === "listing_snapshot" && (
               <p>

@@ -161,8 +161,12 @@ test("stale writes conflict; multiple roles stay separate; notes retain revision
   assert.equal(w.applications[0].stage, "Interviewing");
   const events = (await request("/events/" + a.id, "GET", undefined, cookie))
     .data;
-  assert.equal(events.length, 2);
-  assert.equal(JSON.parse(events[0].before_data).stage, "Submitted");
+  const applicationEvents = events.filter(
+    (event) => event.kind === "application",
+  );
+  assert.equal(applicationEvents.length, 2);
+  assert.equal(JSON.parse(applicationEvents[0].before_data).stage, "Submitted");
+  assert.equal(events.filter((event) => event.kind === "field_lock").length, 1);
 });
 test("CSV preview validates dates and replay does not duplicate applications", async (t) => {
   const { request, register } = await setup(t);

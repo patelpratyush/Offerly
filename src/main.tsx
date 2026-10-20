@@ -40,6 +40,8 @@ import { ContactFields } from "./ContactFields";
 import { SubmittedDocuments } from "./SubmittedDocuments";
 import { OfferFields } from "./OfferFields";
 import { ListingSnapshots } from "./ListingSnapshots";
+import { RecruitingReview } from "./RecruitingReview";
+import { Reminders } from "./Reminders";
 import { Timeline } from "./Timeline";
 type Item = { id: string; version: number; [key: string]: any };
 type Workspace = {
@@ -53,6 +55,11 @@ type Workspace = {
   documentUsages: Item[];
   listingSnapshots: Item[];
   assessments: Item[];
+  evidence: Item[];
+  recruitingJobs: Item[];
+  reviews: Item[];
+  fieldLocks: Item[];
+  reminders: Item[];
   duplicates: any[];
   duplicateReviews: Item[];
 };
@@ -251,6 +258,21 @@ function App() {
       })
       .finally(() => setLoading(false));
   }, []);
+  const refreshCurrent = useRef(refresh);
+  refreshCurrent.current = refresh;
+  useEffect(() => {
+    if (page !== "Today" || !w?.user.email) return;
+    const update = () => {
+      if (document.visibilityState === "visible")
+        void refreshCurrent.current().catch((e) => setError(e.message));
+    };
+    const timer = window.setInterval(update, 30000);
+    document.addEventListener("visibilitychange", update);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", update);
+    };
+  }, [page, w?.user.email]);
   const run = async (fn: () => Promise<any>) => {
     activeOperations.current++;
     setBusy(true);
@@ -446,6 +468,7 @@ function App() {
   const nav = [
     ["Today", Sun],
     ["Applications", BriefcaseBusiness],
+    ["Reviews", Check],
     ["Connections", Users],
     ["Documents", Files],
     ["Insights", ChartNoAxesCombined],
@@ -619,6 +642,8 @@ function App() {
                         "Build relationships that open the right doors.",
                       Documents:
                         "The right version, ready for the right opportunity.",
+                      Reviews:
+                        "Evidence first. Every update stays in your control.",
                       Insights: "A clearer picture of your progress.",
                       Settings: "Make this workspace work for you.",
                     } as any
@@ -626,27 +651,29 @@ function App() {
                 }
               </p>
             </div>
-            {page !== "Settings" && page !== "Insights" && (
-              <button
-                className="primary"
-                onClick={() =>
-                  newRecord(
-                    page === "Connections"
-                      ? "contact"
-                      : page === "Documents"
-                        ? "document"
-                        : "application",
-                  )
-                }
-              >
-                <Plus size={17} />
-                {page === "Connections"
-                  ? "Add connection"
-                  : page === "Documents"
-                    ? "Upload document"
-                    : "Add application"}
-              </button>
-            )}
+            {page !== "Settings" &&
+              page !== "Insights" &&
+              page !== "Reviews" && (
+                <button
+                  className="primary"
+                  onClick={() =>
+                    newRecord(
+                      page === "Connections"
+                        ? "contact"
+                        : page === "Documents"
+                          ? "document"
+                          : "application",
+                    )
+                  }
+                >
+                  <Plus size={17} />
+                  {page === "Connections"
+                    ? "Add connection"
+                    : page === "Documents"
+                      ? "Upload document"
+                      : "Add application"}
+                </button>
+              )}
           </div>
           {page === "Today" && (
             <>
@@ -797,6 +824,33 @@ function App() {
                   </button>
                 </section>
               </div>
+              <section className="panel review-shortcut">
+                <div>
+                  <h2>Updates to review</h2>
+                  <p>
+                    {w.reviews.filter((r) => r.status === "pending").length}{" "}
+                    pending · Evidence never changes applications without your
+                    decision.
+                  </p>
+                </div>
+                <button
+                  className="secondary"
+                  onClick={() => setPage("Reviews")}
+                >
+                  Open reviews
+                </button>
+              </section>
+              <Reminders
+                applications={w.applications}
+                rounds={w.rounds}
+                assessments={w.assessments}
+                tasks={w.tasks}
+                reminders={w.reminders}
+                request={api}
+                onChanged={async () => {
+                  await refresh();
+                }}
+              />
               <div className="section-head space-top">
                 <h2>Opportunities in motion</h2>
                 <button
@@ -859,6 +913,18 @@ function App() {
                 )}
               </section>
             </>
+          )}
+          {page === "Reviews" && (
+            <RecruitingReview
+              applications={w.applications}
+              evidence={w.evidence}
+              recruitingJobs={w.recruitingJobs}
+              reviews={w.reviews}
+              fieldLocks={w.fieldLocks}
+              stages={w.user.stages}
+              request={api}
+              onChanged={refresh}
+            />
           )}
           {page === "Applications" && (
             <>

@@ -1,4 +1,6 @@
 import express from "express";
+import { mountRecruiting } from "./recruiting.js";
+import { mountReminders } from "./reminders.js";
 import { z } from "zod";
 import {
   securityConfig,
@@ -235,6 +237,11 @@ export function createApp(store, options = {}) {
       documentUsages: list(u.id, "document_usage"),
       listingSnapshots: list(u.id, "listing_snapshot"),
       assessments: list(u.id, "assessment"),
+      evidence: list(u.id, "recruiting_evidence"),
+      recruitingJobs: list(u.id, "recruiting_job"),
+      reviews: list(u.id, "recruiting_review"),
+      fieldLocks: list(u.id, "field_lock"),
+      reminders: list(u.id, "reminder"),
       duplicates,
       duplicateScanLimited: !!duplicates.limited,
       duplicateReviews: list(u.id, "duplicate_review").filter(
@@ -327,6 +334,8 @@ export function createApp(store, options = {}) {
     return data;
   }
   mountTracker(app, store, validate);
+  mountRecruiting(app, store, validate);
+  mountReminders(app, store);
   function matchingSubmission(userId, data, excludeId) {
     if (data.retracted) return undefined;
     return list(userId, "document_usage").find(
@@ -361,11 +370,9 @@ export function createApp(store, options = {}) {
   app.put("/api/records/:kind/:id", (req, res, next) => {
     try {
       if (req.params.kind === "document")
-        return res
-          .status(400)
-          .json({
-            error: "Document versions are immutable. Upload a new version.",
-          });
+        return res.status(400).json({
+          error: "Document versions are immutable. Upload a new version.",
+        });
       const old = get(req.user.id, req.params.id);
       if (!old || old.kind !== req.params.kind)
         throw new HttpError(404, "Record not found");

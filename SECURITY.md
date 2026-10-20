@@ -20,6 +20,8 @@ No application can be certified to have zero security risk. This repository has 
 
 Contact provenance and confirmations are user-recorded assertions, not external identity verification. Changing contact values clears inherited confirmation and stale evidence. Submitted-document evidence is derived from owned immutable files; later uploads cannot replace recorded bytes. Listing revisions are server-recorded and cannot be edited through the record API; recording time is distinct from user-supplied capture date. Application and listing-history writes share one transaction, including quota failures. Full account deletion removes these records and their histories.
 
+Recruiting evidence is explicitly supplied by the user and never treated as executable instructions. The worker performs no network requests or AI extraction. Reviews require an authenticated decision; version checks, field locks, chronology checks and transactional receipts protect updates and undo. Evidence timestamps and excerpts remain user assertions, not externally verified facts. Reminders are date-only in-app records with no outbound sending. A separate worker shares the private SQLite database; supervise the API service and its child process together.
+
 ## Deployment requirements
 
 1. Use Node 24 and install from the committed lockfile (`npm ci --ignore-scripts`). Build with `npm run build`. Run as a dedicated unprivileged OS user, not root. Do not use the Vite development server publicly.

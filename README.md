@@ -2,6 +2,8 @@
 
 A private job-search workspace implementing the manual-tracking foundation of [the build plan](Job_Search_App_Build_Plan.md) and [PRD](Job_Search_Workspace_PRD.md).
 
+Reviews accept pasted evidence and your proposed stage/response-owner changes. Background processing creates review items; you explicitly accept, reject, correct or undo them. Manual field protections and evidence chronology prevent silent overwrites. Today supports date-only in-app reminders with snooze/dismiss/cancel. Gmail and AI extraction are not connected.
+
 ## Run locally
 
 Requires Node.js 24 or later.
@@ -11,7 +13,7 @@ npm install
 npm run dev
 ```
 
-Open http://127.0.0.1:5173 and create an account. No API keys or external services are needed. Accounts start empty; sample data is not mixed into your workspace. SQLite persists locally in `data/offerly.sqlite` (gitignored). The API listens on port 3001, accessible only from this machine.
+Open http://127.0.0.1:5173 and create an account. No API keys or external services are needed. Accounts start empty; sample data is not mixed into your workspace. SQLite persists locally in `data/offerly.sqlite` (gitignored). The API listens on port 3001, accessible only from this machine. The server starts a separate background worker against the same SQLite database; the service exits if its worker unexpectedly stops so your process manager can restart both.
 
 ## Implemented
 

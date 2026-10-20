@@ -1559,3 +1559,39 @@ footer,
 .person-card small {
   display: block;
 }
+
+.review-shortcut,
+.reminders-panel {
+  padding: 24px;
+  margin-top: 24px;
+}
+.review-shortcut {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+.reminders-panel details > summary {
+  cursor: pointer;
+  font-weight: 600;
+  margin: 16px 0;
+}
+.reminders-panel article {
+  border-top: 1px solid #dce4dc;
+  padding: 18px 0;
+}
+.reminders-panel article form {
+  display: flex;
+  gap: 12px;
+  align-items: end;
+  flex-wrap: wrap;
+}
+@media (max-width: 640px) {
+  .recruiting-review .filter-grid,
+  .reminders-panel .filter-grid {
+    grid-template-columns: minmax(0, 1fr);
+    padding-left: 0;
+    padding-right: 0;
+  }
+}
