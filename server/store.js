@@ -32,6 +32,14 @@ export async function createStore(path, options) {
     CREATE TABLE IF NOT EXISTS files(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,mime TEXT NOT NULL,hash TEXT NOT NULL,body BLOB NOT NULL,created_at TEXT NOT NULL);
   `);
     if (
+      !(await db.prepare("PRAGMA table_info(scheduler_state)").all()).some(
+        (c) => c.name === "last_signed_at",
+      )
+    )
+      await db.exec(
+        "ALTER TABLE scheduler_state ADD COLUMN last_signed_at INTEGER NOT NULL DEFAULT 0",
+      );
+    if (
       !(await db.prepare("PRAGMA table_info(sessions)").all()).some(
         (c) => c.name === "last_seen",
       )

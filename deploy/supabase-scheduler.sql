@@ -2,6 +2,7 @@
 -- Secrets are supplied separately as bound parameters, never embedded here.
 CREATE EXTENSION IF NOT EXISTS pg_cron;
 CREATE EXTENSION IF NOT EXISTS pg_net WITH SCHEMA extensions;
+CREATE EXTENSION IF NOT EXISTS pgcrypto WITH SCHEMA extensions;
 
 CREATE TABLE IF NOT EXISTS offerly.scheduler_dispatch (
   id integer PRIMARY KEY CHECK (id = 1),
@@ -10,8 +11,6 @@ CREATE TABLE IF NOT EXISTS offerly.scheduler_dispatch (
 );
 ALTER TABLE offerly.scheduler_dispatch ENABLE ROW LEVEL SECURITY;
 REVOKE ALL ON offerly.scheduler_dispatch FROM PUBLIC, anon, authenticated, offerly_app;
--- Pending HTTP requests contain the Authorization header until dispatched.
-REVOKE ALL ON net.http_request_queue FROM PUBLIC, anon, authenticated, offerly_app;
 
 CREATE OR REPLACE FUNCTION offerly.invoke_scheduler() RETURNS bigint
 LANGUAGE plpgsql SECURITY INVOKER SET search_path = '' AS $$
@@ -19,15 +18,21 @@ DECLARE
   origin text;
   secret text;
   request_id bigint;
+  signed_at text;
 BEGIN
   SELECT decrypted_secret INTO origin FROM vault.decrypted_secrets WHERE name = 'offerly_scheduler_origin';
   SELECT decrypted_secret INTO secret FROM vault.decrypted_secrets WHERE name = 'offerly_scheduler_secret';
   IF origin IS NULL OR origin !~ '^https://[^/]+$' OR secret IS NULL OR length(secret) < 32 THEN
     RAISE EXCEPTION 'Offerly scheduler configuration missing or invalid';
   END IF;
+  signed_at := floor(extract(epoch FROM clock_timestamp()) * 1000)::bigint::text;
   SELECT net.http_get(
     url := origin || '/api/jobs/run',
-    headers := jsonb_build_object('Authorization', 'Bearer ' || secret),
+    -- pg_net queue grants are platform-managed. Never put the secret in it.
+    headers := jsonb_build_object(
+      'x-offerly-scheduler-at', signed_at,
+      'x-offerly-scheduler-signature', encode(extensions.hmac(signed_at || ':/api/jobs/run', secret, 'sha256'), 'hex')
+    ),
     timeout_milliseconds := 55000
   ) INTO request_id;
   INSERT INTO offerly.scheduler_dispatch(id, request_id, dispatched_at)

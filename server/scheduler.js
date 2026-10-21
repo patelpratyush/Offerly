@@ -8,6 +8,7 @@ export async function runScheduler(
   store,
   {
     now = Date.now(),
+    signedAt = 0,
     recruiting = processRecruitingJobs,
     reminders = processReminders,
   } = {},
@@ -15,10 +16,10 @@ export async function runScheduler(
   const owner = randomUUID();
   const state = await store.db
     .prepare(
-      "UPDATE scheduler_state SET lease_owner=?,lease_until=?,started_at=?,status='running' WHERE id=1 AND lease_until<=? RETURNING recruiting_cursor,reminder_cursor",
+      "UPDATE scheduler_state SET lease_owner=?,lease_until=?,started_at=?,status='running',last_signed_at=CASE WHEN ?>last_signed_at THEN ? ELSE last_signed_at END WHERE id=1 AND lease_until<=? AND (CAST(? AS BIGINT)=0 OR last_signed_at<?) RETURNING recruiting_cursor,reminder_cursor",
     )
-    .get(owner, now + 90000, now, now);
-  if (!state) return { skipped: true, reason: "already_running" };
+    .get(owner, now + 90000, now, signedAt, signedAt, now, signedAt, signedAt);
+  if (!state) return { skipped: true, reason: "already_running_or_replayed" };
   const deadline = Date.now() + 35000;
   try {
     const reviewResult = await recruiting(store, {

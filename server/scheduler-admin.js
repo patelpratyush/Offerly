@@ -32,6 +32,7 @@ const client = new pg.Client({
     ),
   },
 });
+let step = "connect";
 try {
   await client.connect();
   if (command === "setup") {
@@ -49,6 +50,7 @@ try {
       );
     await client.query("BEGIN");
     try {
+      step = "install";
       await client.query(
         await readFile(
           new URL("../deploy/supabase-scheduler.sql", import.meta.url),
@@ -59,10 +61,12 @@ try {
         ["offerly_scheduler_origin", origin],
         ["offerly_scheduler_secret", secret],
       ]) {
+        step = "read_vault";
         const { rows } = await client.query(
           "SELECT id FROM vault.secrets WHERE name=$1",
           [name],
         );
+        step = "write_vault";
         if (rows.length)
           await client.query("SELECT vault.update_secret($1,$2)", [
             rows[0].id,
@@ -74,11 +78,12 @@ try {
             name,
           ]);
       }
+      step = "schedule";
       await client.query(
         "SELECT cron.schedule('offerly-workspace-tick','* * * * *','SELECT offerly.invoke_scheduler();')",
       );
       await client.query(
-        "UPDATE cron.job SET active=true WHERE jobname='offerly-workspace-tick'",
+        "SELECT cron.alter_job(jobid,active:=true) FROM cron.job WHERE jobname='offerly-workspace-tick'",
       );
       await client.query("COMMIT");
       console.log(
@@ -90,7 +95,7 @@ try {
     }
   } else if (command === "pause") {
     await client.query(
-      "UPDATE cron.job SET active=false WHERE jobname='offerly-workspace-tick'",
+      "SELECT cron.alter_job(jobid,active:=false) FROM cron.job WHERE jobname='offerly-workspace-tick'",
     );
     console.log("Scheduler paused. Queued work preserved.");
   } else {
@@ -105,14 +110,24 @@ try {
         "SELECT status,start_time,end_time FROM cron.job_run_details WHERE jobid IN (SELECT jobid FROM cron.job WHERE jobname='offerly-workspace-tick') ORDER BY start_time DESC LIMIT 5",
     };
     const result = {};
-    for (const [key, sql] of Object.entries(queries))
+    for (const [key, sql] of Object.entries(queries)) {
+      step = key;
       result[key] = (await client.query(sql)).rows;
+    }
     console.log(JSON.stringify(result, null, 2));
   }
-} catch {
+} catch (error) {
   // pg errors can echo SQL parameter values. Keep operational failures secret-free.
   console.error(
     "Scheduler command failed. Check database access, schema migrations, extensions and configuration.",
+  );
+  console.error(
+    JSON.stringify({
+      step,
+      code: /^[A-Z0-9]{5}$/.test(error.code || "")
+        ? error.code
+        : "configuration_or_connection",
+    }),
   );
   process.exitCode = 1;
 } finally {

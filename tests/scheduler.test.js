@@ -32,7 +32,7 @@ test("scheduler lease blocks overlap and persists both queue cursors", async (t)
   await started;
   assert.deepEqual(await runScheduler(store), {
     skipped: true,
-    reason: "already_running",
+    reason: "already_running_or_replayed",
   });
   release();
   await first;
@@ -51,6 +51,22 @@ test("scheduler lease blocks overlap and persists both queue cursors", async (t)
       return { processed: 0, nextCursor: "" };
     },
   });
+});
+
+test("signed scheduler requests cannot replay or move backwards", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  const at = Date.now();
+  assert.equal(
+    (await runScheduler(store, { signedAt: at })).reminders.processed,
+    0,
+  );
+  assert.equal((await runScheduler(store, { signedAt: at })).skipped, true);
+  assert.equal((await runScheduler(store, { signedAt: at - 1 })).skipped, true);
+  assert.equal(
+    (await runScheduler(store, { signedAt: at + 1 })).reminders.processed,
+    0,
+  );
 });
 
 test("expired leases recover; failed runs release lease without storing errors", async (t) => {

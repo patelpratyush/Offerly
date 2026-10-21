@@ -1,4 +1,4 @@
-import { timingSafeEqual } from "node:crypto";
+import { timingSafeEqual, createHmac } from "node:crypto";
 import { createApp } from "./app.js";
 import { createStore } from "./store.js";
 import { securityConfig, digest } from "./security.js";
@@ -35,6 +35,7 @@ export function createHostedHandler({
     try {
       const isJob =
         new URL(req.url, "https://localhost").pathname === "/api/jobs/run";
+      let signedAt = 0;
       if (isJob) {
         if (
           !env.APP_ORIGIN ||
@@ -45,14 +46,31 @@ export function createHostedHandler({
           return res.end();
         }
         const secret = env.CRON_SECRET;
+        const at = req.headers["x-offerly-scheduler-at"];
+        const signature = req.headers["x-offerly-scheduler-signature"];
+        if (
+          secret &&
+          typeof at === "string" &&
+          /^\d{13}$/.test(at) &&
+          typeof signature === "string" &&
+          /^[a-f0-9]{64}$/.test(signature) &&
+          Number(at) <= Date.now() + 5000 &&
+          Number(at) >= Date.now() - 60000 &&
+          timingSafeEqual(
+            Buffer.from(signature, "hex"),
+            createHmac("sha256", secret).update(`${at}:/api/jobs/run`).digest(),
+          )
+        )
+          signedAt = Number(at);
         if (
           req.method !== "GET" ||
           !secret ||
           secret.length < 32 ||
-          !timingSafeEqual(
-            Buffer.from(digest(req.headers.authorization || "")),
-            Buffer.from(digest(`Bearer ${secret}`)),
-          )
+          (!signedAt &&
+            !timingSafeEqual(
+              Buffer.from(digest(req.headers.authorization || "")),
+              Buffer.from(digest(`Bearer ${secret}`)),
+            ))
         ) {
           res.statusCode = 401;
           return res.end();
@@ -64,7 +82,7 @@ export function createHostedHandler({
       });
       const { app, store } = await initialization;
       if (isJob) {
-        const result = await runScheduler(store);
+        const result = await runScheduler(store, { signedAt });
         console.info(JSON.stringify({ event: "scheduler_tick", ...result }));
         res.setHeader("Content-Type", "application/json");
         return res.end(JSON.stringify(result));

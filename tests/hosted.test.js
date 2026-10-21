@@ -1,6 +1,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import http from "node:http";
+import { createHmac } from "node:crypto";
 import { createHostedHandler } from "../server/hosted.js";
 import { createStore } from "../server/store.js";
 import { openDatabase, postgresSQL } from "../server/database.js";
@@ -102,6 +103,27 @@ test("hosted job execution requires exact secret, method, host and HTTPS", async
   const result = await call({ authorization: `Bearer ${secret}` });
   assert.equal(result.status, 200);
   assert.equal((await result.json()).reminders.processed, 0);
+  const signed = (at) => ({
+    "x-offerly-scheduler-at": String(at),
+    "x-offerly-scheduler-signature": createHmac("sha256", secret)
+      .update(`${at}:/api/jobs/run`)
+      .digest("hex"),
+  });
+  assert.equal((await call(signed(Date.now() - 120000))).status, 401);
+  assert.equal((await call(signed(Date.now() + 120000))).status, 401);
+  const headers = signed(Date.now());
+  assert.equal(
+    (
+      await call({
+        ...headers,
+        "x-offerly-scheduler-signature": "a".repeat(64),
+      })
+    ).status,
+    401,
+  );
+  assert.equal((await call(headers)).status, 200);
+  const replay = await call(headers);
+  assert.equal((await replay.json()).skipped, true);
 });
 
 test("SQL translation keeps placeholders inside strings and rejects URL TLS overrides", () => {
