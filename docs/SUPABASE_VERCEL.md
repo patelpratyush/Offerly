@@ -5,7 +5,7 @@ This deployment uses Supabase PostgreSQL and Vercel Functions. Existing Offerly 
 ## Configure the database
 
 1. Create a Supabase project near the Vercel function region. Save database credentials in a password manager.
-2. Apply `supabase/migrations/20261021000019_hosted_workspace.sql` through the Supabase SQL editor or a migration connection. It creates a new private `offerly` schema; never add this schema to the Data API exposed schemas. The migration deliberately fails if the schema already exists. Inspect existing state instead of dropping it.
+2. Apply the files in `supabase/migrations/` in filename order through a trusted migration connection. Apply only unapplied migrations to an existing installation. The first migration creates a new private `offerly` schema; never add this schema to the Data API exposed schemas. It deliberately fails if the schema already exists. Inspect existing state instead of dropping it.
 3. Apply `supabase/runtime-role.sql` as the migration owner. This creates a dedicated runtime role with only table access. Set its password using an interactive trusted database client (`\password offerly_app` in psql); never commit the password to SQL or paste it into chat.
 4. Your project is `xgaobvlmnuhxkcqubvee`, with transaction pooler host `aws-0-us-east-2.pooler.supabase.com:6543`. Copy the transaction pooler connection string from Supabase Connect. Replace its username with `offerly_app.PROJECT_REF` and use the runtime role password, URL-encoded. Do not include `sslmode` or other SSL query parameters; the adapter enforces verified TLS and includes Supabase’s public CA certificate from its official download source. Named prepared statements are not used. Keep the migration/admin credentials out of Vercel.
 
@@ -28,9 +28,20 @@ Redeploy after changing environment variables. Check `/api/auth/config` returns 
 
 ## Schedule durable jobs
 
-Configure a trusted scheduler to request `GET https://offerly-nine-delta.vercel.app/api/jobs/run` every minute with `Authorization: Bearer <CRON_SECRET>`. Supabase Cron with pg_net and a Vault-held secret is an option; keep secrets out of cron SQL text. Do not assume the Vercel Hobby daily cron frequency supplies minute-level processing. No scheduler has been provisioned by the repository change.
+Supabase Cron calls `GET /api/jobs/run` every minute using pg_net and a Vault-held credential. This uses the existing database rather than a second scheduler service. Vercel and the local setup environment must contain the same `CRON_SECRET`. Redeploy Vercel after setting that variable, then run:
 
-Each invocation handles a bounded batch, checks a time budget, and preserves leases/retries. Pending reviews and reminders will not advance automatically until scheduling is configured. Monitor non-200 responses and retry; serialization conflicts return 409 rather than silently losing writes.
+```sh
+npm run scheduler:setup
+npm run scheduler:status
+```
+
+Setup reads `DATABASE_ADMIN_URL`, `APP_ORIGIN`, and `CRON_SECRET` from the ignored local `.env`. It enables pg_cron and pg_net, stores credentials encrypted in Vault, and creates or updates the named `offerly-workspace-tick` job. Secrets never appear in cron command text. The invocation function runs with caller privileges and is inaccessible to browser and app runtime roles. Keep admin credentials local.
+
+Each invocation claims a database lease, processes up to 20 reviews and 500 reminders within a 35-second soft budget, and records progress. Persistent cursors prevent large queues from restarting at the first batch on each cold start. Recruiting jobs retain retry/backoff and expired-lease recovery; proposed changes still require user approval. Reminders appear in-app, not via email or push. Overlapping invocations skip; a crashed function's lease expires after 90 seconds. The Vercel function lifetime must stay below that lease duration (currently 60 seconds).
+
+`scheduler:status` reports the active schedule, latest worker completion, latest HTTP response, and recent cron dispatches. A successful cron dispatch only means the HTTP request was queued: verify HTTP 200 and a fresh completed worker timestamp too. A null response may mean dispatch is still pending; pg_net retains HTTP responses for a limited time. Alert operationally if no successful completion occurs for five minutes or HTTP responses repeatedly fail. Cron dispatch history is trimmed to seven days for this job only.
+
+To stop scheduling without deleting queued work, run `npm run scheduler:pause`. Run setup again to resume. Pause before changing the production origin or rotating the credential, update Vercel and local configuration, redeploy, then rerun setup. Never add secrets to `vercel.json`, SQL files, command-line arguments, or source control.
 
 ## Current limits and safe rollout
 

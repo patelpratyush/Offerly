@@ -2,8 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { createApp } from "./app.js";
 import { createStore } from "./store.js";
 import { securityConfig, digest } from "./security.js";
-import { processRecruitingJobs } from "./recruiting.js";
-import { processReminders } from "./reminders.js";
+import { runScheduler } from "./scheduler.js";
 
 export function createHostedHandler({
   env = process.env,
@@ -34,14 +33,12 @@ export function createHostedHandler({
     res.setHeader("Cache-Control", "no-store");
     res.setHeader("X-Content-Type-Options", "nosniff");
     try {
-      initialization ||= initialize().catch((error) => {
-        initialization = undefined;
-        throw error;
-      });
-      const { app, store, config } = await initialization;
-      if (new URL(req.url, config.origin).pathname === "/api/jobs/run") {
+      const isJob =
+        new URL(req.url, "https://localhost").pathname === "/api/jobs/run";
+      if (isJob) {
         if (
-          req.headers.host !== new URL(config.origin).host ||
+          !env.APP_ORIGIN ||
+          req.headers.host !== new URL(env.APP_ORIGIN).host ||
           req.headers["x-forwarded-proto"] !== "https"
         ) {
           res.statusCode = 400;
@@ -60,11 +57,17 @@ export function createHostedHandler({
           res.statusCode = 401;
           return res.end();
         }
-        const deadline = Date.now() + 35000;
-        const recruiting = await processRecruitingJobs(store, { deadline });
-        const reminders = await processReminders(store, { deadline });
+      }
+      initialization ||= initialize().catch((error) => {
+        initialization = undefined;
+        throw error;
+      });
+      const { app, store } = await initialization;
+      if (isJob) {
+        const result = await runScheduler(store);
+        console.info(JSON.stringify({ event: "scheduler_tick", ...result }));
         res.setHeader("Content-Type", "application/json");
-        return res.end(JSON.stringify({ recruiting, reminders }));
+        return res.end(JSON.stringify(result));
       }
       return app(req, res);
     } catch {

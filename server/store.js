@@ -26,6 +26,8 @@ export async function createStore(path, options) {
     CREATE INDEX IF NOT EXISTS records_owner ON records(user_id,kind);
     CREATE TABLE IF NOT EXISTS events(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,record_id TEXT NOT NULL,at TEXT NOT NULL,before_data TEXT,after_data TEXT NOT NULL,actor TEXT NOT NULL);
     CREATE INDEX IF NOT EXISTS events_owner ON events(user_id,record_id,at);
+    CREATE TABLE IF NOT EXISTS scheduler_state(id INTEGER PRIMARY KEY CHECK(id=1),lease_owner TEXT NOT NULL DEFAULT '',lease_until INTEGER NOT NULL DEFAULT 0,recruiting_cursor TEXT NOT NULL DEFAULT '',reminder_cursor TEXT NOT NULL DEFAULT '',started_at INTEGER NOT NULL DEFAULT 0,finished_at INTEGER NOT NULL DEFAULT 0,status TEXT NOT NULL DEFAULT 'idle',result TEXT NOT NULL DEFAULT '{}');
+    INSERT INTO scheduler_state(id) VALUES(1) ON CONFLICT(id) DO NOTHING;
     CREATE TABLE IF NOT EXISTS import_batches(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,rows TEXT NOT NULL,expires INTEGER NOT NULL,result TEXT,decisions TEXT);
     CREATE TABLE IF NOT EXISTS files(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,mime TEXT NOT NULL,hash TEXT NOT NULL,body BLOB NOT NULL,created_at TEXT NOT NULL);
   `);

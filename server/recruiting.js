@@ -163,12 +163,12 @@ export async function recordManualLocks(
       );
     }
 }
-// One synchronous bounded tick. Atomic claims and optimistic versions also protect
+// One bounded tick. Atomic claims and optimistic versions also protect
 // separate workers using the same SQLite database; no network runs under a lease.
 const jobCursors = new WeakMap();
 export async function processRecruitingJobs(
   store,
-  { now = Date.now(), deadline = Infinity } = {},
+  { now = Date.now(), deadline = Infinity, cursor: suppliedCursor } = {},
 ) {
   const time =
     now instanceof Date
@@ -177,16 +177,19 @@ export async function processRecruitingJobs(
         ? now
         : Date.parse(now);
   if (!Number.isFinite(time)) throw new TypeError("Invalid worker time");
-  const cursor = jobCursors.get(store) || "";
+  const cursor = suppliedCursor ?? jobCursors.get(store) ?? "";
   const rows = await store.db
     .prepare(
       "SELECT id,user_id FROM records WHERE id>? AND kind='recruiting_job' AND ((json_extract(data,'$.status') IN ('queued','retry') AND json_extract(data,'$.availableAt')<=?) OR (json_extract(data,'$.status')='running' AND json_extract(data,'$.leaseUntil')<=?)) ORDER BY id LIMIT 20",
     )
     .all(cursor, time, time);
-  jobCursors.set(store, rows.length === 20 ? rows.at(-1).id : "");
-  let processed = 0;
+  let processed = 0,
+    visited = 0,
+    nextCursor = cursor;
   for (const row of rows) {
     if (Date.now() >= deadline) break;
+    visited++;
+    nextCursor = row.id;
     let claimed;
     try {
       claimed = await store.atomic(async () => {
@@ -296,7 +299,9 @@ export async function processRecruitingJobs(
         }
     }
   }
-  return { processed };
+  if (visited === rows.length && rows.length < 20) nextCursor = "";
+  if (suppliedCursor === undefined) jobCursors.set(store, nextCursor);
+  return { processed, nextCursor };
 }
 export function mountRecruiting(app, store, validate) {
   app.post("/api/recruiting/evidence", async (req, res) => {

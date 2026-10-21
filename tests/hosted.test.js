@@ -35,13 +35,17 @@ test("hosted setup failures are retryable and never expose connection secrets", 
 test("hosted job execution requires exact secret, method, host and HTTPS", async (t) => {
   const store = await createStore(":memory:");
   const secret = "s".repeat(40);
+  let initializations = 0;
   const handler = createHostedHandler({
     env: {
       DATABASE_URL: "postgresql://localhost/test",
       APP_ORIGIN: "https://offerly.test",
       CRON_SECRET: secret,
     },
-    storeFactory: async () => store,
+    storeFactory: async () => {
+      initializations++;
+      return store;
+    },
   });
   const server = http.createServer(handler).listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
@@ -89,6 +93,11 @@ test("hosted job execution requires exact secret, method, host and HTTPS", async
     (await call({ authorization: `Bearer ${secret}`, host: "other.test" }))
       .status,
     400,
+  );
+  assert.equal(
+    initializations,
+    0,
+    "rejected cron requests must not initialize database",
   );
   const result = await call({ authorization: `Bearer ${secret}` });
   assert.equal(result.status, 200);

@@ -131,29 +131,39 @@ async function refreshOne(store, userId, item, now) {
 const cursors = new WeakMap();
 export async function processReminders(
   store,
-  { now = new Date(), userId, deadline = Infinity } = {},
+  {
+    now = new Date(),
+    userId,
+    deadline = Infinity,
+    cursor: suppliedCursor,
+  } = {},
 ) {
   now = new Date(now);
   if (!Number.isFinite(now.getTime()))
     throw new TypeError("Invalid scheduler time");
-  const cursor = userId ? "" : cursors.get(store) || "";
+  const cursor = userId ? "" : (suppliedCursor ?? cursors.get(store) ?? "");
   const rows = await store.db
     .prepare(
       `SELECT * FROM records WHERE kind='reminder' AND json_extract(data,'$.state') IN ('scheduled','due') ${userId ? "AND user_id=?" : "AND id>?"} ORDER BY id LIMIT 500`,
     )
     .all(userId || cursor);
   let changed = 0,
-    failed = 0;
-  if (!userId) cursors.set(store, rows.length === 500 ? rows.at(-1).id : "");
+    failed = 0,
+    processed = 0,
+    nextCursor = cursor;
   for (const row of rows) {
     if (Date.now() >= deadline) break;
+    processed++;
+    nextCursor = row.id;
     try {
       changed += Number(await refreshOne(store, row.user_id, unpack(row), now));
     } catch {
       failed++;
     }
   }
-  return { processed: rows.length, changed, failed };
+  if (processed === rows.length && rows.length < 500) nextCursor = "";
+  if (!userId && suppliedCursor === undefined) cursors.set(store, nextCursor);
+  return { processed, changed, failed, nextCursor };
 }
 export async function reconcileReminders(
   store,
