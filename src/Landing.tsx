@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import "./landing.css";
 import { WorkspaceScene } from "./WorkspaceScene";
+import { PossibilityBloom } from "./PossibilityBloom";
 
 const examples = {
   Saved: {
@@ -173,7 +174,7 @@ export function Landing() {
       { threshold: 0.08, rootMargin: "0px 0px -32px 0px" },
     );
     const sections = root.current.querySelectorAll<HTMLElement>(
-      ".lp-feature-main, .lp-feature-pair > article, .lp-headspace, .lp-process-intro, .lp-steps > li, .lp-faq, .lp-final",
+      ".lp-manifesto, .lp-feature-main, .lp-feature-pair > article, .lp-headspace, .lp-process-intro, .lp-steps > li, .lp-faq, .lp-final",
     );
     sections.forEach((section, index) => {
       section.classList.add("lp-reveal");
@@ -218,14 +219,28 @@ export function Landing() {
               <span className="lp-status-dot" /> LESS CHAOS. MORE POSSIBILITY.
             </span>
             <h1 id="landing-title">
-              Your next chapter.
-              <br />
-              <span>A clearer path.</span>
+              <span className="lp-title-line">
+                <span>Big possibilities.</span>
+              </span>
+              <span className="lp-title-line">
+                <span>A little more</span>
+              </span>
+              <span className="lp-title-line lp-title-script">
+                <span>headspace.</span>
+                <svg viewBox="0 0 470 24" fill="none" aria-hidden="true">
+                  <path
+                    d="M5 17C120 2 255 5 463 12M61 23C175 11 307 13 410 18"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                </svg>
+              </span>
             </h1>
             <p>
-              Your job search has a lot of moving parts.
-              <br className="lp-desktop-break" /> Give them one calm place to
-              come together.
+              For the open tabs, the follow-ups, and the what-ifs.
+              <br className="lp-desktop-break" /> One thoughtfully organized
+              space for your next chapter.
             </p>
             <div className="lp-hero-actions">
               <a className="lp-button" href="#signup">
@@ -253,10 +268,20 @@ export function Landing() {
             </div>
           </div>
           <div className="lp-hero-visual">
-            <div className="lp-orbit lp-orbit-one" aria-hidden="true" />
-            <div className="lp-orbit lp-orbit-two" aria-hidden="true" />
+            <div className="lp-studio-backdrop" aria-hidden="true">
+              <div className="lp-studio-grid" />
+              <PossibilityBloom className="lp-hero-bloom" />
+              <span className="lp-studio-caption">YOUR SPACE TO GROW.</span>
+              <span className="lp-studio-orbit">
+                <span />
+              </span>
+            </div>
+            <div className="lp-growth-stamp" aria-hidden="true">
+              <PossibilityBloom />
+              <span>good things ahead.</span>
+            </div>
             <div className="lp-floating-label">
-              <Sparkles size={15} /> A little more headspace.
+              <Sparkles size={15} /> A fresh start looks good on you.
             </div>
             <WorkspacePreview />
             <div className="lp-floating-note">
@@ -264,12 +289,12 @@ export function Landing() {
                 <CircleCheck size={20} />
               </span>
               <div>
-                <strong>You’ve got this.</strong>
-                <p>One next step is enough.</p>
+                <strong>One step closer.</strong>
+                <p>Your next chapter is taking shape.</p>
               </div>
             </div>
             <span className="lp-handwritten" aria-hidden="true">
-              a place for your possibilities{" "}
+              room for a little possibility{" "}
               <svg viewBox="0 0 72 42" fill="none">
                 <path
                   d="M2 4C32 1 55 9 58 35m-10-8 11 10 9-13"
@@ -283,25 +308,54 @@ export function Landing() {
           </div>
         </section>
 
-        <div
-          className="lp-promises"
-          aria-label="What belongs in your workspace"
+        <section
+          className="lp-ribbon"
+          aria-label="Bring opportunities, conversations, and next steps together"
         >
-          <span>
-            A little structure.
-            <br />
-            <strong>A lot more clarity.</strong>
+          <div className="lp-ribbon-track" aria-hidden="true">
+            {[0, 1].map((group) => (
+              <div className="lp-ribbon-group" key={group}>
+                {[
+                  "THE WHAT-IFS",
+                  "THE FOLLOW-UPS",
+                  "THE FRESH STARTS",
+                  "THE NEXT CHAPTERS",
+                ].map((word) => (
+                  <span key={word}>
+                    {word}
+                    <span>✳</span>
+                  </span>
+                ))}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="lp-manifesto" aria-labelledby="manifesto-title">
+          <span className="lp-eyebrow">
+            A SMALL SHIFT. A DIFFERENT KIND OF SEARCH.
           </span>
-          <div>
-            <BriefcaseBusiness size={18} /> Every opportunity
-          </div>
-          <div>
-            <Users size={18} /> Every connection
-          </div>
-          <div>
-            <CircleCheck size={18} /> Every next step
-          </div>
-        </div>
+          <h2 id="manifesto-title">
+            You have enough on your mind.
+            <br />
+            Your job search can live <span>here.</span>
+          </h2>
+          <p>A place for the details. A little room for the bigger picture.</p>
+          <svg
+            className="lp-manifesto-arrow"
+            viewBox="0 0 60 80"
+            fill="none"
+            aria-hidden="true"
+          >
+            <path
+              d="M12 4C62 14 11 49 37 68m-14-6 16 10 7-16"
+              stroke="currentColor"
+              strokeWidth="1.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        </section>
 
         <section
           className="lp-features"
@@ -421,6 +475,28 @@ export function Landing() {
                 Remember who you met, what you discussed, and which opportunity
                 brought you together.
               </p>
+              <div className="lp-connection-visual" aria-hidden="true">
+                <span>AL</span>
+                <svg viewBox="0 0 150 48" fill="none">
+                  <path
+                    d="M3 24h144"
+                    stroke="#a7b994"
+                    strokeWidth="1.5"
+                    strokeDasharray="4 5"
+                  />
+                  <circle
+                    className="lp-connection-dot"
+                    cx="12"
+                    cy="24"
+                    r="5"
+                    fill="#537c44"
+                  />
+                </svg>
+                <span>YOU</span>
+                <span className="lp-connection-caption">
+                  More than a name in your inbox.
+                </span>
+              </div>
               <div className="lp-contact-example">
                 <span className="lp-contact-avatar">AL</span>
                 <div>
@@ -444,6 +520,20 @@ export function Landing() {
                 Keep interviews, tasks, and reminders close. Know what needs
                 your attention, and what can wait.
               </p>
+              <div className="lp-focus-count" aria-hidden="true">
+                <span>
+                  01<span>next good move.</span>
+                </span>
+                <svg viewBox="0 0 130 70" fill="none">
+                  <path
+                    d="M8 58c18-22 26 3 43-15s20 1 35-17 17-9 30-15m-17 0 20-3-1 20"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              </div>
               <div className="lp-task-example">
                 <span>
                   <Check size={14} />
@@ -606,10 +696,9 @@ export function Landing() {
             <p>Have an invitation? Your workspace is waiting.</p>
           </div>
           <div className="lp-final-art" aria-hidden="true">
-            <div className="lp-art-ring" />
-            <ArrowUpRight strokeWidth={0.8} />
+            <PossibilityBloom className="lp-final-bloom" />
             <span>onward, at your own pace.</span>
-            <span className="lp-art-star">✳</span>
+            <span className="lp-art-star">↗</span>
           </div>
         </section>
       </main>

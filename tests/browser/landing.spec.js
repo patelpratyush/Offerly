@@ -11,7 +11,7 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Your next chapter. A clearer path.",
+      name: "Big possibilities. A little more headspace.",
     }),
   ).toBeVisible();
   await expect(page.getByLabel("Your name")).toHaveCount(0);
@@ -27,6 +27,14 @@ test("public landing previews stages and connects signup, sign-in, and home", as
     .not.toBe(initialTransform);
   await page.getByRole("button", { name: "Pause page motion" }).click();
   await expect(movingCard).toHaveCSS("animation-play-state", "paused");
+  await expect(page.locator(".lp-ribbon-track")).toHaveCSS(
+    "animation-play-state",
+    "paused",
+  );
+  await expect(page.locator(".lp-bloom-petals").first()).toHaveCSS(
+    "animation-play-state",
+    "paused",
+  );
   await expect(page.locator(".lp-coffee-steam").first()).toHaveCSS(
     "animation-play-state",
     "paused",
@@ -82,10 +90,28 @@ test("public landing previews stages and connects signup, sign-in, and home", as
     page.getByRole("button", { name: "Play animation" }),
   ).toBeHidden();
   await expect(movingCard).toHaveCSS("animation-name", "none");
+  await expect(page.locator(".lp-ribbon-track")).toHaveCSS(
+    "animation-name",
+    "none",
+  );
+  await expect(page.locator(".lp-bloom-petals").first()).toHaveCSS(
+    "animation-name",
+    "none",
+  );
   await expect(
     page.getByRole("button", { name: "Play page motion" }),
   ).toBeHidden();
   await page.emulateMedia({ reducedMotion: "no-preference" });
+  await page.screenshot({
+    path: testInfo.outputPath("landing-full.png"),
+    fullPage: true,
+    animations: "disabled",
+  });
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({
+    path: testInfo.outputPath("landing-hero.png"),
+    animations: "disabled",
+  });
   const a11y = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21aa"])
     .analyze();
@@ -95,11 +121,7 @@ test("public landing previews stages and connects signup, sign-in, and home", as
       nodes: item.nodes.map((node) => node.target),
     })),
   ).toEqual([]);
-  await page.screenshot({
-    path: testInfo.outputPath("landing-full.png"),
-    fullPage: true,
-    animations: "disabled",
-  });
+
   await page.getByRole("link", { name: "Make room for what’s next" }).click();
   await expect(page.getByLabel("Your name")).toBeVisible();
   await page
@@ -113,7 +135,7 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Your next chapter. A clearer path.",
+      name: "Big possibilities. A little more headspace.",
     }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
@@ -121,4 +143,36 @@ test("public landing previews stages and connects signup, sign-in, and home", as
     page.getByRole("heading", { name: "Welcome back." }),
   ).toBeVisible();
   expect(errors).toEqual([]);
+});
+
+test("landing keeps account entry controls inside narrow and tablet viewports", async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: "reduce" });
+  for (const width of [320, 820]) {
+    await page.setViewportSize({ width, height: 900 });
+    await page.goto("/");
+    await expect(
+      page.getByRole("heading", {
+        level: 1,
+        name: "Big possibilities. A little more headspace.",
+      }),
+    ).toBeVisible();
+    for (const name of [
+      "Get started",
+      "Sign in",
+      "Make room for what’s next",
+    ]) {
+      const link = page.getByRole("link", { name, exact: true });
+      const box = await link.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width).toBeLessThanOrEqual(width);
+    }
+    expect(
+      await page.evaluate(
+        () => document.documentElement.scrollWidth <= window.innerWidth,
+      ),
+    ).toBe(true);
+  }
 });
