@@ -7,7 +7,7 @@ test("reviewed evidence, protected fields, undo and reminder lifecycle work on e
   test.setTimeout(60000);
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/#signup");
   await page.getByLabel("Your name").fill("Reviewer");
   await page
     .getByLabel("Email address", { exact: true })

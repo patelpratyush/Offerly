@@ -4,7 +4,7 @@ test("manual workspace persists application, round, task and document", async ({
 }) => {
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
-  await page.goto("/");
+  await page.goto("/#signup");
   await page.getByLabel("Your name").fill("Taylor");
   await page
     .getByLabel("Email address")
@@ -110,7 +110,7 @@ test("password change signs out all sessions and new password restores access", 
   page,
 }) => {
   const email = `test-password-${Date.now()}-${Math.random()}@example.com`;
-  await page.goto("/");
+  await page.goto("/#signup");
   await page.getByLabel("Your name").fill("Security Test");
   await page.getByLabel("Email address").fill(email);
   await page

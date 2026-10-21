@@ -6,7 +6,7 @@ test("offer decisions persist independently of stage and listing revisions prese
 }, testInfo) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("/");
+  await page.goto("/#signup");
   await page.getByLabel("Your name").fill("Avery");
   await page
     .getByLabel("Email address")

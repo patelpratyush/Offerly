@@ -30,7 +30,7 @@ test("submitted documents retain exact versions and support correction, retracti
     fileId: firstFile.id,
     applicationIds: [application.id],
   });
-  await page.goto("/");
+  await page.goto("/#signup");
   async function openSubmissions() {
     await page
       .getByRole("button", {

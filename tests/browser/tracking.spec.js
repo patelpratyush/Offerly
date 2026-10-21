@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 async function account(page) {
-  await page.goto("/");
+  await page.goto("/#signup");
   await page.getByLabel("Your name").fill("Morgan");
   await page
     .getByLabel("Email address")
@@ -450,7 +450,7 @@ test("signing out clears private state in other open tabs", async ({
   });
   const second = await context.newPage();
   try {
-    await second.goto("/");
+    await second.goto("/#signup");
     await second
       .getByRole("navigation")
       .getByRole("button", { name: /Applications/ })

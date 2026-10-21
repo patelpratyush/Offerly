@@ -21,7 +21,7 @@ test("rich contacts retain sources, explicit confirmations and multiple applicat
 }) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
-  await page.goto("/");
+  await page.goto("/#signup");
   await page.getByLabel("Your name").fill("Contact Tester");
   await page
     .getByLabel("Email address", { exact: true })

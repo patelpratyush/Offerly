@@ -43,6 +43,7 @@ import { ListingSnapshots } from "./ListingSnapshots";
 import { RecruitingReview } from "./RecruitingReview";
 import { Reminders } from "./Reminders";
 import { Timeline } from "./Timeline";
+import { Landing } from "./Landing";
 type Item = { id: string; version: number; [key: string]: any };
 type Workspace = {
   user: { name: string; email: string; timezone: string; stages: string[] };
@@ -161,6 +162,22 @@ function useDialogFocus(active: boolean) {
   }, [active]);
 }
 function App() {
+  const publicView = () =>
+    window.location.hash === "#signup"
+      ? "signup"
+      : window.location.hash === "#signin"
+        ? "signin"
+        : "home";
+  const [entry, setEntry] = useState(publicView);
+  useEffect(() => {
+    const change = () => {
+      const next = publicView();
+      setEntry(next);
+      if (next !== "home") window.scrollTo(0, 0);
+    };
+    window.addEventListener("hashchange", change);
+    return () => window.removeEventListener("hashchange", change);
+  }, []);
   const [w, setW] = useState<Workspace | null>(null),
     [loading, setLoading] = useState(true),
     [page, setPage] = useState("Today"),
@@ -189,6 +206,11 @@ function App() {
   const detailRequest = useRef(0);
   const detailId = useRef<string | null>(null);
   const activeOperations = useRef(0);
+  useEffect(() => {
+    if (!loading && !w && entry !== "home") {
+      document.querySelector<HTMLElement>(".auth-form h1")?.focus();
+    }
+  }, [entry, loading, w]);
   const setDetail = (value: Item | null) => {
     detailRequest.current++;
     detailId.current = value?.id || null;
@@ -356,9 +378,11 @@ function App() {
         <Leaf /> Opening your workspace…
       </div>
     );
+  if (!w && entry === "home") return <Landing />;
   if (!w)
     return (
       <Auth
+        mode={entry === "signin" ? "signin" : "signup"}
         error={error}
         onSubmit={(action, data) =>
           run(async () => {
@@ -1851,15 +1875,20 @@ function Empty({
   );
 }
 function Auth({
+  mode,
   onSubmit,
   error,
   busy,
 }: {
+  mode: "signin" | "signup";
   onSubmit: (a: string, d: any) => void;
   error: string;
   busy: boolean;
 }) {
-  const [register, setRegister] = useState(true);
+  const register = mode === "signup";
+  const setRegister = (value: boolean) => {
+    window.location.hash = value ? "signup" : "signin";
+  };
   const [authConfig, setAuthConfig] = useState<any>(null),
     [configError, setConfigError] = useState("");
   useEffect(() => {
@@ -1877,7 +1906,7 @@ function Auth({
   return (
     <div className="auth">
       <section className="auth-story">
-        <a className="brand" href="#">
+        <a className="brand" href="/" aria-label="Offerly home">
           <Leaf />
           offerly.
         </a>
@@ -1898,7 +1927,9 @@ function Auth({
       </section>
       <section className="auth-form">
         <span className="eyebrow">YOUR PERSONAL JOB SEARCH WORKSPACE</span>
-        <h1>{register ? "Make room for what’s next." : "Welcome back."}</h1>
+        <h1 tabIndex={-1}>
+          {register ? "Make room for what’s next." : "Welcome back."}
+        </h1>
         <p>
           {register
             ? "Create your private workspace to get started."
