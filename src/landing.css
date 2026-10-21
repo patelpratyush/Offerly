@@ -4,6 +4,8 @@
   --lp-paper: #f8f9f4;
   --lp-soft: #eaf0e5;
   --lp-mint: #d2e9d8;
+  --lp-ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --lp-ease-move: cubic-bezier(0.77, 0, 0.175, 1);
   color: var(--lp-ink);
   background: var(--lp-paper);
   overflow: clip;
@@ -126,8 +128,6 @@
 }
 .lp-button:hover {
   background: #245746;
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px #173e3417;
 }
 .lp-button-small {
   padding: 12px 17px;
@@ -1101,10 +1101,10 @@
 }
 @media (min-width: 1000px) and (prefers-reduced-motion: no-preference) {
   .lp-hero-copy {
-    animation: lp-rise 0.65s ease both;
+    animation: lp-rise 0.65s var(--lp-ease-out) both;
   }
   .lp-hero-visual {
-    animation: lp-rise 0.8s 0.12s ease both;
+    animation: lp-rise 0.8s 0.12s var(--lp-ease-out) both;
   }
 }
 @media (max-width: 1050px) {
@@ -1546,12 +1546,12 @@
   animation-delay: -2.5s;
 }
 .lp-moving-application {
-  animation: lp-application 12s ease-in-out infinite;
+  animation: lp-application 8s var(--lp-ease-move) infinite;
 }
 .lp-offer-check {
   transform-box: fill-box;
   transform-origin: center;
-  animation: lp-check-arrives 12s ease-in-out infinite;
+  animation: lp-check-arrives 8s var(--lp-ease-out) infinite;
 }
 .lp-plant-leaf-right {
   transform-box: fill-box;
@@ -1630,7 +1630,7 @@
   52%,
   100% {
     opacity: 0;
-    transform: scale(0.6);
+    transform: scale(0.95);
   }
   65%,
   85% {
@@ -1724,4 +1724,104 @@
 .lp-footer > a:last-child,
 .lp-animation-control {
   min-height: 44px;
+}
+
+/* Explanatory marketing motion. Functional workspace screens stay still. */
+.lp-job-card {
+  animation: lp-preview-float 6s var(--lp-ease-move) infinite;
+}
+.lp-floating-label {
+  animation: lp-label-float 5s -1s var(--lp-ease-move) infinite;
+}
+.lp-floating-note {
+  animation: lp-note-bob 5.5s -2s var(--lp-ease-move) infinite;
+}
+.lp-preview:focus-within .lp-job-card {
+  animation-play-state: paused;
+}
+.lp-hero-note {
+  flex-wrap: wrap;
+}
+.lp-motion-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-height: 32px;
+  padding: 6px 10px;
+  margin-left: 8px;
+  border: 1px solid #d5dfcf;
+  border-radius: 20px;
+  background: #eef3e7;
+  color: #53684e;
+  font-size: 9px;
+}
+.lp-reveal {
+  transform: translateY(22px);
+  transition: transform 650ms var(--lp-ease-out);
+}
+.lp-reveal[data-revealed] {
+  transform: translateY(0);
+}
+.lp-motion-paused * {
+  animation-play-state: paused !important;
+}
+.lp-motion-paused .lp-reveal {
+  transform: none;
+  transition: none;
+}
+.lp-button > svg {
+  transition: transform 180ms var(--lp-ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .lp-preview:hover .lp-job-card {
+    animation-play-state: paused;
+  }
+  .lp-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px #173e3417;
+  }
+  .lp-button:hover > svg {
+    transform: translate(2px, -2px);
+  }
+}
+@keyframes lp-preview-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+@keyframes lp-label-float {
+  0%,
+  100% {
+    transform: translateY(0) rotate(5deg);
+  }
+  50% {
+    transform: translateY(-6px) rotate(3deg);
+  }
+}
+@keyframes lp-note-bob {
+  0%,
+  100% {
+    transform: translateY(0) rotate(4deg);
+  }
+  50% {
+    transform: translateY(7px) rotate(2deg);
+  }
+}
+@media (max-width: 760px) {
+  .lp-motion-control {
+    margin-left: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .landing .lp-reveal {
+    transform: none;
+    transition: none;
+  }
+  .lp-motion-control {
+    display: none;
+  }
 }

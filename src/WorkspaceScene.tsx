@@ -1,9 +1,13 @@
-import { useState } from "react";
 import { Pause, Play } from "lucide-react";
 
 /** A self-contained vector scene: no third-party media or animation runtime. */
-export function WorkspaceScene() {
-  const [paused, setPaused] = useState(false);
+export function WorkspaceScene({
+  paused,
+  onToggle,
+}: {
+  paused: boolean;
+  onToggle: () => void;
+}) {
   return (
     <div className={`lp-scene${paused ? " lp-scene-paused" : ""}`}>
       <svg
@@ -332,7 +336,7 @@ export function WorkspaceScene() {
         className="lp-animation-control"
         type="button"
         aria-pressed={paused}
-        onClick={() => setPaused((value) => !value)}
+        onClick={onToggle}
       >
         {paused ? <Play size={12} /> : <Pause size={12} />}
         {paused ? "Play animation" : "Pause animation"}

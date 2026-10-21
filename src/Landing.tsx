@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowDown,
   ArrowDownRight,
@@ -15,6 +15,8 @@ import {
   MessageCircle,
   MoreHorizontal,
   Plus,
+  Pause,
+  Play,
   Search,
   Sparkles,
   Users,
@@ -155,8 +157,36 @@ function WorkspacePreview() {
 }
 
 export function Landing() {
+  const [motionPaused, setMotionPaused] = useState(false);
+  const root = useRef<HTMLDivElement>(null);
+  const toggleMotion = () => setMotionPaused((value) => !value);
+  useEffect(() => {
+    if (!root.current || typeof IntersectionObserver === "undefined") return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const entry of entries) {
+          if (!entry.isIntersecting) continue;
+          (entry.target as HTMLElement).dataset.revealed = "true";
+          observer.unobserve(entry.target);
+        }
+      },
+      { threshold: 0.08, rootMargin: "0px 0px -32px 0px" },
+    );
+    const sections = root.current.querySelectorAll<HTMLElement>(
+      ".lp-feature-main, .lp-feature-pair > article, .lp-headspace, .lp-process-intro, .lp-steps > li, .lp-faq, .lp-final",
+    );
+    sections.forEach((section, index) => {
+      section.classList.add("lp-reveal");
+      section.style.transitionDelay = `${(index % 3) * 60}ms`;
+      observer.observe(section);
+    });
+    return () => observer.disconnect();
+  }, []);
   return (
-    <div className="landing">
+    <div
+      ref={root}
+      className={`landing${motionPaused ? " lp-motion-paused" : ""}`}
+    >
       <a className="lp-skip" href="#landing-content">
         Skip to content
       </a>
@@ -208,6 +238,18 @@ export function Landing() {
             <div className="lp-hero-note">
               <LockKeyhole size={13} />
               <span>Private by default. Thoughtfully yours.</span>
+              <button
+                className="lp-motion-control"
+                type="button"
+                aria-label={
+                  motionPaused ? "Play page motion" : "Pause page motion"
+                }
+                aria-pressed={motionPaused}
+                onClick={toggleMotion}
+              >
+                {motionPaused ? <Play size={11} /> : <Pause size={11} />}
+                {motionPaused ? "Play motion" : "Pause motion"}
+              </button>
             </div>
           </div>
           <div className="lp-hero-visual">
@@ -435,7 +477,7 @@ export function Landing() {
               <Leaf size={15} /> Good things grow at their own pace.
             </span>
           </div>
-          <WorkspaceScene />
+          <WorkspaceScene paused={motionPaused} onToggle={toggleMotion} />
         </section>
 
         <section

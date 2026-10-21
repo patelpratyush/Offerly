@@ -6,6 +6,7 @@ test("public landing previews stages and connects signup, sign-in, and home", as
 }, testInfo) => {
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
+  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.goto("/");
   await expect(
     page.getByRole("heading", {
@@ -15,6 +16,23 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   ).toBeVisible();
   await expect(page.getByLabel("Your name")).toHaveCount(0);
   const preview = page.locator("#workspace-preview");
+  const movingCard = preview.locator(".lp-job-card");
+  const initialTransform = await movingCard.evaluate(
+    (element) => getComputedStyle(element).transform,
+  );
+  await expect
+    .poll(() =>
+      movingCard.evaluate((element) => getComputedStyle(element).transform),
+    )
+    .not.toBe(initialTransform);
+  await page.getByRole("button", { name: "Pause page motion" }).click();
+  await expect(movingCard).toHaveCSS("animation-play-state", "paused");
+  await expect(page.locator(".lp-coffee-steam").first()).toHaveCSS(
+    "animation-play-state",
+    "paused",
+  );
+  await page.getByRole("button", { name: "Play page motion" }).click();
+  await expect(movingCard).toHaveCSS("animation-play-state", "running");
   await preview.getByRole("button", { name: "Offer" }).click();
   await expect(
     preview.getByRole("heading", { name: "Senior Designer" }),
@@ -50,6 +68,11 @@ test("public landing previews stages and connects signup, sign-in, and home", as
     "animation-play-state",
     "paused",
   );
+  await expect(movingCard).toHaveCSS("animation-play-state", "paused");
+  await expect(page.locator(".lp-headspace")).toHaveAttribute(
+    "data-revealed",
+    "true",
+  );
   await page.emulateMedia({ reducedMotion: "reduce" });
   await expect(page.locator(".lp-coffee-steam").first()).toHaveCSS(
     "animation-name",
@@ -57,6 +80,10 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   );
   await expect(
     page.getByRole("button", { name: "Play animation" }),
+  ).toBeHidden();
+  await expect(movingCard).toHaveCSS("animation-name", "none");
+  await expect(
+    page.getByRole("button", { name: "Play page motion" }),
   ).toBeHidden();
   await page.emulateMedia({ reducedMotion: "no-preference" });
   const a11y = await new AxeBuilder({ page })
