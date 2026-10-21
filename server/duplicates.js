@@ -1,3 +1,4 @@
+import { mapAsync as _mapAsync } from "./async.js";
 import { HttpError } from "./security.js";
 import { z } from "zod";
 import { createHash } from "node:crypto";
@@ -57,11 +58,11 @@ export function duplicatePairs(applications, reviews = []) {
 }
 export function mountDuplicateRoutes(app, store) {
   const { get, save, list, atomic } = store;
-  function mergePlan(user, leftId, rightId, targetId) {
+  async function mergePlan(user, leftId, rightId, targetId) {
     if (leftId === rightId || ![leftId, rightId].includes(targetId))
       throw new HttpError(400, "Choose two applications and a primary record");
-    const records = [leftId, rightId].map((id) => {
-      const row = get(user, id);
+    const records = await _mapAsync([leftId, rightId], async (id) => {
+      const row = await get(user, id);
       if (row?.kind !== "application")
         throw new HttpError(404, "Application not found");
       return { ...JSON.parse(row.data), id: row.id, version: row.version };
@@ -70,22 +71,26 @@ export function mountDuplicateRoutes(app, store) {
       throw new HttpError(400, "Choose active duplicate candidates");
     const primary = records.find((r) => r.id === targetId),
       source = records.find((r) => r.id !== targetId);
-    const children = [
-      "contact",
-      "document",
-      "document_usage",
-      "round",
-      "assessment",
-      "task",
-    ].flatMap((kind) =>
-      list(user, kind)
-        .filter(
-          (r) =>
-            r.applicationId === source.id ||
-            r.applicationIds?.includes(source.id),
-        )
-        .map((r) => ({ kind, ...r })),
-    );
+    const children = (
+      await _mapAsync(
+        [
+          "contact",
+          "document",
+          "document_usage",
+          "round",
+          "assessment",
+          "task",
+        ],
+        async (kind) =>
+          (await list(user, kind))
+            .filter(
+              (r) =>
+                r.applicationId === source.id ||
+                r.applicationIds?.includes(source.id),
+            )
+            .map((r) => ({ kind, ...r })),
+      )
+    ).flat();
     if (children.length > 100)
       throw new HttpError(
         413,
@@ -96,7 +101,7 @@ export function mountDuplicateRoutes(app, store) {
       .digest("hex");
     return { primary, source, children, fingerprint };
   }
-  app.post("/api/duplicates/merge-preview", (req, res, next) => {
+  app.post("/api/duplicates/merge-preview", async (req, res, next) => {
     try {
       const v = z
         .object({
@@ -105,7 +110,12 @@ export function mountDuplicateRoutes(app, store) {
           targetId: z.string().uuid(),
         })
         .parse(req.body);
-      const plan = mergePlan(req.user.id, v.leftId, v.rightId, v.targetId);
+      const plan = await mergePlan(
+        req.user.id,
+        v.leftId,
+        v.rightId,
+        v.targetId,
+      );
       res.json({
         fingerprint: plan.fingerprint,
         primaryId: plan.primary.id,
@@ -120,9 +130,9 @@ export function mountDuplicateRoutes(app, store) {
       next(e);
     }
   });
-  app.post("/api/duplicates/review", (req, res, next) => {
+  app.post("/api/duplicates/review", async (req, res, next) => {
     try {
-      const result = atomic(() => {
+      const result = await atomic(async () => {
         const {
           leftId,
           rightId,
@@ -150,16 +160,16 @@ export function mountDuplicateRoutes(app, store) {
           leftId === rightId
         )
           throw new HttpError(400, "Invalid review decision");
-        const owned = (id) => {
-          const r = get(req.user.id, id);
+        const owned = async (id) => {
+          const r = await get(req.user.id, id);
           if (r?.kind !== "application")
             throw Object.assign(new HttpError(400, "Application not found"), {
               status: 404,
             });
           return { ...JSON.parse(r.data), id: r.id, version: r.version };
         };
-        const left = owned(leftId),
-          right = owned(rightId);
+        const left = await owned(leftId),
+          right = await owned(rightId);
         if (left.version !== leftVersion || right.version !== rightVersion)
           throw Object.assign(
             new HttpError(
@@ -174,12 +184,12 @@ export function mountDuplicateRoutes(app, store) {
             "These applications are no longer duplicate candidates",
           );
         const key = pairKey(left, right);
-        const previous = list(req.user.id, "duplicate_review").find(
+        const previous = (await list(req.user.id, "duplicate_review")).find(
           (r) => r.pairKey === key && r.decision !== "undone",
         );
         if (previous) return previous;
         if (decision === "merge") {
-          const plan = mergePlan(req.user.id, leftId, rightId, targetId);
+          const plan = await mergePlan(req.user.id, leftId, rightId, targetId);
           if (fingerprint !== plan.fingerprint)
             throw new HttpError(
               409,
@@ -239,7 +249,7 @@ export function mountDuplicateRoutes(app, store) {
             delete data.id;
             delete data.version;
             delete data.kind;
-            save(
+            await save(
               req.user.id,
               change.kind,
               data,
@@ -248,7 +258,7 @@ export function mountDuplicateRoutes(app, store) {
               "manual_merge",
             );
           }
-          return save(req.user.id, "duplicate_review", review);
+          return await save(req.user.id, "duplicate_review", review);
         }
         let targetVersion = null,
           previousArchived = null;
@@ -258,15 +268,17 @@ export function mountDuplicateRoutes(app, store) {
           const target = targetId === leftId ? left : right;
           previousArchived = target.archived;
           const { id, version, ...data } = target;
-          targetVersion = save(
-            req.user.id,
-            "application",
-            { ...data, archived: true },
-            id,
-            version,
+          targetVersion = (
+            await save(
+              req.user.id,
+              "application",
+              { ...data, archived: true },
+              id,
+              version,
+            )
           ).version;
         }
-        return save(req.user.id, "duplicate_review", {
+        return await save(req.user.id, "duplicate_review", {
           pairKey: key,
           applicationIds: [leftId, rightId],
           decision,
@@ -280,10 +292,10 @@ export function mountDuplicateRoutes(app, store) {
       next(e);
     }
   });
-  app.post("/api/duplicates/:id/undo", (req, res, next) => {
+  app.post("/api/duplicates/:id/undo", async (req, res, next) => {
     try {
-      const result = atomic(() => {
-        const record = get(req.user.id, req.params.id);
+      const result = await atomic(async () => {
+        const record = await get(req.user.id, req.params.id);
         if (record?.kind !== "duplicate_review")
           throw Object.assign(new HttpError(400, "Review not found"), {
             status: 404,
@@ -292,7 +304,7 @@ export function mountDuplicateRoutes(app, store) {
         if (review.decision === "undone") return { ok: true };
         if (review.decision === "merge") {
           for (const original of review.undo) {
-            const current = get(req.user.id, original.id);
+            const current = await get(req.user.id, original.id);
             if (
               !current ||
               current.kind !== original.kind ||
@@ -304,7 +316,7 @@ export function mountDuplicateRoutes(app, store) {
               );
           }
           for (const original of review.undo)
-            save(
+            await save(
               req.user.id,
               original.kind,
               original.data,
@@ -314,7 +326,7 @@ export function mountDuplicateRoutes(app, store) {
             );
         }
         if (review.decision === "archive") {
-          const target = get(req.user.id, review.targetId);
+          const target = await get(req.user.id, review.targetId);
           if (!target || target.version !== review.targetVersion)
             throw Object.assign(
               new HttpError(
@@ -323,7 +335,7 @@ export function mountDuplicateRoutes(app, store) {
               ),
               { status: 409 },
             );
-          save(
+          await save(
             req.user.id,
             "application",
             { ...JSON.parse(target.data), archived: review.previousArchived },
@@ -331,7 +343,7 @@ export function mountDuplicateRoutes(app, store) {
             target.version,
           );
         }
-        save(
+        await save(
           req.user.id,
           "duplicate_review",
           { ...review, decision: "undone" },

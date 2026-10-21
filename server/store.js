@@ -1,4 +1,4 @@
-import { DatabaseSync } from "node:sqlite";
+import { openDatabase } from "./database.js";
 import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
 import { recordManualLocks } from "./recruiting.js";
@@ -15,10 +15,11 @@ export const stages = [
   "Rejected",
   "Withdrawn",
 ];
-export function createStore(path) {
-  const db = new DatabaseSync(path);
-  if (path !== ":memory:") chmodSync(path, 0o600);
-  db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA secure_delete=ON;
+export async function createStore(path, options) {
+  const db = openDatabase(path, options);
+  if (!db.hosted) {
+    if (path !== ":memory:") chmodSync(path, 0o600);
+    await db.exec(`PRAGMA journal_mode=WAL; PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000; PRAGMA secure_delete=ON;
     CREATE TABLE IF NOT EXISTS users(id TEXT PRIMARY KEY,email TEXT UNIQUE NOT NULL,password TEXT NOT NULL,name TEXT NOT NULL,timezone TEXT NOT NULL,stages TEXT NOT NULL);
     CREATE TABLE IF NOT EXISTS sessions(token TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,expires INTEGER NOT NULL);
     CREATE TABLE IF NOT EXISTS records(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,kind TEXT NOT NULL,data TEXT NOT NULL,version INTEGER NOT NULL DEFAULT 1);
@@ -28,55 +29,44 @@ export function createStore(path) {
     CREATE TABLE IF NOT EXISTS import_batches(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,rows TEXT NOT NULL,expires INTEGER NOT NULL,result TEXT,decisions TEXT);
     CREATE TABLE IF NOT EXISTS files(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,mime TEXT NOT NULL,hash TEXT NOT NULL,body BLOB NOT NULL,created_at TEXT NOT NULL);
   `);
-  if (
-    !db
-      .prepare("PRAGMA table_info(sessions)")
-      .all()
-      .some((c) => c.name === "last_seen")
-  ) {
-    db.exec(
-      "ALTER TABLE sessions ADD COLUMN last_seen INTEGER NOT NULL DEFAULT 0",
-    );
-    db.exec("DELETE FROM sessions"); // Old sessions lack an inactivity timestamp; require sign-in.
+    if (
+      !(await db.prepare("PRAGMA table_info(sessions)").all()).some(
+        (c) => c.name === "last_seen",
+      )
+    ) {
+      await db.exec(
+        "ALTER TABLE sessions ADD COLUMN last_seen INTEGER NOT NULL DEFAULT 0",
+      );
+      await db.exec("DELETE FROM sessions"); // Old sessions lack an inactivity timestamp; require sign-in.
+    }
+    if (
+      !(await db.prepare("PRAGMA table_info(files)").all()).some(
+        (c) => c.name === "scanned_at",
+      )
+    )
+      await db.exec("ALTER TABLE files ADD COLUMN scanned_at TEXT");
+    if (path !== ":memory:")
+      for (const suffix of ["", "-wal", "-shm"])
+        if (existsSync(path + suffix)) chmodSync(path + suffix, 0o600);
   }
-  if (
-    !db
-      .prepare("PRAGMA table_info(files)")
-      .all()
-      .some((c) => c.name === "scanned_at")
-  )
-    db.exec("ALTER TABLE files ADD COLUMN scanned_at TEXT");
-  if (path !== ":memory:")
-    for (const suffix of ["", "-wal", "-shm"])
-      if (existsSync(path + suffix)) chmodSync(path + suffix, 0o600);
-  const list = (user, kind) =>
-    db
-      .prepare("SELECT * FROM records WHERE user_id=? AND kind=?")
-      .all(user, kind)
-      .map((r) => ({ ...JSON.parse(r.data), id: r.id, version: r.version }));
-  const get = (user, id) =>
+  const list = async (user, kind) =>
+    (
+      await db
+        .prepare(
+          `SELECT * FROM records WHERE user_id=? AND kind=? ORDER BY ${db.hosted ? "sequence" : "rowid"}`,
+        )
+        .all(user, kind)
+    ).map((r) => ({ ...JSON.parse(r.data), id: r.id, version: r.version }));
+  const get = async (user, id) =>
     typeof id !== "string"
       ? undefined
-      : db
+      : await db
           .prepare("SELECT * FROM records WHERE id=? AND user_id=?")
           .get(id, user);
-  let transactionId = 0;
-  const atomic = (fn) => {
-    const name = `operation_${++transactionId}`;
-    db.exec(`SAVEPOINT ${name}`);
-    try {
-      const result = fn();
-      db.exec(`RELEASE ${name}`);
-      return result;
-    } catch (e) {
-      db.exec(`ROLLBACK TO ${name}`);
-      db.exec(`RELEASE ${name}`);
-      throw e;
-    }
-  };
-  const save = (user, kind, data, id, version, actor = "manual") =>
-    atomic(() => {
-      const old = id ? get(user, id) : undefined;
+  const atomic = db.atomic;
+  const save = async (user, kind, data, id, version, actor = "manual") =>
+    await atomic(async () => {
+      const old = id ? await get(user, id) : undefined;
       if (id && (!old || old.kind !== kind))
         throw Object.assign(new HttpError(404, "Record not found"), {
           status: 404,
@@ -93,7 +83,7 @@ export function createStore(path) {
       if (kind === "document" && !old) {
         const root = data.documentId;
         const versions = root
-          ? db
+          ? await db
               .prepare(
                 "SELECT count(*) n, max(COALESCE(json_extract(data,'$.versionNumber'),1)) latest FROM records WHERE user_id=? AND kind='document' AND (id=? OR json_extract(data,'$.documentId')=?)",
               )
@@ -108,12 +98,14 @@ export function createStore(path) {
       const serialized = JSON.stringify(data);
       if (Buffer.byteLength(serialized) > 256 * 1024)
         throw new HttpError(413, "Record exceeds the 256 KB limit");
-      const count = db
-        .prepare("SELECT count(*) n FROM records WHERE user_id=?")
-        .get(user).n;
+      const count = (
+        await db
+          .prepare("SELECT count(*) n FROM records WHERE user_id=?")
+          .get(user)
+      ).n;
       if (!old && count >= 10000)
         throw new HttpError(413, "Workspace record limit reached");
-      const history = db
+      const history = await db
         .prepare(
           "SELECT count(*) n,COALESCE(sum(COALESCE(length(CAST(before_data AS BLOB)),0)+length(CAST(after_data AS BLOB))),0) bytes FROM events WHERE user_id=?",
         )
@@ -130,19 +122,22 @@ export function createStore(path) {
           "Workspace history limit reached. Export your data before continuing.",
         );
       const key = id || randomUUID();
-      db.prepare(
-        "INSERT INTO records VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,version=excluded.version",
-      ).run(key, user, kind, JSON.stringify(data), (old?.version || 0) + 1);
-      db.prepare("INSERT INTO events VALUES(?,?,?,?,?,?,?)").run(
-        randomUUID(),
-        user,
-        key,
-        new Date().toISOString(),
-        old?.data || null,
-        JSON.stringify(data),
-        actor,
-      );
-
+      await db
+        .prepare(
+          "INSERT INTO records VALUES(?,?,?,?,?) ON CONFLICT(id) DO UPDATE SET data=excluded.data,version=excluded.version",
+        )
+        .run(key, user, kind, JSON.stringify(data), (old?.version || 0) + 1);
+      await db
+        .prepare("INSERT INTO events VALUES(?,?,?,?,?,?,?)")
+        .run(
+          randomUUID(),
+          user,
+          key,
+          new Date().toISOString(),
+          old?.data || null,
+          JSON.stringify(data),
+          actor,
+        );
       if (kind === "application") {
         const before = old ? JSON.parse(old.data) : null;
         const changed = [
@@ -154,13 +149,13 @@ export function createStore(path) {
           // Preserve legacy text before the first edit; never invent its capture date.
           if (
             before?.description &&
-            !db
+            !(await db
               .prepare(
                 "SELECT id FROM records WHERE user_id=? AND kind='listing_snapshot' AND json_extract(data,'$.applicationId')=? LIMIT 1",
               )
-              .get(user, key)
+              .get(user, key))
           ) {
-            save(
+            await save(
               user,
               "listing_snapshot",
               {
@@ -178,7 +173,7 @@ export function createStore(path) {
             );
           }
           if (data.description)
-            save(
+            await save(
               user,
               "listing_snapshot",
               {
@@ -197,7 +192,7 @@ export function createStore(path) {
         }
       }
       if (kind === "application")
-        recordManualLocks(
+        await recordManualLocks(
           store,
           user,
           old ? JSON.parse(old.data) : null,
@@ -205,7 +200,7 @@ export function createStore(path) {
           key,
           actor,
         );
-      reconcileReminders(
+      await reconcileReminders(
         store,
         user,
         kind,

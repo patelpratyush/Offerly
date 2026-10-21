@@ -120,7 +120,6 @@ test("contact details validate dates, sources, URLs, email identities and proven
   assert.equal(valid.additionalEmails[0].confirmed, false);
   assert.equal(valid.emailConfirmed, false);
 });
-
 test("additional email edits require fresh confirmation and server-owned timestamps", () => {
   const initial = normalizeContact(
     contactSchema.parse({
@@ -163,7 +162,6 @@ test("additional email edits require fresh confirmation and server-owned timesta
   assert.equal(confirmed.additionalEmails[0].confirmed, true);
   assert.equal(confirmed.additionalEmails[0].confirmedValue, undefined);
 });
-
 test("changing a field drops carried evidence but accepts newly supplied provenance", () => {
   const initial = normalizeContact(
     contactSchema.parse({
@@ -213,7 +211,6 @@ test("changing a field drops carried evidence but accepts newly supplied provena
     recordedAt: later,
   });
 });
-
 test("contact field limits and trimmed confirmation proofs are enforced", () => {
   for (const field of ["name", "company", "role", "agency", "hiringCompany"]) {
     assert.equal(

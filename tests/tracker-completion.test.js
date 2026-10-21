@@ -2,11 +2,10 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { parse } from "csv-parse/sync";
 import { createApp } from "../server/app.js";
-import { createStore } from "../server/store.js";
-
+import { createStore } from "./helpers/store.js";
 async function setup(t) {
-  const store = createStore(":memory:");
-  const server = createApp(store).listen(0, "127.0.0.1");
+  const store = await createStore(":memory:");
+  const server = (await createApp(store)).listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   t.after(() => {
     server.closeAllConnections();
@@ -58,7 +57,6 @@ async function setup(t) {
   };
   return { store, request, register, create };
 }
-
 test("contact provenance persists across edits without forging confirmations or timestamps", async (t) => {
   const { request, register, create } = await setup(t);
   const cookie = await register("contact-completion@example.com"),
@@ -161,7 +159,6 @@ test("contact provenance persists across edits without forging confirmations or 
     ),
   );
 });
-
 test("offer dates and listing captures survive CSV export/import with explicit date format", async (t) => {
   const { request, register, create } = await setup(t);
   const cookie = await register("offer-completion@example.com");
@@ -220,7 +217,6 @@ test("offer dates and listing captures survive CSV export/import with explicit d
     ),
   );
 });
-
 test("listing revisions are immutable, private, and do not invent legacy capture dates", async (t) => {
   const { store, request, register, create } = await setup(t);
   const cookie = await register("listing-completion@example.com"),
@@ -291,7 +287,7 @@ test("listing revisions are immutable, private, and do not invent legacy capture
     title: "Role",
     stage: "Saved",
   });
-  store.db
+  await store.db
     .prepare("UPDATE records SET data=? WHERE id=?")
     .run(
       JSON.stringify({ ...legacy, description: "Legacy pasted text" }),
@@ -315,7 +311,6 @@ test("listing revisions are immutable, private, and do not invent legacy capture
   assert.equal(history[0].sourceUrl, "");
   assert.equal(history[0].description, "Legacy pasted text");
 });
-
 test("submitted versions survive newer uploads, corrections and duplicate merge reversal", async (t) => {
   const { store, request, register, create } = await setup(t);
   const cookie = await register("usage-completion@example.com"),
@@ -436,7 +431,11 @@ test("submitted versions survive newer uploads, corrections and duplicate merge 
   );
   assert.ok(
     Buffer.from(
-      store.db.prepare("SELECT body FROM files WHERE id=?").get(file1.id).body,
+      (
+        await store.db
+          .prepare("SELECT body FROM files WHERE id=?")
+          .get(file1.id)
+      ).body,
     ).includes(Buffer.from("first")),
   );
   const retracted = (
@@ -479,7 +478,6 @@ test("submitted versions survive newer uploads, corrections and duplicate merge 
     ),
   );
 });
-
 test("listing history quota failure rolls back the application and its event", async (t) => {
   const { store, register, create, request } = await setup(t);
   const cookie = await register("listing-quota@example.com");
@@ -488,16 +486,18 @@ test("listing history quota failure rolls back the application and its event", a
     title: "Engineer",
     stage: "Saved",
   });
-  const user = store.db
-    .prepare("SELECT user_id FROM records WHERE id=?")
-    .get(app.id).user_id;
-  const count = store.db
-    .prepare("SELECT count(*) n FROM events WHERE user_id=?")
-    .get(user).n;
-  store.atomic(() => {
+  const user = (
+    await store.db.prepare("SELECT user_id FROM records WHERE id=?").get(app.id)
+  ).user_id;
+  const count = (
+    await store.db
+      .prepare("SELECT count(*) n FROM events WHERE user_id=?")
+      .get(user)
+  ).n;
+  await store.atomic(async () => {
     const insert = store.db.prepare("INSERT INTO events VALUES(?,?,?,?,?,?,?)");
     for (let i = count; i < 49999; i++)
-      insert.run(
+      await insert.run(
         `quota-${i}`,
         user,
         app.id,
@@ -517,12 +517,18 @@ test("listing history quota failure rolls back the application and its event", a
     cookie,
   );
   assert.equal(result.status, 413);
-  assert.equal(store.get(user, app.id).version, app.version);
-  assert.equal(JSON.parse(store.get(user, app.id).data).description, "");
-  assert.equal(store.list(user, "listing_snapshot").length, 0);
+  assert.equal((await store.get(user, app.id)).version, app.version);
   assert.equal(
-    store.db.prepare("SELECT count(*) n FROM events WHERE user_id=?").get(user)
-      .n,
+    JSON.parse((await store.get(user, app.id)).data).description,
+    "",
+  );
+  assert.equal((await store.list(user, "listing_snapshot")).length, 0);
+  assert.equal(
+    (
+      await store.db
+        .prepare("SELECT count(*) n FROM events WHERE user_id=?")
+        .get(user)
+    ).n,
     49999,
   );
 });

@@ -13,3 +13,6 @@ test-results/
 *.pem
 *.key
 coverage/
+
+# Supabase CLI local cache
+supabase/.temp/

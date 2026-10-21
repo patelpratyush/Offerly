@@ -1,7 +1,7 @@
+import { mapAsync as _mapAsync } from "./async.js";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { HttpError } from "./security.js";
-
 const short = z.string().trim().max(300);
 const filterDate = z.union([
   z.literal(""),
@@ -68,15 +68,15 @@ const bulkSchema = z
       .refine((v) => Object.keys(v).length > 0, { message: "Select a change" }),
   })
   .strict();
-
-export function mountTracker(app, store, validate) {
+export async function mountTracker(app, store, validate) {
   const { db, get, save, atomic } = store;
-  db.exec(`CREATE TABLE IF NOT EXISTS mutation_receipts (
+  if (!db.hosted)
+    await db.exec(`CREATE TABLE IF NOT EXISTS mutation_receipts (
     user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
     operation_id TEXT NOT NULL, fingerprint TEXT NOT NULL, result TEXT NOT NULL,
     expires INTEGER NOT NULL, PRIMARY KEY(user_id,operation_id));
     CREATE INDEX IF NOT EXISTS mutation_expiry ON mutation_receipts(expires);`);
-  app.post("/api/applications/bulk", (req, res, next) => {
+  app.post("/api/applications/bulk", async (req, res, next) => {
     try {
       const body = bulkSchema.parse(req.body);
       if (
@@ -87,11 +87,11 @@ export function mountTracker(app, store, validate) {
       const fingerprint = createHash("sha256")
         .update(JSON.stringify(body))
         .digest("hex");
-      const result = atomic(() => {
-        db.prepare("DELETE FROM mutation_receipts WHERE expires<=?").run(
-          Date.now(),
-        );
-        const prior = db
+      const result = await atomic(async () => {
+        await db
+          .prepare("DELETE FROM mutation_receipts WHERE expires<=?")
+          .run(Date.now());
+        const prior = await db
           .prepare(
             "SELECT * FROM mutation_receipts WHERE user_id=? AND operation_id=?",
           )
@@ -105,34 +105,41 @@ export function mountTracker(app, store, validate) {
           return { ...JSON.parse(prior.result), replayed: true };
         }
         if (
-          db
-            .prepare("SELECT count(*) n FROM mutation_receipts WHERE user_id=?")
-            .get(req.user.id).n >= 1000
+          (
+            await db
+              .prepare(
+                "SELECT count(*) n FROM mutation_receipts WHERE user_id=?",
+              )
+              .get(req.user.id)
+          ).n >= 1000
         )
           throw new HttpError(
             429,
             "Bulk edit limit reached. Try again after older operations expire.",
           );
-        const prepared = body.applications.map(({ id, version }) => {
-          const old = get(req.user.id, id);
-          if (!old || old.kind !== "application")
-            throw new HttpError(404, "Application not found");
-          if (old.version !== version)
-            throw new HttpError(
-              409,
-              "An application changed. Refresh and review your selection. Nothing was updated.",
-            );
-          return {
-            id,
-            version,
-            data: validate(req.user, "application", {
-              ...JSON.parse(old.data),
-              ...body.changes,
-            }),
-          };
-        });
+        const prepared = await _mapAsync(
+          body.applications,
+          async ({ id, version }) => {
+            const old = await get(req.user.id, id);
+            if (!old || old.kind !== "application")
+              throw new HttpError(404, "Application not found");
+            if (old.version !== version)
+              throw new HttpError(
+                409,
+                "An application changed. Refresh and review your selection. Nothing was updated.",
+              );
+            return {
+              id,
+              version,
+              data: await validate(req.user, "application", {
+                ...JSON.parse(old.data),
+                ...body.changes,
+              }),
+            };
+          },
+        );
         for (const item of prepared)
-          save(
+          await save(
             req.user.id,
             "application",
             item.data,
@@ -145,13 +152,15 @@ export function mountTracker(app, store, validate) {
           operationId: body.operationId,
           replayed: false,
         };
-        db.prepare("INSERT INTO mutation_receipts VALUES(?,?,?,?,?)").run(
-          req.user.id,
-          body.operationId,
-          fingerprint,
-          JSON.stringify(value),
-          Date.now() + 7 * 86400000,
-        );
+        await db
+          .prepare("INSERT INTO mutation_receipts VALUES(?,?,?,?,?)")
+          .run(
+            req.user.id,
+            body.operationId,
+            fingerprint,
+            JSON.stringify(value),
+            Date.now() + 7 * 86400000,
+          );
         return value;
       });
       res.json(result);

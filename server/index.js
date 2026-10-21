@@ -9,8 +9,8 @@ process.umask(0o077);
 const config = securityConfig();
 const database = resolve(process.env.DATABASE_PATH || "data/offerly.sqlite");
 mkdirSync(dirname(database), { recursive: true, mode: 0o700 });
-const store = createStore(database),
-  app = createApp(store, config);
+const store = await createStore(database),
+  app = await createApp(store, config);
 if (config.production) {
   const root = resolve("dist");
   app.use(express.static(root, { dotfiles: "deny", index: false }));

@@ -1,7 +1,7 @@
+import { mapAsync as _mapAsync } from "./async.js";
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { HttpError } from "./security.js";
-
 const changesSchema = z
   .object({
     stage: z.string().trim().min(1).max(100).optional(),
@@ -57,8 +57,8 @@ const actionSchema = z
   .strict();
 const hash = (value) =>
   createHash("sha256").update(JSON.stringify(value)).digest("hex");
-function record(store, user, id, kind) {
-  const row = store.get(user, id);
+async function record(store, user, id, kind) {
+  const row = await store.get(user, id);
   if (!row || row.kind !== kind) throw new HttpError(404, "Record not found");
   return { ...JSON.parse(row.data), id: row.id, version: row.version };
 }
@@ -68,18 +68,18 @@ function dataOf(value) {
   delete data.version;
   return data;
 }
-function save(store, user, kind, data, old, actor = "recruiting") {
-  return store.save(user, kind, data, old?.id, old?.version, actor);
+async function save(store, user, kind, data, old, actor = "recruiting") {
+  return await store.save(user, kind, data, old?.id, old?.version, actor);
 }
-function receipt(store, user, operationId) {
-  return store
-    .list(user, "recruiting_operation")
-    .find((r) => r.operationId === operationId);
+async function receipt(store, user, operationId) {
+  return (await store.list(user, "recruiting_operation")).find(
+    (r) => r.operationId === operationId,
+  );
 }
-function operation(store, user, scope, input, fn) {
-  return store.atomic(() => {
+async function operation(store, user, scope, input, fn) {
+  return await store.atomic(async () => {
     const fingerprint = hash({ scope, input });
-    const old = receipt(store, user, input.operationId);
+    const old = await receipt(store, user, input.operationId);
     if (old) {
       if (old.fingerprint !== fingerprint)
         throw new HttpError(
@@ -88,8 +88,8 @@ function operation(store, user, scope, input, fn) {
         );
       return old.result;
     }
-    const result = fn();
-    save(store, user, "recruiting_operation", {
+    const result = await fn();
+    await save(store, user, "recruiting_operation", {
       operationId: input.operationId,
       fingerprint,
       result,
@@ -99,8 +99,10 @@ function operation(store, user, scope, input, fn) {
 }
 const norm = (value) =>
   (value || "").normalize("NFKC").toLowerCase().replace(/\s+/g, " ").trim();
-function match(store, user, evidence) {
-  const apps = store.list(user, "application").filter((a) => !a.archived);
+async function match(store, user, evidence) {
+  const apps = (await store.list(user, "application")).filter(
+    (a) => !a.archived,
+  );
   if (evidence.applicationId) {
     const a = apps.find((a) => a.id === evidence.applicationId);
     return {
@@ -130,8 +132,7 @@ function match(store, user, evidence) {
       "Exact normalized company and role match; review required",
   };
 }
-
-export function recordManualLocks(
+export async function recordManualLocks(
   store,
   userId,
   before,
@@ -142,13 +143,10 @@ export function recordManualLocks(
   if (!before || actor.startsWith("recruiting")) return;
   for (const field of ["stage", "owner"])
     if (before[field] !== after[field]) {
-      const old = store
-        .list(userId, "field_lock")
-        .find(
-          (lock) =>
-            lock.applicationId === applicationId && lock.field === field,
-        );
-      save(
+      const old = (await store.list(userId, "field_lock")).find(
+        (lock) => lock.applicationId === applicationId && lock.field === field,
+      );
+      await save(
         store,
         userId,
         "field_lock",
@@ -165,11 +163,13 @@ export function recordManualLocks(
       );
     }
 }
-
 // One synchronous bounded tick. Atomic claims and optimistic versions also protect
 // separate workers using the same SQLite database; no network runs under a lease.
 const jobCursors = new WeakMap();
-export function processRecruitingJobs(store, { now = Date.now() } = {}) {
+export async function processRecruitingJobs(
+  store,
+  { now = Date.now(), deadline = Infinity } = {},
+) {
   const time =
     now instanceof Date
       ? now.getTime()
@@ -178,7 +178,7 @@ export function processRecruitingJobs(store, { now = Date.now() } = {}) {
         : Date.parse(now);
   if (!Number.isFinite(time)) throw new TypeError("Invalid worker time");
   const cursor = jobCursors.get(store) || "";
-  const rows = store.db
+  const rows = await store.db
     .prepare(
       "SELECT id,user_id FROM records WHERE id>? AND kind='recruiting_job' AND ((json_extract(data,'$.status') IN ('queued','retry') AND json_extract(data,'$.availableAt')<=?) OR (json_extract(data,'$.status')='running' AND json_extract(data,'$.leaseUntil')<=?)) ORDER BY id LIMIT 20",
     )
@@ -186,10 +186,11 @@ export function processRecruitingJobs(store, { now = Date.now() } = {}) {
   jobCursors.set(store, rows.length === 20 ? rows.at(-1).id : "");
   let processed = 0;
   for (const row of rows) {
+    if (Date.now() >= deadline) break;
     let claimed;
     try {
-      claimed = store.atomic(() => {
-        const job = record(store, row.user_id, row.id, "recruiting_job");
+      claimed = await store.atomic(async () => {
+        const job = await record(store, row.user_id, row.id, "recruiting_job");
         if (
           !(
             ["queued", "retry"].includes(job.status) && job.availableAt <= time
@@ -198,7 +199,7 @@ export function processRecruitingJobs(store, { now = Date.now() } = {}) {
         )
           return null;
         if (job.attempts >= 3) {
-          save(
+          await save(
             store,
             row.user_id,
             "recruiting_job",
@@ -212,7 +213,7 @@ export function processRecruitingJobs(store, { now = Date.now() } = {}) {
           );
           return null;
         }
-        return save(
+        return await save(
           store,
           row.user_id,
           "recruiting_job",
@@ -226,29 +227,29 @@ export function processRecruitingJobs(store, { now = Date.now() } = {}) {
         );
       });
       if (!claimed) continue;
-      store.atomic(() => {
-        const job = record(store, row.user_id, row.id, "recruiting_job");
+      await store.atomic(async () => {
+        const job = await record(store, row.user_id, row.id, "recruiting_job");
         if (job.version !== claimed.version || job.status !== "running") return;
-        const evidence = record(
+        const evidence = await record(
           store,
           row.user_id,
           job.evidenceId,
           "recruiting_evidence",
         );
-        let review = store
-          .list(row.user_id, "recruiting_review")
-          .find((r) => r.evidenceId === evidence.id);
+        let review = (await store.list(row.user_id, "recruiting_review")).find(
+          (r) => r.evidenceId === evidence.id,
+        );
         if (!review)
-          review = save(store, row.user_id, "recruiting_review", {
+          review = await save(store, row.user_id, "recruiting_review", {
             evidenceId: evidence.id,
             jobId: job.id,
             status: "pending",
-            ...match(store, row.user_id, evidence),
+            ...(await match(store, row.user_id, evidence)),
             proposedChanges: evidence.changes,
             effectiveAt: evidence.effectiveAt,
             recordedAt: new Date(time).toISOString(),
           });
-        save(
+        await save(
           store,
           row.user_id,
           "recruiting_job",
@@ -266,11 +267,16 @@ export function processRecruitingJobs(store, { now = Date.now() } = {}) {
     } catch {
       if (claimed)
         try {
-          store.atomic(() => {
-            const job = record(store, row.user_id, row.id, "recruiting_job");
+          await store.atomic(async () => {
+            const job = await record(
+              store,
+              row.user_id,
+              row.id,
+              "recruiting_job",
+            );
             if (job.version !== claimed.version || job.status !== "running")
               return;
-            save(
+            await save(
               store,
               row.user_id,
               "recruiting_job",
@@ -292,61 +298,66 @@ export function processRecruitingJobs(store, { now = Date.now() } = {}) {
   }
   return { processed };
 }
-
 export function mountRecruiting(app, store, validate) {
-  app.post("/api/recruiting/evidence", (req, res) => {
+  app.post("/api/recruiting/evidence", async (req, res) => {
     const input = evidenceSchema.parse(req.body);
-    const result = operation(store, req.user.id, "evidence", input, () => {
-      if (input.applicationId)
-        record(store, req.user.id, input.applicationId, "application");
-      if (
-        input.changes.stage &&
-        !JSON.parse(req.user.stages).includes(input.changes.stage)
-      )
-        throw new HttpError(400, "Unknown stage");
-      const payload = { ...input };
-      delete payload.operationId;
-      const fingerprint = hash(payload);
-      const existing = store
-        .list(req.user.id, "recruiting_evidence")
-        .find((e) => e.sourceId === input.sourceId);
-      if (existing) {
-        if (existing.fingerprint !== fingerprint)
-          throw new HttpError(
-            409,
-            "Source ID already contains different evidence",
+    const result = await operation(
+      store,
+      req.user.id,
+      "evidence",
+      input,
+      async () => {
+        if (input.applicationId)
+          await record(store, req.user.id, input.applicationId, "application");
+        if (
+          input.changes.stage &&
+          !JSON.parse(req.user.stages).includes(input.changes.stage)
+        )
+          throw new HttpError(400, "Unknown stage");
+        const payload = { ...input };
+        delete payload.operationId;
+        const fingerprint = hash(payload);
+        const existing = (
+          await store.list(req.user.id, "recruiting_evidence")
+        ).find((e) => e.sourceId === input.sourceId);
+        if (existing) {
+          if (existing.fingerprint !== fingerprint)
+            throw new HttpError(
+              409,
+              "Source ID already contains different evidence",
+            );
+          const job = (await store.list(req.user.id, "recruiting_job")).find(
+            (j) => j.evidenceId === existing.id,
           );
-        const job = store
-          .list(req.user.id, "recruiting_job")
-          .find((j) => j.evidenceId === existing.id);
-        return { evidence: existing, job };
-      }
-      const evidence = save(store, req.user.id, "recruiting_evidence", {
-        ...payload,
-        fingerprint,
-        recordedAt: new Date().toISOString(),
-        sourceType: "manual",
-      });
-      const job = save(store, req.user.id, "recruiting_job", {
-        evidenceId: evidence.id,
-        status: "queued",
-        attempts: 0,
-        availableAt: Date.now(),
-        leaseUntil: 0,
-      });
-      return { evidence, job };
-    });
+          return { evidence: existing, job };
+        }
+        const evidence = await save(store, req.user.id, "recruiting_evidence", {
+          ...payload,
+          fingerprint,
+          recordedAt: new Date().toISOString(),
+          sourceType: "manual",
+        });
+        const job = await save(store, req.user.id, "recruiting_job", {
+          evidenceId: evidence.id,
+          status: "queued",
+          attempts: 0,
+          availableAt: Date.now(),
+          leaseUntil: 0,
+        });
+        return { evidence, job };
+      },
+    );
     res.json(result);
   });
-  app.post("/api/recruiting/reviews/:id/decide", (req, res) => {
+  app.post("/api/recruiting/reviews/:id/decide", async (req, res) => {
     const input = decisionSchema.parse(req.body);
-    const result = operation(
+    const result = await operation(
       store,
       req.user.id,
       `decide:${req.params.id}`,
       input,
-      () => {
-        const review = record(
+      async () => {
+        const review = await record(
           store,
           req.user.id,
           req.params.id,
@@ -358,7 +369,7 @@ export function mountRecruiting(app, store, validate) {
           throw new HttpError(409, "Review already decided");
         if (input.decision === "reject")
           return {
-            review: save(
+            review: await save(
               store,
               req.user.id,
               "recruiting_review",
@@ -377,7 +388,7 @@ export function mountRecruiting(app, store, validate) {
             400,
             "Choose an application and its current version",
           );
-        const target = record(
+        const target = await record(
           store,
           req.user.id,
           input.applicationId,
@@ -391,20 +402,18 @@ export function mountRecruiting(app, store, validate) {
         const changes =
           input.decision === "correct" ? input.changes : review.proposedChanges;
         if (!changes) throw new HttpError(400, "Supply corrected changes");
-        const locks = store
-          .list(req.user.id, "field_lock")
-          .filter(
-            (lock) =>
-              lock.applicationId === target.id &&
-              Object.hasOwn(changes, lock.field),
-          );
-        const clocks = store
-          .list(req.user.id, "recruiting_clock")
-          .filter(
-            (clock) =>
-              clock.applicationId === target.id &&
-              Object.hasOwn(changes, clock.field),
-          );
+        const locks = (await store.list(req.user.id, "field_lock")).filter(
+          (lock) =>
+            lock.applicationId === target.id &&
+            Object.hasOwn(changes, lock.field),
+        );
+        const clocks = (
+          await store.list(req.user.id, "recruiting_clock")
+        ).filter(
+          (clock) =>
+            clock.applicationId === target.id &&
+            Object.hasOwn(changes, clock.field),
+        );
         if (!input.override && locks.some((lock) => lock.locked))
           throw new HttpError(
             409,
@@ -428,13 +437,13 @@ export function mountRecruiting(app, store, validate) {
             409,
             "Reopening a terminal application requires an explicit override",
           );
-        const merged = validate(
+        const merged = await validate(
           req.user,
           "application",
           { ...dataOf(target), ...changes },
           dataOf(target),
         );
-        const applied = save(
+        const applied = await save(
           store,
           req.user.id,
           "application",
@@ -442,53 +451,58 @@ export function mountRecruiting(app, store, validate) {
           target,
           "recruiting_accept",
         );
-        const lockSnapshots = Object.keys(changes).flatMap((field) => {
-          const lock = locks.find((item) => item.field === field);
-          if (!lock && input.decision !== "correct") return [];
-          return [
-            {
-              before: lock || null,
-              after: save(
+        const lockSnapshots = (
+          await _mapAsync(Object.keys(changes), async (field) => {
+            const lock = locks.find((item) => item.field === field);
+            if (!lock && input.decision !== "correct") return [];
+            return [
+              {
+                before: lock || null,
+                after: await save(
+                  store,
+                  req.user.id,
+                  "field_lock",
+                  {
+                    ...(lock ? dataOf(lock) : {}),
+                    applicationId: target.id,
+                    field,
+                    value: merged[field],
+                    locked: input.decision === "correct",
+                    recordedAt: new Date().toISOString(),
+                    actor:
+                      input.decision === "correct"
+                        ? "manual_correction"
+                        : "review_override",
+                  },
+                  lock,
+                  "recruiting_override",
+                ),
+              },
+            ];
+          })
+        ).flat();
+        const clockSnapshots = await _mapAsync(
+          Object.keys(changes),
+          async (field) => {
+            const old = clocks.find((clock) => clock.field === field);
+            return {
+              before: old || null,
+              after: await save(
                 store,
                 req.user.id,
-                "field_lock",
+                "recruiting_clock",
                 {
-                  ...(lock ? dataOf(lock) : {}),
                   applicationId: target.id,
                   field,
-                  value: merged[field],
-                  locked: input.decision === "correct",
-                  recordedAt: new Date().toISOString(),
-                  actor:
-                    input.decision === "correct"
-                      ? "manual_correction"
-                      : "review_override",
+                  effectiveAt: review.effectiveAt,
+                  reviewId: review.id,
                 },
-                lock,
-                "recruiting_override",
+                old,
               ),
-            },
-          ];
-        });
-        const clockSnapshots = Object.keys(changes).map((field) => {
-          const old = clocks.find((clock) => clock.field === field);
-          return {
-            before: old || null,
-            after: save(
-              store,
-              req.user.id,
-              "recruiting_clock",
-              {
-                applicationId: target.id,
-                field,
-                effectiveAt: review.effectiveAt,
-                reviewId: review.id,
-              },
-              old,
-            ),
-          };
-        });
-        const updated = save(
+            };
+          },
+        );
+        const updated = await save(
           store,
           req.user.id,
           "recruiting_review",
@@ -513,128 +527,145 @@ export function mountRecruiting(app, store, validate) {
     );
     res.json(result);
   });
-  app.post("/api/recruiting/reviews/:id/undo", (req, res) => {
+  app.post("/api/recruiting/reviews/:id/undo", async (req, res) => {
     const input = actionSchema.parse(req.body);
     res.json(
-      operation(store, req.user.id, `undo:${req.params.id}`, input, () => {
-        const review = record(
-          store,
-          req.user.id,
-          req.params.id,
-          "recruiting_review",
-        );
-        if (
-          review.version !== input.version ||
-          !["accepted", "corrected", "rejected"].includes(review.status)
-        )
-          throw new HttpError(
-            409,
-            "Review cannot be undone in its current state",
-          );
-        let application;
-        if (review.status !== "rejected") {
-          const current = record(
+      await operation(
+        store,
+        req.user.id,
+        `undo:${req.params.id}`,
+        input,
+        async () => {
+          const review = await record(
             store,
             req.user.id,
-            review.applicationId,
-            "application",
+            req.params.id,
+            "recruiting_review",
           );
-          if (current.version !== review.appliedApplicationVersion)
-            throw new HttpError(409, "Later application edits prevent undo");
-          for (const snapshot of [
-            ...review.lockSnapshots,
-            ...review.clockSnapshots,
-          ]) {
-            const current = store.get(req.user.id, snapshot.after.id);
-            if (!current || current.version !== snapshot.after.version)
-              throw new HttpError(409, "Later field decisions prevent undo");
-          }
-          application = save(
-            store,
-            req.user.id,
-            "application",
-            validate(
-              req.user,
+          if (
+            review.version !== input.version ||
+            !["accepted", "corrected", "rejected"].includes(review.status)
+          )
+            throw new HttpError(
+              409,
+              "Review cannot be undone in its current state",
+            );
+          let application;
+          if (review.status !== "rejected") {
+            const current = await record(
+              store,
+              req.user.id,
+              review.applicationId,
               "application",
-              review.beforeApplication,
-              dataOf(current),
-            ),
-            current,
+            );
+            if (current.version !== review.appliedApplicationVersion)
+              throw new HttpError(409, "Later application edits prevent undo");
+            for (const snapshot of [
+              ...review.lockSnapshots,
+              ...review.clockSnapshots,
+            ]) {
+              const current = await store.get(req.user.id, snapshot.after.id);
+              if (!current || current.version !== snapshot.after.version)
+                throw new HttpError(409, "Later field decisions prevent undo");
+            }
+            application = await save(
+              store,
+              req.user.id,
+              "application",
+              await validate(
+                req.user,
+                "application",
+                review.beforeApplication,
+                dataOf(current),
+              ),
+              current,
+              "recruiting_undo",
+            );
+            for (const [kind, snapshots] of [
+              ["field_lock", review.lockSnapshots],
+              ["recruiting_clock", review.clockSnapshots],
+            ])
+              for (const snapshot of snapshots) {
+                if (snapshot.before)
+                  await save(
+                    store,
+                    req.user.id,
+                    kind,
+                    dataOf(snapshot.before),
+                    snapshot.after,
+                    "recruiting_undo",
+                  );
+                else
+                  await save(
+                    store,
+                    req.user.id,
+                    kind,
+                    {
+                      ...dataOf(snapshot.after),
+                      effectiveAt: "",
+                      reviewId: "",
+                      retracted: true,
+                      ...(kind === "field_lock" ? { locked: false } : {}),
+                    },
+                    snapshot.after,
+                    "recruiting_undo",
+                  );
+              }
+          }
+          const updated = await save(
+            store,
+            req.user.id,
+            "recruiting_review",
+            {
+              ...dataOf(review),
+              status: "undone",
+              undoneAt: new Date().toISOString(),
+            },
+            review,
             "recruiting_undo",
           );
-          for (const [kind, snapshots] of [
-            ["field_lock", review.lockSnapshots],
-            ["recruiting_clock", review.clockSnapshots],
-          ])
-            for (const snapshot of snapshots) {
-              if (snapshot.before)
-                save(
-                  store,
-                  req.user.id,
-                  kind,
-                  dataOf(snapshot.before),
-                  snapshot.after,
-                  "recruiting_undo",
-                );
-              else
-                save(
-                  store,
-                  req.user.id,
-                  kind,
-                  {
-                    ...dataOf(snapshot.after),
-                    effectiveAt: "",
-                    reviewId: "",
-                    retracted: true,
-                    ...(kind === "field_lock" ? { locked: false } : {}),
-                  },
-                  snapshot.after,
-                  "recruiting_undo",
-                );
-            }
-        }
-        const updated = save(
-          store,
-          req.user.id,
-          "recruiting_review",
-          {
-            ...dataOf(review),
-            status: "undone",
-            undoneAt: new Date().toISOString(),
-          },
-          review,
-          "recruiting_undo",
-        );
-        return { review: updated, ...(application ? { application } : {}) };
-      }),
+          return { review: updated, ...(application ? { application } : {}) };
+        },
+      ),
     );
   });
-  app.post("/api/recruiting/jobs/:id/retry", (req, res) => {
+  app.post("/api/recruiting/jobs/:id/retry", async (req, res) => {
     const input = actionSchema.parse(req.body);
     res.json(
-      operation(store, req.user.id, `retry:${req.params.id}`, input, () => {
-        const job = record(store, req.user.id, req.params.id, "recruiting_job");
-        if (job.version !== input.version || job.status !== "failed")
-          throw new HttpError(
-            409,
-            "Only the current failed job can be retried",
+      await operation(
+        store,
+        req.user.id,
+        `retry:${req.params.id}`,
+        input,
+        async () => {
+          const job = await record(
+            store,
+            req.user.id,
+            req.params.id,
+            "recruiting_job",
           );
-        return save(
-          store,
-          req.user.id,
-          "recruiting_job",
-          {
-            ...dataOf(job),
-            status: "queued",
-            attempts: 0,
-            leaseUntil: 0,
-            availableAt: Date.now(),
-            lastError: "",
-          },
-          job,
-          "recruiting_retry",
-        );
-      }),
+          if (job.version !== input.version || job.status !== "failed")
+            throw new HttpError(
+              409,
+              "Only the current failed job can be retried",
+            );
+          return await save(
+            store,
+            req.user.id,
+            "recruiting_job",
+            {
+              ...dataOf(job),
+              status: "queued",
+              attempts: 0,
+              leaseUntil: 0,
+              availableAt: Date.now(),
+              lastError: "",
+            },
+            job,
+            "recruiting_retry",
+          );
+        },
+      ),
     );
   });
   for (const [path, kind, transform] of [
@@ -659,19 +690,19 @@ export function mountRecruiting(app, store, validate) {
   ])
     app.post(
       `/api/recruiting/${path}/:id/${path === "locks" ? "unlock" : "cancel"}`,
-      (req, res) => {
+      async (req, res) => {
         const input = actionSchema.parse(req.body);
         res.json(
-          operation(
+          await operation(
             store,
             req.user.id,
             `${path}:${req.params.id}`,
             input,
-            () => {
-              const old = record(store, req.user.id, req.params.id, kind);
+            async () => {
+              const old = await record(store, req.user.id, req.params.id, kind);
               if (old.version !== input.version)
                 throw new HttpError(409, "Record changed; refresh first");
-              return save(
+              return await save(
                 store,
                 req.user.id,
                 kind,

@@ -6,14 +6,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fork } from "node:child_process";
 import { once } from "node:events";
-import { createStore } from "../server/store.js";
+import { createStore } from "./helpers/store.js";
 import { createApp } from "../server/app.js";
 import { processRecruitingJobs } from "../server/recruiting.js";
 import { processReminders } from "../server/reminders.js";
-
 async function setup(t, path = ":memory:") {
-  const store = createStore(path),
-    server = createApp(store).listen(0, "127.0.0.1");
+  const store = await createStore(path),
+    server = (await createApp(store)).listen(0, "127.0.0.1");
   await once(server, "listening");
   t.after(() => {
     server.closeAllConnections();
@@ -59,11 +58,15 @@ async function setup(t, path = ":memory:") {
     title: "Engineer",
     stage: "Saved",
   });
-  const user = store.get(
-    store.db
-      .prepare("SELECT id FROM users WHERE email=?")
-      .get("review@example.com").id,
-    app.id,
+  const user = (
+    await store.get(
+      (
+        await store.db
+          .prepare("SELECT id FROM users WHERE email=?")
+          .get("review@example.com")
+      ).id,
+      app.id,
+    )
   ).user_id;
   const workspace = async () =>
     (await request("/workspace", "GET", undefined, cookie)).data;
@@ -82,8 +85,8 @@ async function setup(t, path = ":memory:") {
     assert.equal(result.status, 200, JSON.stringify(result.data));
     return { body, ...result.data };
   }
-  const decide = (review, application, extra = {}) =>
-    request(
+  const decide = async (review, application, extra = {}) =>
+    await request(
       `/recruiting/reviews/${review.id}/decide`,
       "POST",
       {
@@ -109,7 +112,6 @@ async function setup(t, path = ":memory:") {
     decide,
   };
 }
-
 test("review ingestion is replay-safe, owner isolated, immutable, and never applies ambiguous evidence", async (t) => {
   const x = await setup(t);
   await x.create("application", {
@@ -157,8 +159,8 @@ test("review ingestion is replay-safe, owner isolated, immutable, and never appl
     ).status,
     400,
   );
-  processRecruitingJobs(x.store);
-  processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
   const w = await x.workspace();
   assert.equal(w.reviews.length, 1);
   assert.equal(w.reviews[0].candidateApplicationIds.length, 2);
@@ -185,7 +187,6 @@ test("review ingestion is replay-safe, owner isolated, immutable, and never appl
     /Recruiter proposed an interview/,
   );
 });
-
 test("manual locks, review corrections, replay and undo preserve later application edits", async (t) => {
   const x = await setup(t);
   const edit = await x.request(
@@ -196,7 +197,7 @@ test("manual locks, review corrections, replay and undo preserve later applicati
   );
   assert.equal(edit.status, 200);
   await x.evidence();
-  processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
   let w = await x.workspace();
   const review = w.reviews[0];
   assert.equal(w.fieldLocks[0].locked, true);
@@ -239,7 +240,7 @@ test("manual locks, review corrections, replay and undo preserve later applicati
   assert.equal(w.applications[0].stage, "Preparing");
   assert.equal(w.fieldLocks[0].locked, true);
   await x.evidence({ sourceId: "later" });
-  processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
   w = await x.workspace();
   const next = w.reviews.find((r) => r.status === "pending");
   const accept2 = await x.decide(next, w.applications[0], { override: true });
@@ -267,15 +268,14 @@ test("manual locks, review corrections, replay and undo preserve later applicati
     409,
   );
 });
-
 test("out-of-order evidence and terminal reopen require explicit review override", async (t) => {
   const x = await setup(t);
   await x.evidence({ changes: { stage: "Rejected" } });
-  processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
   let w = await x.workspace();
   assert.equal((await x.decide(w.reviews[0], w.applications[0])).status, 200);
   await x.evidence({ effectiveAt: "2026-10-19T12:00:00Z" });
-  processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
   w = await x.workspace();
   const pending = w.reviews.find((r) => r.status === "pending");
   assert.equal((await x.decide(pending, w.applications[0])).status, 409);
@@ -284,7 +284,6 @@ test("out-of-order evidence and terminal reopen require explicit review override
     200,
   );
 });
-
 test("canceled jobs cannot generate reviews; expired leases recover and deletion prevents resurrection", async (t) => {
   const x = await setup(t);
   const first = await x.evidence();
@@ -295,10 +294,10 @@ test("canceled jobs cannot generate reviews; expired leases recover and deletion
     x.cookie,
   );
   assert.equal(cancel.status, 200);
-  processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
   assert.equal((await x.workspace()).reviews.length, 0);
   const second = await x.evidence({ sourceId: "recover" });
-  x.store.save(
+  await x.store.save(
     x.user,
     "recruiting_job",
     {
@@ -311,27 +310,31 @@ test("canceled jobs cannot generate reviews; expired leases recover and deletion
     second.job.version,
     "recruiting_test",
   );
-  processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
   assert.equal((await x.workspace()).reviews.length, 1);
   await x.evidence({ sourceId: "delete-pending" });
-  x.store.db.prepare("DELETE FROM users WHERE id=?").run(x.user);
-  processRecruitingJobs(x.store);
-  processReminders(x.store);
-  assert.equal(x.store.db.prepare("SELECT count(*) n FROM records").get().n, 0);
+  await x.store.db.prepare("DELETE FROM users WHERE id=?").run(x.user);
+  await processRecruitingJobs(x.store);
+  await processReminders(x.store);
+  assert.equal(
+    (await x.store.db.prepare("SELECT count(*) n FROM records").get()).n,
+    0,
+  );
 });
-
 test("review decision rolls back application and locks when audit quota is exhausted", async (t) => {
   const x = await setup(t);
   await x.evidence();
-  processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
   const w = await x.workspace();
-  const count = x.store.db.prepare("SELECT count(*) n FROM events").get().n;
-  x.store.atomic(() => {
+  const count = (
+    await x.store.db.prepare("SELECT count(*) n FROM events").get()
+  ).n;
+  await x.store.atomic(async () => {
     const insert = x.store.db.prepare(
       "INSERT INTO events VALUES(?,?,?,?,?,?,?)",
     );
     for (let i = count; i < 49999; i++)
-      insert.run(
+      await insert.run(
         `quota-${i}`,
         x.user,
         x.app.id,
@@ -347,14 +350,13 @@ test("review decision rolls back application and locks when audit quota is exhau
   assert.equal(after.reviews[0].status, "pending");
   assert.equal(after.fieldLocks.length, 0);
   assert.equal(
-    x.store.db.prepare("SELECT count(*) n FROM events").get().n,
+    (await x.store.db.prepare("SELECT count(*) n FROM events").get()).n,
     49999,
   );
 });
-
 test("date-only reminders honor timezone and source changes with replay-safe actions", async (t) => {
   const x = await setup(t);
-  x.store.db
+  await x.store.db
     .prepare("UPDATE users SET timezone=? WHERE id=?")
     .run("America/Los_Angeles", x.user);
   const round = await x.create("round", {
@@ -390,9 +392,9 @@ test("date-only reminders honor timezone and source changes with replay-safe act
     ).status,
     409,
   );
-  processReminders(x.store, { now: new Date("2099-01-01T07:00:00Z") });
+  await processReminders(x.store, { now: new Date("2099-01-01T07:00:00Z") });
   assert.equal((await x.workspace()).reminders[0].state, "scheduled");
-  processReminders(x.store, { now: new Date("2099-01-01T09:00:00Z") });
+  await processReminders(x.store, { now: new Date("2099-01-01T09:00:00Z") });
   assert.equal((await x.workspace()).reminders[0].state, "due");
   const edited = await x.request(
     `/records/round/${round.id}`,
@@ -430,7 +432,6 @@ test("date-only reminders honor timezone and source changes with replay-safe act
     404,
   );
 });
-
 test("closed applications cancel general reminders but preserve explicit tasks until completion", async (t) => {
   const x = await setup(t);
   const task = await x.create("task", {
@@ -494,7 +495,6 @@ test("closed applications cancel general reminders but preserve explicit tasks u
   reminders = (await x.workspace()).reminders;
   assert.ok(reminders.every((r) => r.state === "canceled"));
 });
-
 test("a separate worker recovers durable queued work after restart without duplicating reviews", async (t) => {
   const dir = mkdtempSync(join(tmpdir(), "offerly-worker-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -509,10 +509,11 @@ test("a separate worker recovers durable queued work after restart without dupli
     try {
       await once(worker, "message");
       for (let i = 0; i < 50; i++) {
-        if (x.store.list(x.user, "recruiting_review").length === 1) break;
+        if ((await x.store.list(x.user, "recruiting_review")).length === 1)
+          break;
         await new Promise((r) => setTimeout(r, 100));
       }
-      assert.equal(x.store.list(x.user, "recruiting_review").length, 1);
+      assert.equal((await x.store.list(x.user, "recruiting_review")).length, 1);
     } finally {
       const exited = once(worker, "exit");
       worker.kill("SIGTERM");
@@ -520,7 +521,6 @@ test("a separate worker recovers durable queued work after restart without dupli
     }
   }
 });
-
 test("failed jobs back off, stop at retry limit, and retry explicitly without duplicate reviews", async (t) => {
   const x = await setup(t);
   const { job } = await x.evidence();
@@ -532,13 +532,13 @@ test("failed jobs back off, stop at retry limit, and retry explicitly without du
   };
   let now = Date.now();
   for (let i = 0; i < 3; i++) {
-    processRecruitingJobs(x.store, { now });
+    await processRecruitingJobs(x.store, { now });
     now += 60000;
   }
-  const failed = x.store.list(x.user, "recruiting_job")[0];
+  const failed = (await x.store.list(x.user, "recruiting_job"))[0];
   assert.equal(failed.status, "failed");
   assert.equal(failed.attempts, 3);
-  assert.equal(x.store.list(x.user, "recruiting_review").length, 0);
+  assert.equal((await x.store.list(x.user, "recruiting_review")).length, 0);
   x.store.save = original;
   const retried = await x.request(
     `/recruiting/jobs/${job.id}/retry`,
@@ -547,11 +547,10 @@ test("failed jobs back off, stop at retry limit, and retry explicitly without du
     x.cookie,
   );
   assert.equal(retried.status, 200);
-  processRecruitingJobs(x.store);
-  processRecruitingJobs(x.store);
-  assert.equal(x.store.list(x.user, "recruiting_review").length, 1);
+  await processRecruitingJobs(x.store);
+  await processRecruitingJobs(x.store);
+  assert.equal((await x.store.list(x.user, "recruiting_review")).length, 1);
 });
-
 test("reminder failure isolation and mutation rollback preserve other accounts and source history", async (t) => {
   const x = await setup(t);
   const due = await x.request(
@@ -596,7 +595,7 @@ test("reminder failure isolation and mutation rollback preserve other accounts a
       throw new Error("Synthetic history quota");
     return original(user, kind, ...args);
   };
-  const result = processReminders(x.store, {
+  const result = await processReminders(x.store, {
     now: new Date("2099-01-02T12:00:00Z"),
   });
   assert.equal(result.failed, 1);
@@ -606,7 +605,7 @@ test("reminder failure isolation and mutation rollback preserve other accounts a
       .reminders[0].state,
     "due",
   );
-  assert.equal(x.store.list(x.user, "reminder")[0].state, "scheduled");
+  assert.equal((await x.store.list(x.user, "reminder"))[0].state, "scheduled");
   const edit = await x.request(
     `/records/application/${x.app.id}`,
     "PUT",
@@ -614,9 +613,12 @@ test("reminder failure isolation and mutation rollback preserve other accounts a
     x.cookie,
   );
   assert.equal(edit.status, 500);
-  assert.equal(JSON.parse(x.store.get(x.user, x.app.id).data).stage, "Saved");
-  assert.equal(x.store.list(x.user, "field_lock").length, 0);
+  assert.equal(
+    JSON.parse((await x.store.get(x.user, x.app.id)).data).stage,
+    "Saved",
+  );
+  assert.equal((await x.store.list(x.user, "field_lock")).length, 0);
   x.store.save = original;
-  processReminders(x.store, { now: new Date("2099-01-02T12:00:00Z") });
-  assert.equal(x.store.list(x.user, "reminder")[0].state, "due");
+  await processReminders(x.store, { now: new Date("2099-01-02T12:00:00Z") });
+  assert.equal((await x.store.list(x.user, "reminder"))[0].state, "due");
 });

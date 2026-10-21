@@ -143,11 +143,11 @@ const schemas = {
     documentId: z.union([z.literal(""), z.string().uuid()]).default(""),
   }),
 };
-export function createApp(store, options = {}) {
+export async function createApp(store, options = {}) {
   const { db, list, get, save } = store;
   const app = express();
   const config = securityConfig(options),
-    limit = createLimiter(db);
+    limit = await createLimiter(db);
   installSecurity(app, config, limit);
   const smallJson = express.json({
     limit: "256kb",
@@ -160,7 +160,7 @@ export function createApp(store, options = {}) {
     strict: true,
   });
   const fileJson = express.json({
-    limit: "28mb",
+    limit: config.vercel ? "3mb" : "28mb",
     inflate: false,
     strict: true,
   });
@@ -192,14 +192,14 @@ export function createApp(store, options = {}) {
     }
     next();
   });
-  app.use("/api", (req, res, next) => {
+  app.use("/api", async (req, res, next) => {
     try {
       if (req.path === "/files" && req.method === "POST") {
-        limit("file-body:" + req.user.id, 5, 60000);
+        await limit("file-body:" + req.user.id, 5, 60000);
         return fileJson(req, res, next);
       }
       if (req.path.startsWith("/import/")) {
-        limit("import:" + req.user.id, 20, 60000);
+        await limit("import:" + req.user.id, 20, 60000);
         return importJson(req, res, next);
       }
       next();
@@ -215,11 +215,11 @@ export function createApp(store, options = {}) {
       return next(new HttpError(400, "A JSON object is required"));
     next();
   });
-  app.get("/api/workspace", (req, res) => {
+  app.get("/api/workspace", async (req, res) => {
     const u = req.user;
     const duplicates = duplicatePairs(
-      list(u.id, "application"),
-      list(u.id, "duplicate_review"),
+      await list(u.id, "application"),
+      await list(u.id, "duplicate_review"),
     );
     res.json({
       user: {
@@ -228,28 +228,28 @@ export function createApp(store, options = {}) {
         timezone: u.timezone,
         stages: JSON.parse(u.stages),
       },
-      applications: list(u.id, "application"),
-      savedViews: list(u.id, "saved_view").filter((v) => !v.archived),
-      contacts: list(u.id, "contact"),
-      tasks: list(u.id, "task"),
-      rounds: list(u.id, "round"),
-      documents: list(u.id, "document"),
-      documentUsages: list(u.id, "document_usage"),
-      listingSnapshots: list(u.id, "listing_snapshot"),
-      assessments: list(u.id, "assessment"),
-      evidence: list(u.id, "recruiting_evidence"),
-      recruitingJobs: list(u.id, "recruiting_job"),
-      reviews: list(u.id, "recruiting_review"),
-      fieldLocks: list(u.id, "field_lock"),
-      reminders: list(u.id, "reminder"),
+      applications: await list(u.id, "application"),
+      savedViews: (await list(u.id, "saved_view")).filter((v) => !v.archived),
+      contacts: await list(u.id, "contact"),
+      tasks: await list(u.id, "task"),
+      rounds: await list(u.id, "round"),
+      documents: await list(u.id, "document"),
+      documentUsages: await list(u.id, "document_usage"),
+      listingSnapshots: await list(u.id, "listing_snapshot"),
+      assessments: await list(u.id, "assessment"),
+      evidence: await list(u.id, "recruiting_evidence"),
+      recruitingJobs: await list(u.id, "recruiting_job"),
+      reviews: await list(u.id, "recruiting_review"),
+      fieldLocks: await list(u.id, "field_lock"),
+      reminders: await list(u.id, "reminder"),
       duplicates,
       duplicateScanLimited: !!duplicates.limited,
-      duplicateReviews: list(u.id, "duplicate_review").filter(
+      duplicateReviews: (await list(u.id, "duplicate_review")).filter(
         (r) => r.decision !== "undone",
       ),
     });
   });
-  app.put("/api/settings", (req, res, next) => {
+  app.put("/api/settings", async (req, res, next) => {
     try {
       const v = z
         .object({
@@ -265,7 +265,7 @@ export function createApp(store, options = {}) {
       if (new Set(v.stages).size !== v.stages.length)
         throw new HttpError(400, "Stage names must be unique");
       if (
-        list(req.user.id, "application").some(
+        (await list(req.user.id, "application")).some(
           (a) => !v.stages.includes(a.stage),
         )
       )
@@ -273,24 +273,22 @@ export function createApp(store, options = {}) {
           400,
           "Cannot remove a stage used by an application",
         );
-      db.prepare("UPDATE users SET timezone=?,stages=? WHERE id=?").run(
-        v.timezone,
-        JSON.stringify(v.stages),
-        req.user.id,
-      );
+      await db
+        .prepare("UPDATE users SET timezone=?,stages=? WHERE id=?")
+        .run(v.timezone, JSON.stringify(v.stages), req.user.id);
       res.json({ ok: true });
     } catch (e) {
       next(e);
     }
   });
-  function validate(user, kind, body, previous) {
+  async function validate(user, kind, body, previous) {
     if (!Object.hasOwn(schemas, kind))
       throw new HttpError(400, "Unknown record type");
     let data = schemas[kind].parse(body);
     if (kind === "contact") data = normalizeContact(data, previous);
     if (kind === "application") validateApplicationDetails(data);
     if (kind === "document_usage")
-      data = validateDocumentUsage(data, user, store);
+      data = await validateDocumentUsage(data, user, store);
     if (!data) throw new HttpError(400, "Unknown record type");
     if (kind === "application" && !JSON.parse(user.stages).includes(data.stage))
       throw new HttpError(400, "Unknown stage");
@@ -305,24 +303,24 @@ export function createApp(store, options = {}) {
       ...(data.applicationIds || []),
       ...(data.applicationId ? [data.applicationId] : []),
     ]) {
-      if (get(user.id, id)?.kind !== "application")
+      if ((await get(user.id, id))?.kind !== "application")
         throw new HttpError(400, "Invalid application link");
     }
     if (
       kind === "document" &&
-      !db
+      !(await db
         .prepare("SELECT id FROM files WHERE id=? AND user_id=?")
-        .get(data.fileId, user.id)
+        .get(data.fileId, user.id))
     )
       throw new HttpError(400, "File not found");
     if (
       kind === "document" &&
       data.documentId &&
-      get(user.id, data.documentId)?.kind !== "document"
+      (await get(user.id, data.documentId))?.kind !== "document"
     )
       throw new HttpError(400, "Invalid document version link");
     if (kind === "document" && data.documentId) {
-      const parent = get(user.id, data.documentId);
+      const parent = await get(user.id, data.documentId);
       data.documentId = JSON.parse(parent.data).documentId || parent.id;
     }
     if (kind === "round")
@@ -333,12 +331,12 @@ export function createApp(store, options = {}) {
       }
     return data;
   }
-  mountTracker(app, store, validate);
+  await mountTracker(app, store, validate);
   mountRecruiting(app, store, validate);
   mountReminders(app, store);
-  function matchingSubmission(userId, data, excludeId) {
+  async function matchingSubmission(userId, data, excludeId) {
     if (data.retracted) return undefined;
-    return list(userId, "document_usage").find(
+    return (await list(userId, "document_usage")).find(
       (v) =>
         v.id !== excludeId &&
         !v.retracted &&
@@ -348,11 +346,11 @@ export function createApp(store, options = {}) {
         v.purpose === data.purpose,
     );
   }
-  app.post("/api/records/:kind", (req, res, next) => {
+  app.post("/api/records/:kind", async (req, res, next) => {
     try {
-      const data = validate(req.user, req.params.kind, req.body);
+      const data = await validate(req.user, req.params.kind, req.body);
       if (req.params.kind === "document_usage") {
-        const existing = matchingSubmission(req.user.id, data);
+        const existing = await matchingSubmission(req.user.id, data);
         if (existing) {
           if (existing.notes !== data.notes)
             throw new HttpError(
@@ -362,21 +360,21 @@ export function createApp(store, options = {}) {
           return res.json(existing);
         }
       }
-      res.json(save(req.user.id, req.params.kind, data));
+      res.json(await save(req.user.id, req.params.kind, data));
     } catch (e) {
       next(e);
     }
   });
-  app.put("/api/records/:kind/:id", (req, res, next) => {
+  app.put("/api/records/:kind/:id", async (req, res, next) => {
     try {
       if (req.params.kind === "document")
         return res.status(400).json({
           error: "Document versions are immutable. Upload a new version.",
         });
-      const old = get(req.user.id, req.params.id);
+      const old = await get(req.user.id, req.params.id);
       if (!old || old.kind !== req.params.kind)
         throw new HttpError(404, "Record not found");
-      const data = validate(
+      const data = await validate(
         req.user,
         req.params.kind,
         req.body,
@@ -384,14 +382,14 @@ export function createApp(store, options = {}) {
       );
       if (
         req.params.kind === "document_usage" &&
-        matchingSubmission(req.user.id, data, req.params.id)
+        (await matchingSubmission(req.user.id, data, req.params.id))
       )
         throw new HttpError(
           409,
           "This submission is already recorded. Correct the existing record instead.",
         );
       res.json(
-        save(
+        await save(
           req.user.id,
           req.params.kind,
           data,
@@ -403,11 +401,11 @@ export function createApp(store, options = {}) {
       next(e);
     }
   });
-  app.get("/api/events/:id", (req, res) => {
-    const record = get(req.user.id, req.params.id);
+  app.get("/api/events/:id", async (req, res) => {
+    const record = await get(req.user.id, req.params.id);
     if (!record) return res.status(404).json({ error: "Record not found" });
     // Historical snapshots retain link/unlink evidence even after a child moves.
-    const events = db
+    const events = await db
       .prepare(
         `SELECT e.*,r.kind FROM events e JOIN records r ON r.id=e.record_id AND r.user_id=e.user_id
       WHERE e.user_id=? AND (e.record_id=? OR (?='application' AND (
@@ -430,8 +428,8 @@ export function createApp(store, options = {}) {
   mountFiles(app, store, config, limit);
   mountImportRoutes(app, store, validate);
   mountDuplicateRoutes(app, store);
-  app.get("/api/export.csv", (req, res) => {
-    limit("export:" + req.user.id, 3, 3600000);
+  app.get("/api/export.csv", async (req, res) => {
+    await limit("export:" + req.user.id, 3, 3600000);
     const columns = [
       "id",
       "company",
@@ -466,7 +464,7 @@ export function createApp(store, options = {}) {
       .attachment("offerly-applications.csv")
       .send(
         stringify(
-          list(req.user.id, "application").map((v) => ({
+          (await list(req.user.id, "application")).map((v) => ({
             ...v,
             timezone: req.user.timezone,
           })),
@@ -476,7 +474,7 @@ export function createApp(store, options = {}) {
   });
   app.get("/api/export.json", async (req, res, next) => {
     try {
-      limit("export:" + req.user.id, 3, 3600000);
+      await limit("export:" + req.user.id, 3, 3600000);
       // Stream each bounded row/file instead of materializing the full workspace in memory.
       res.attachment("offerly-workspace.json").type("application/json");
       const write = async (chunk) => {
@@ -520,7 +518,7 @@ export function createApp(store, options = {}) {
       ]) {
         await write("," + JSON.stringify(name) + ":[");
         let first = true;
-        for (const row of db.prepare(query).all(req.user.id)) {
+        for (const row of await db.prepare(query).all(req.user.id)) {
           if (!first) await write(",");
           first = false;
           if (name === "files") {
@@ -533,7 +531,7 @@ export function createApp(store, options = {}) {
                 }),
               );
             else {
-              const file = db
+              const file = await db
                 .prepare("SELECT body FROM files WHERE id=? AND user_id=?")
                 .get(row.id, req.user.id);
               await write(

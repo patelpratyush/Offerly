@@ -13,8 +13,8 @@ import { validateDocument, scanWithClamav } from "../server/files.js";
 const password = "test-security-password-123";
 const pdf = Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF");
 async function setup(t, options = {}) {
-  const store = createStore(":memory:");
-  const app = createApp(store, options);
+  const store = await createStore(":memory:");
+  const app = await createApp(store, options);
   const server = app.listen(0, "127.0.0.1");
   await new Promise((r) => server.once("listening", r));
   t.after(() => {
@@ -106,7 +106,6 @@ async function setup(t, options = {}) {
   };
   return { store, request, register };
 }
-
 test("rejects cross-site, wrong-origin, wrong-host, missing custom headers and simple form requests", async (t) => {
   const { request, register } = await setup(t);
   const c = await register();
@@ -144,7 +143,6 @@ test("rejects cross-site, wrong-origin, wrong-host, missing custom headers and s
   );
   assert.equal((await request("/workspace", "GET", undefined, c)).status, 200);
 });
-
 test("auth cookies, idle timeout, absolute expiry, logout and password changes revoke access", async (t) => {
   const { request, register, store } = await setup(t);
   let c = await register();
@@ -197,7 +195,9 @@ test("auth cookies, idle timeout, absolute expiry, logout and password changes r
       password: "replacement-password-123",
     })
   ).cookie;
-  store.db.prepare("UPDATE sessions SET last_seen=?").run(Date.now() - 1800001);
+  await store.db
+    .prepare("UPDATE sessions SET last_seen=?")
+    .run(Date.now() - 1800001);
   assert.equal((await request("/workspace", "GET", undefined, c)).status, 401);
   c = (
     await request("/auth/login", "POST", {
@@ -205,7 +205,7 @@ test("auth cookies, idle timeout, absolute expiry, logout and password changes r
       password: "replacement-password-123",
     })
   ).cookie;
-  store.db.prepare("UPDATE sessions SET expires=?").run(Date.now() - 1);
+  await store.db.prepare("UPDATE sessions SET expires=?").run(Date.now() - 1);
   assert.equal((await request("/workspace", "GET", undefined, c)).status, 401);
   c = (
     await request("/auth/login", "POST", {
@@ -216,7 +216,6 @@ test("auth cookies, idle timeout, absolute expiry, logout and password changes r
   await request("/logout", "POST", {}, c);
   assert.equal((await request("/workspace", "GET", undefined, c)).status, 401);
 });
-
 test("account deletion needs current password and invalidates all private access", async (t) => {
   const { request, register, store } = await setup(t);
   const c = await register();
@@ -253,16 +252,20 @@ test("account deletion needs current password and invalidates all private access
     ).status,
     200,
   );
-  assert.equal(store.db.prepare("SELECT count(*) n FROM users").get().n, 0);
+  assert.equal(
+    (await store.db.prepare("SELECT count(*) n FROM users").get()).n,
+    0,
+  );
   assert.equal((await request("/workspace", "GET", undefined, c)).status, 401);
 });
-
 test("persistent account/IP throttling cannot be bypassed with forwarded headers", async (t) => {
   const { request, register, store } = await setup(t);
   await register();
   // Prefill the exact persisted bucket to exercise rejection without expensive repeated hashing.
   const key = digest("auth-email:security@example.com");
-  store.db.prepare("UPDATE rate_limits SET count=10 WHERE key=?").run(key);
+  await store.db
+    .prepare("UPDATE rate_limits SET count=10 WHERE key=?")
+    .run(key);
   assert.equal(
     (
       await request(
@@ -275,15 +278,17 @@ test("persistent account/IP throttling cannot be bypassed with forwarded headers
     ).status,
     429,
   );
-  const server = createApp(store);
+  const server = await createApp(store);
   assert.ok(server); // Reconstructing the app retains DB-backed rate limits.
   assert.equal(
-    store.db.prepare("SELECT count FROM rate_limits WHERE key=?").get(key)
-      .count,
+    (
+      await store.db
+        .prepare("SELECT count FROM rate_limits WHERE key=?")
+        .get(key)
+    ).count,
     10,
   );
 });
-
 test("production refuses missing HTTPS config, requires invitations, enforces secure host and transport", async (t) => {
   assert.throws(
     () => securityConfig({ production: true, origin: undefined }),
@@ -354,7 +359,6 @@ test("production refuses missing HTTPS config, requires invitations, enforces se
     503,
   );
 });
-
 test("file signatures, canonical encoding, ownership, version lineage and quotas enforced", async (t) => {
   const { request, register, store } = await setup(t);
   const c = await register(),
@@ -411,11 +415,13 @@ test("file signatures, canonical encoding, ownership, version lineage and quotas
   assert.equal(file.headers.get("content-type"), "application/octet-stream");
   assert.match(file.headers.get("content-security-policy"), /sandbox/);
   assert.match(file.headers.get("content-disposition"), /^attachment/);
-  const owner = store.db
-    .prepare("SELECT id FROM users WHERE email=?")
-    .get("other@example.com").id;
+  const owner = (
+    await store.db
+      .prepare("SELECT id FROM users WHERE email=?")
+      .get("other@example.com")
+  ).id;
   for (let i = 0; i < 99; i++)
-    store.db
+    await store.db
       .prepare(
         "INSERT INTO files(id,user_id,name,mime,hash,body,created_at) VALUES(?,?,?,?,?,?,?)",
       )
@@ -440,7 +446,6 @@ test("file signatures, canonical encoding, ownership, version lineage and quotas
     413,
   );
 });
-
 test("unscanned legacy files stay blocked in production, including full exports", async (t) => {
   const { request, register, store } = await setup(t, {
     production: true,
@@ -464,7 +469,9 @@ test("unscanned legacy files stay blocked in production, including full exports"
     (await request("/files/" + file.id, "GET", undefined, c)).status,
     200,
   );
-  store.db.prepare("UPDATE files SET scanned_at=NULL WHERE id=?").run(file.id);
+  await store.db
+    .prepare("UPDATE files SET scanned_at=NULL WHERE id=?")
+    .run(file.id);
   assert.equal(
     (await request("/files/" + file.id, "GET", undefined, c)).status,
     403,
@@ -474,7 +481,6 @@ test("unscanned legacy files stay blocked in production, including full exports"
   assert.equal(exported.data.files[0].body, null);
   assert.match(exported.data.files[0].omitted, /screening/);
 });
-
 test("malformed inputs and internal database errors do not leak internals; large bodies require authentication", async (t) => {
   const { request, register, store } = await setup(t);
   const c = await register();
@@ -504,18 +510,17 @@ test("malformed inputs and internal database errors do not leak internals; large
   const w = await request("/workspace", "GET", undefined, c);
   assert.equal(w.headers.get("cache-control"), "no-store");
   assert.match(w.headers.get("content-security-policy"), /object-src 'none'/);
-  store.db.exec("DROP TABLE records");
+  await store.db.exec("DROP TABLE records");
   const failed = await request("/workspace", "GET", undefined, c);
   assert.equal(failed.status, 500);
   assert.equal(failed.data.error, "Request failed. Try again later.");
   assert.doesNotMatch(JSON.stringify(failed.data), /SQL|records|stack/i);
 });
-
 test("legacy hashes migrate after successful sign-in and database files use restrictive permissions", async (t) => {
   const { request, store } = await setup(t);
   const salt = "a".repeat(32),
     legacy = salt + ":" + scryptSync(password, salt, 64).toString("hex");
-  store.db
+  await store.db
     .prepare("INSERT INTO users VALUES(?,?,?,?,?,?)")
     .run(
       randomUUID(),
@@ -535,17 +540,16 @@ test("legacy hashes migrate after successful sign-in and database files use rest
     200,
   );
   assert.match(
-    store.db.prepare("SELECT password FROM users").get().password,
+    (await store.db.prepare("SELECT password FROM users").get()).password,
     /^scrypt-v1:/,
   );
   const dir = mkdtempSync(join(tmpdir(), "offerly-security-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
   const path = join(dir, "private.sqlite"),
-    fileStore = createStore(path);
+    fileStore = await createStore(path);
   assert.equal(statSync(path).mode & 0o777, 0o600);
   fileStore.db.close();
 });
-
 test("ClamAV protocol accepts clean only, rejects infected, unavailable and malformed responses", async (t) => {
   const dir = mkdtempSync(join(tmpdir(), "offerly-av-"));
   t.after(() => rmSync(dir, { recursive: true, force: true }));
@@ -580,7 +584,6 @@ test("ClamAV protocol accepts clean only, rejects infected, unavailable and malf
     /unavailable/,
   );
 });
-
 // Minimal stored ZIP fixture; no shell tools or network are involved.
 function zipFixture(entries) {
   let offset = 0;
@@ -659,7 +662,6 @@ test("DOCX validation accepts a Word package and rejects disguised ZIPs, macros,
       /DOCX/,
     );
 });
-
 test("scanner failure never persists upload bytes", async (t) => {
   const { request, register, store } = await setup(t, {
     scannerSocket: "/nonexistent-offerly-test-scanner",
@@ -676,9 +678,11 @@ test("scanner failure never persists upload bytes", async (t) => {
     ).status,
     503,
   );
-  assert.equal(store.db.prepare("SELECT count(*) n FROM files").get().n, 0);
+  assert.equal(
+    (await store.db.prepare("SELECT count(*) n FROM files").get()).n,
+    0,
+  );
 });
-
 test("noncanonical API paths do not bypass request protection", async (t) => {
   const { request, register } = await setup(t);
   const c = await register();
@@ -693,11 +697,11 @@ test("noncanonical API paths do not bypass request protection", async (t) => {
   assert.equal((await request("/logout/", "POST", {}, c)).status, 404);
   assert.equal((await request("/workspace", "GET", undefined, c)).status, 200);
 });
-
 test("session revocation after password verification prevents password-change commit", async (t) => {
   const { store, request, register } = await setup(t);
   const cookie = await register("revoke-race@example.com");
-  const before = store.db.prepare("SELECT password FROM users").get().password;
+  const before = (await store.db.prepare("SELECT password FROM users").get())
+    .password;
   const prepare = store.db.prepare.bind(store.db);
   let revoked = false;
   // Model logout precisely after reauthentication's session read, while the
@@ -736,7 +740,10 @@ test("session revocation after password verification prevents password-change co
   assert.equal(revoked, true);
   assert.equal(result.status, 401);
   assert.equal(result.data.code, "SESSION_REQUIRED");
-  assert.equal(prepare("SELECT password FROM users").get().password, before);
+  assert.equal(
+    (await prepare("SELECT password FROM users").get()).password,
+    before,
+  );
   assert.equal(
     (await request("/workspace", "GET", undefined, cookie)).status,
     401,

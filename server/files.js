@@ -220,7 +220,7 @@ export function mountFiles(app, store, config, limit) {
   const needsScan = config.production || !!config.scannerSocket;
   app.post("/api/files", async (req, res, next) => {
     try {
-      limit("upload:" + req.user.id, 5, 60000);
+      await limit("upload:" + req.user.id, 5, 60000);
       if (config.production && !config.scannerSocket && !config.scanDocument)
         throw new HttpError(
           503,
@@ -242,16 +242,21 @@ export function mountFiles(app, store, config, limit) {
       if (needsScan) await scan(b);
       // Ownership, quota and session are rechecked after asynchronous inspection.
       const id = randomUUID();
-      store.atomic(() => {
+      await store.atomic(async () => {
         if (
-          !db
+          !(await db
             .prepare(
               "SELECT token FROM sessions WHERE token=? AND user_id=? AND expires>? AND last_seen>?",
             )
-            .get(req.sessionHash, req.user.id, Date.now(), Date.now() - 1800000)
+            .get(
+              req.sessionHash,
+              req.user.id,
+              Date.now(),
+              Date.now() - 1800000,
+            ))
         )
           throw new HttpError(401, "Sign in again");
-        const used = db
+        const used = await db
           .prepare(
             "SELECT COALESCE(sum(length(body)),0) bytes,count(*) n FROM files WHERE user_id=?",
           )
@@ -261,18 +266,20 @@ export function mountFiles(app, store, config, limit) {
             413,
             "Document storage limit reached (100 MB / 100 files)",
           );
-        db.prepare(
-          "INSERT INTO files(id,user_id,name,mime,hash,body,created_at,scanned_at) VALUES(?,?,?,?,?,?,?,?)",
-        ).run(
-          id,
-          req.user.id,
-          f.name,
-          mime,
-          digest(b),
-          b,
-          new Date().toISOString(),
-          needsScan ? new Date().toISOString() : null,
-        );
+        await db
+          .prepare(
+            "INSERT INTO files(id,user_id,name,mime,hash,body,created_at,scanned_at) VALUES(?,?,?,?,?,?,?,?)",
+          )
+          .run(
+            id,
+            req.user.id,
+            f.name,
+            mime,
+            digest(b),
+            b,
+            new Date().toISOString(),
+            needsScan ? new Date().toISOString() : null,
+          );
       });
       res.json({ id });
     } catch (e) {
@@ -281,7 +288,7 @@ export function mountFiles(app, store, config, limit) {
   });
   app.get("/api/files/:id", async (req, res, next) => {
     try {
-      const f = db
+      const f = await db
         .prepare("SELECT * FROM files WHERE id=? AND user_id=?")
         .get(req.params.id, req.user.id);
       if (!f) throw new HttpError(404, "File not found");

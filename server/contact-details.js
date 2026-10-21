@@ -1,5 +1,4 @@
 import { z } from "zod";
-
 const text = z.string().trim().max(200);
 const source = z.enum([
   "Manual entry",
@@ -136,7 +135,6 @@ export const contactSchema = z
       seen.add(email);
     });
   });
-
 // The server owns timestamps; provenance never establishes identity implicitly.
 export function normalizeContact(
   data,

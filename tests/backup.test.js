@@ -14,19 +14,18 @@ import { join } from "node:path";
 import { DatabaseSync } from "node:sqlite";
 import { createStore } from "../server/store.js";
 import { snapshotDatabase } from "../server/backup.js";
-
-function fixture(t) {
+async function fixture(t) {
   const dir = mkdtempSync(join(tmpdir(), "offerly-backup-test-"));
   const source = join(dir, "live.sqlite");
-  const store = createStore(source);
-  store.db
+  const store = await createStore(source);
+  await store.db
     .prepare("INSERT INTO users VALUES(?,?,?,?,?,?)")
     .run("owner", "backup@example.test", "hash", "Backup", "UTC", "[]");
-  store.db
+  await store.db
     .prepare("INSERT INTO sessions VALUES(?,?,?,?)")
     .run("session-digest", "owner", Date.now() + 10000, Date.now());
-  store.save("owner", "applications", { company: "Snapshot test" });
-  store.db
+  await store.save("owner", "applications", { company: "Snapshot test" });
+  await store.db
     .prepare("INSERT INTO files VALUES(?,?,?,?,?,?,?,?)")
     .run(
       "file",
@@ -44,28 +43,35 @@ function fixture(t) {
   });
   return { dir, source, store };
 }
-
 test("online WAL backup restores records and bytes, revokes sessions, leaves source intact", async (t) => {
-  const { dir, source, store } = fixture(t);
-  store.db.exec("PRAGMA wal_autocheckpoint=0");
+  const { dir, source, store } = await fixture(t);
+  await store.db.exec("PRAGMA wal_autocheckpoint=0");
   const saved = join(dir, "backup.sqlite"),
     restored = join(dir, "restored.sqlite");
   await snapshotDatabase(source, saved);
-  store.save("owner", "applications", { company: "After snapshot" });
+  await store.save("owner", "applications", { company: "After snapshot" });
   await snapshotDatabase(saved, restored, { restore: true });
   const db = new DatabaseSync(restored, { readOnly: true });
   try {
-    assert.equal(db.prepare("SELECT count(*) n FROM records").get().n, 1);
-    assert.equal(db.prepare("SELECT count(*) n FROM sessions").get().n, 0);
     assert.equal(
-      Buffer.from(db.prepare("SELECT body FROM files").get().body).toString(),
+      (await db.prepare("SELECT count(*) n FROM records").get()).n,
+      1,
+    );
+    assert.equal(
+      (await db.prepare("SELECT count(*) n FROM sessions").get()).n,
+      0,
+    );
+    assert.equal(
+      Buffer.from(
+        (await db.prepare("SELECT body FROM files").get()).body,
+      ).toString(),
       "private-file",
     );
     assert.equal(
-      store.db.prepare("SELECT count(*) n FROM sessions").get().n,
+      (await store.db.prepare("SELECT count(*) n FROM sessions").get()).n,
       1,
     );
-    assert.equal(store.list("owner", "applications").length, 2);
+    assert.equal((await store.list("owner", "applications")).length, 2);
     assert.equal(statSync(saved).mode & 0o777, 0o600);
     assert.equal(statSync(restored).mode & 0o777, 0o600);
     assert.equal(existsSync(restored + "-wal"), false);
@@ -73,9 +79,8 @@ test("online WAL backup restores records and bytes, revokes sessions, leaves sou
     db.close();
   }
 });
-
 test("snapshot refuses overwrite, same path, symlinks and destination WAL", async (t) => {
-  const { dir, source } = fixture(t);
+  const { dir, source } = await fixture(t);
   const output = join(dir, "existing.sqlite");
   writeFileSync(output, "preserve");
   await assert.rejects(snapshotDatabase(source, output));
@@ -92,9 +97,8 @@ test("snapshot refuses overwrite, same path, symlinks and destination WAL", asyn
   await assert.rejects(snapshotDatabase(source, sidecar));
   assert.equal(existsSync(sidecar), false);
 });
-
 test("invalid or missing sources never publish a snapshot or create a source", async (t) => {
-  const { dir } = fixture(t);
+  const { dir } = await fixture(t);
   const missing = join(dir, "missing.sqlite"),
     output = join(dir, "output.sqlite");
   await assert.rejects(snapshotDatabase(missing, output));

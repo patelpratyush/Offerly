@@ -5,14 +5,12 @@ import {
   applicationDetailsShape,
   validateApplicationDetails,
 } from "../server/application-details.js";
-
 const schema = z.object({
   ...applicationDetailsShape,
   description: z.string().default(""),
   stage: z.string().default("Applied"),
 });
 const parse = (data) => validateApplicationDetails(schema.parse(data));
-
 test("legacy applications keep unknown offer and listing dates without inventing facts", () => {
   const data = parse({});
   assert.equal(data.offerOutcome, "Not recorded");
@@ -20,7 +18,6 @@ test("legacy applications keep unknown offer and listing dates without inventing
   assert.equal(data.offerDecisionDate, "");
   assert.equal(data.descriptionCapturedDate, "");
 });
-
 test("offer decisions require truthful chronological dates independent of stage", () => {
   for (const offerOutcome of ["Accepted", "Declined"]) {
     assert.throws(() => parse({ offerOutcome }), /actual decision date/);
@@ -57,7 +54,6 @@ test("offer decisions require truthful chronological dates independent of stage"
     "Accepted",
   );
 });
-
 test("offer and listing date fields reject impossible dates", () => {
   for (const field of [
     "offerReceivedDate",
@@ -80,7 +76,6 @@ test("offer and listing date fields reject impossible dates", () => {
     assert.equal(schema.safeParse({ [field]: "2024-02-29" }).success, true);
   }
 });
-
 test("listing provenance requires saved text and safe bounded source URLs", () => {
   assert.throws(
     () => parse({ descriptionCapturedDate: "2026-10-20" }),

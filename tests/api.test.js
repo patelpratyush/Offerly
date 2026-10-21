@@ -1,10 +1,10 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { createApp } from "../server/app.js";
-import { createStore } from "../server/store.js";
+import { createStore } from "./helpers/store.js";
 async function setup(t) {
-  const store = createStore(":memory:");
-  const server = createApp(store).listen(0, "127.0.0.1");
+  const store = await createStore(":memory:");
+  const server = (await createApp(store)).listen(0, "127.0.0.1");
   await new Promise((r) => server.once("listening", r));
   t.after(() => {
     server.close();
@@ -266,7 +266,7 @@ test("documents immutable; deletion invalidates sessions and removes private dat
     "import_batches",
   ])
     assert.equal(
-      store.db.prepare(`SELECT count(*) AS n FROM ${table}`).get().n,
+      (await store.db.prepare(`SELECT count(*) AS n FROM ${table}`).get()).n,
       0,
     );
 });
@@ -345,7 +345,6 @@ test("scheduled rounds need dates; stage removal and untrusted links rejected", 
     "Saved",
   );
 });
-
 test("mapped CSV dates are explicit; within-file duplicates need decisions and commits replay safely", async (t) => {
   const { request, register } = await setup(t);
   const c = await register("import@example.com");
@@ -393,7 +392,6 @@ test("mapped CSV dates are explicit; within-file duplicates need decisions and c
     400,
   );
 });
-
 test("CSV commit is atomic when a preview becomes stale or validation changes", async (t) => {
   const { request, register, store } = await setup(t);
   const c = await register("atomic@example.com");
@@ -417,14 +415,19 @@ test("CSV commit is atomic when a preview becomes stale or validation changes", 
     (await request("/workspace", "GET", undefined, c)).data.applications.length,
     1,
   );
-  assert.equal(store.db.prepare("SELECT count(*) n FROM events").get().n, 1);
   assert.equal(
-    store.db.prepare("SELECT result FROM import_batches WHERE id=?").get(p.id)
-      .result,
+    (await store.db.prepare("SELECT count(*) n FROM events").get()).n,
+    1,
+  );
+  assert.equal(
+    (
+      await store.db
+        .prepare("SELECT result FROM import_batches WHERE id=?")
+        .get(p.id)
+    ).result,
     null,
   );
 });
-
 test("unified timeline retains child updates and unlink evidence without cross-user access", async (t) => {
   const { request, register } = await setup(t);
   const c = await register("timeline@example.com"),
@@ -483,7 +486,6 @@ test("unified timeline retains child updates and unlink evidence without cross-u
     404,
   );
 });
-
 test("assessment completion is explicit, validated and independent of application stage", async (t) => {
   const { request, register } = await setup(t);
   const c = await register("assessment@example.com");
@@ -552,7 +554,6 @@ test("assessment completion is explicit, validated and independent of applicatio
     2,
   );
 });
-
 test("duplicate review keeps distinct requisitions separate; archive and undo retain child records", async (t) => {
   const { request, register } = await setup(t);
   const c = await register("duplicates@example.com");
@@ -624,7 +625,6 @@ test("duplicate review keeps distinct requisitions separate; archive and undo re
     1,
   );
 });
-
 test("duplicate undo refuses to overwrite a later application edit", async (t) => {
   const { request, register } = await setup(t);
   const c = await register("conflict@example.com");
@@ -674,7 +674,6 @@ test("duplicate undo refuses to overwrite a later application edit", async (t) =
     "New note",
   );
 });
-
 test("saved views persist all filters and enforce ownership and versions", async (t) => {
   const { request, register } = await setup(t);
   const a = await register("views-a@example.com"),
@@ -772,7 +771,6 @@ test("saved views persist all filters and enforce ownership and versions", async
     0,
   );
 });
-
 test("bulk edits are atomic, owned, bounded and replay-safe with preserved history", async (t) => {
   const { request, register, store } = await setup(t);
   const a = await register("bulk-a@example.com"),
@@ -930,11 +928,11 @@ test("bulk edits are atomic, owned, bounded and replay-safe with preserved histo
     200,
   );
   assert.equal(
-    store.db.prepare("SELECT count(*) n FROM mutation_receipts").get().n,
+    (await store.db.prepare("SELECT count(*) n FROM mutation_receipts").get())
+      .n,
     0,
   );
 });
-
 test("compensation preserves unknowns and explicit currency, period and basis across edits and CSV", async (t) => {
   const { request, register } = await setup(t);
   const cookie = await register("pay@example.com");
@@ -1008,7 +1006,6 @@ test("compensation preserves unknowns and explicit currency, period and basis ac
     "CAD",
   );
 });
-
 test("duplicate merge previews linked records, rejects stale previews and reverses atomically", async (t) => {
   const { request, register, store } = await setup(t);
   const cookie = await register("merge@example.com"),
@@ -1054,7 +1051,8 @@ test("duplicate merge previews linked records, rejects stale previews and revers
     applicationIds: [right.id],
   });
   const fileBefore = Buffer.from(
-    store.db.prepare("SELECT body FROM files WHERE id=?").get(file.id).body,
+    (await store.db.prepare("SELECT body FROM files WHERE id=?").get(file.id))
+      .body,
   );
   const args = { leftId: left.id, rightId: right.id, targetId: left.id };
   assert.equal(
@@ -1107,7 +1105,8 @@ test("duplicate merge previews linked records, rejects stale previews and revers
   );
   assert.deepEqual(
     Buffer.from(
-      store.db.prepare("SELECT body FROM files WHERE id=?").get(file.id).body,
+      (await store.db.prepare("SELECT body FROM files WHERE id=?").get(file.id))
+        .body,
     ),
     fileBefore,
   );
@@ -1182,7 +1181,6 @@ test("duplicate merge previews linked records, rejects stale previews and revers
   assert.equal(w.tasks.find((a) => a.id === task.id).title, "Later edit");
   assert.equal(w.applications.find((a) => a.id === right.id).archived, true);
 });
-
 test("quota failures during bulk edits and merges roll back every earlier write", async (t) => {
   const { request, register, store } = await setup(t);
   const cookie = await register("atomic-quota@example.com");
@@ -1197,8 +1195,8 @@ test("quota failures during bulk edits and merges roll back every earlier write"
     ).data;
   const left = await create(),
     right = await create();
-  const user = store.db.prepare("SELECT id FROM users").get().id;
-  store.db
+  const user = (await store.db.prepare("SELECT id FROM users").get()).id;
+  await store.db
     .prepare(
       `WITH RECURSIVE sequence(n) AS (SELECT 1 UNION ALL SELECT n+1 FROM sequence WHERE n<49997)
     INSERT INTO events(id,user_id,record_id,at,before_data,after_data,actor)
@@ -1244,11 +1242,12 @@ test("quota failures during bulk edits and merges roll back every earlier write"
   );
   assert.equal(workspace.duplicateReviews.length, 0);
   assert.equal(
-    store.db.prepare("SELECT count(*) n FROM events").get().n,
+    (await store.db.prepare("SELECT count(*) n FROM events").get()).n,
     49999,
   );
   assert.equal(
-    store.db.prepare("SELECT count(*) n FROM mutation_receipts").get().n,
+    (await store.db.prepare("SELECT count(*) n FROM mutation_receipts").get())
+      .n,
     0,
   );
 });

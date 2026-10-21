@@ -1,3 +1,4 @@
+import { isIP } from "node:net";
 import { createHash, randomUUID } from "node:crypto";
 export class HttpError extends Error {
   constructor(status, message) {
@@ -33,33 +34,45 @@ export function securityConfig(overrides = {}) {
     ...overrides,
   };
 }
-export function createLimiter(db) {
-  db.exec(
-    "CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,expires INTEGER NOT NULL)",
-  );
-  return (key, limit, windowMs) => {
-    const now = Date.now(),
-      hashed = digest(key);
-    db.prepare("DELETE FROM rate_limits WHERE expires<=?").run(now);
-    const row = db.prepare("SELECT * FROM rate_limits WHERE key=?").get(hashed);
-    if (
-      !row &&
-      db.prepare("SELECT count(*) n FROM rate_limits").get().n >= 10000
-    )
-      throw new HttpError(429, "Server busy. Try again shortly.");
-    if (row && row.count >= limit)
-      throw new HttpError(429, "Too many requests. Try again later.");
-    db.prepare(
-      "INSERT INTO rate_limits VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET count=count+1",
-    ).run(hashed, 1, now + windowMs);
-  };
+export async function createLimiter(db) {
+  if (!db.hosted)
+    await db.exec(
+      "CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,expires INTEGER NOT NULL)",
+    );
+  return async (key, limit, windowMs) =>
+    db.atomic(async () => {
+      const now = Date.now(),
+        hashed = digest(key);
+      await db.prepare("DELETE FROM rate_limits WHERE expires<=?").run(now);
+      const row = await db
+        .prepare("SELECT * FROM rate_limits WHERE key=?")
+        .get(hashed);
+      if (
+        !row &&
+        (await db.prepare("SELECT count(*) n FROM rate_limits").get()).n >=
+          10000
+      )
+        throw new HttpError(429, "Server busy. Try again shortly.");
+      if (row && row.count >= limit)
+        throw new HttpError(429, "Too many requests. Try again later.");
+      await db
+        .prepare(
+          "INSERT INTO rate_limits VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET count=count+1",
+        )
+        .run(hashed, 1, now + windowMs);
+    });
 }
 export function installSecurity(app, config, limit) {
   app.disable("x-powered-by");
   app.enable("case sensitive routing");
   app.enable("strict routing");
   if (config.trustProxy) app.set("trust proxy", "loopback");
-  app.use((req, res, next) => {
+  app.use(async (req, res, next) => {
+    if (config.vercel && process.env.VERCEL === "1") {
+      const ip = req.headers["x-vercel-forwarded-for"];
+      if (typeof ip === "string" && isIP(ip))
+        Object.defineProperty(req, "ip", { value: ip });
+    }
     req.requestId = randomUUID();
     res.set({
       "X-Request-ID": req.requestId,
@@ -78,11 +91,19 @@ export function installSecurity(app, config, limit) {
       if (config.production) {
         if (req.headers.host !== new URL(config.origin).host)
           throw new HttpError(421, "Invalid host");
-        if (!req.secure) throw new HttpError(400, "HTTPS is required");
+        if (
+          !req.secure &&
+          !(
+            config.vercel &&
+            process.env.VERCEL === "1" &&
+            req.headers["x-forwarded-proto"] === "https"
+          )
+        )
+          throw new HttpError(400, "HTTPS is required");
       } else if (!["localhost", "127.0.0.1", "[::1]"].includes(req.hostname))
         throw new HttpError(421, "Invalid host");
       if (/^\/api(?:\/|$)/i.test(req.path)) {
-        limit("api:" + req.ip, 600, 60000);
+        await limit("api:" + req.ip, 600, 60000);
         if (req.headers["sec-fetch-site"] === "cross-site")
           throw new HttpError(403, "Cross-site requests are not allowed");
         if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {

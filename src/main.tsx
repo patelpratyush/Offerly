@@ -1868,8 +1868,10 @@ function Auth({
         setAuthConfig(c);
         if (!c.registrationEnabled) setRegister(false);
       })
-      .catch(() =>
-        setConfigError("Sign-in service unavailable. Refresh to try again."),
+      .catch((error: Error) =>
+        setConfigError(
+          error.message || "Sign-in service unavailable. Refresh to try again.",
+        ),
       );
   }, []);
   return (

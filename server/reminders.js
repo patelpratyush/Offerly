@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { HttpError } from "./security.js";
-
 const date = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -45,9 +44,9 @@ const signature = (kind, data) =>
               data.offerOutcome || "Not recorded",
             ],
   );
-function source(store, userId, data) {
-  const appRow = store.get(userId, data.applicationId),
-    row = store.get(userId, data.sourceId);
+async function source(store, userId, data) {
+  const appRow = await store.get(userId, data.applicationId),
+    row = await store.get(userId, data.sourceId);
   if (
     !appRow ||
     appRow.kind !== "application" ||
@@ -79,8 +78,8 @@ function source(store, userId, data) {
           ["Canceled", "Completed"].includes(item.status));
   return { signature: signature(data.sourceKind, item), unavailable };
 }
-function localDate(store, userId, now) {
-  const user = store.db
+async function localDate(store, userId, now) {
+  const user = await store.db
     .prepare("SELECT timezone FROM users WHERE id=?")
     .get(userId);
   if (!user) throw new HttpError(404, "Account not found");
@@ -93,11 +92,11 @@ function localDate(store, userId, now) {
   const part = (type) => parts.find((p) => p.type === type).value;
   return `${part("year")}-${part("month")}-${part("day")}`;
 }
-function refreshOne(store, userId, item, now) {
+async function refreshOne(store, userId, item, now) {
   if (!active(item)) return false;
   let cancellation = "";
   try {
-    const current = source(store, userId, item);
+    const current = await source(store, userId, item);
     if (current.unavailable)
       cancellation = "Source completed, canceled, or application closed";
     else if (current.signature !== item.sourceSignature)
@@ -109,12 +108,12 @@ function refreshOne(store, userId, item, now) {
   }
   const state = cancellation
     ? "canceled"
-    : item.dueDate <= localDate(store, userId, now)
+    : item.dueDate <= (await localDate(store, userId, now))
       ? "due"
       : "scheduled";
   if (state === item.state) return false;
   const { id, version, ...data } = item;
-  store.save(
+  await store.save(
     userId,
     "reminder",
     {
@@ -130,12 +129,15 @@ function refreshOne(store, userId, item, now) {
   return true;
 }
 const cursors = new WeakMap();
-export function processReminders(store, { now = new Date(), userId } = {}) {
+export async function processReminders(
+  store,
+  { now = new Date(), userId, deadline = Infinity } = {},
+) {
   now = new Date(now);
   if (!Number.isFinite(now.getTime()))
     throw new TypeError("Invalid scheduler time");
   const cursor = userId ? "" : cursors.get(store) || "";
-  const rows = store.db
+  const rows = await store.db
     .prepare(
       `SELECT * FROM records WHERE kind='reminder' AND json_extract(data,'$.state') IN ('scheduled','due') ${userId ? "AND user_id=?" : "AND id>?"} ORDER BY id LIMIT 500`,
     )
@@ -144,29 +146,38 @@ export function processReminders(store, { now = new Date(), userId } = {}) {
     failed = 0;
   if (!userId) cursors.set(store, rows.length === 500 ? rows.at(-1).id : "");
   for (const row of rows) {
+    if (Date.now() >= deadline) break;
     try {
-      changed += Number(refreshOne(store, row.user_id, unpack(row), now));
+      changed += Number(await refreshOne(store, row.user_id, unpack(row), now));
     } catch {
       failed++;
     }
   }
   return { processed: rows.length, changed, failed };
 }
-export function reconcileReminders(store, userId, kind, before, after, id) {
+export async function reconcileReminders(
+  store,
+  userId,
+  kind,
+  before,
+  after,
+  id,
+) {
   if (!sourceKinds.includes(kind)) return;
-  const rows = store.db
+  const rows = await store.db
     .prepare(
       "SELECT * FROM records WHERE user_id=? AND kind='reminder' AND json_extract(data,'$.state') IN ('scheduled','due') AND (json_extract(data,'$.sourceId')=? OR json_extract(data,'$.applicationId')=?) LIMIT 501",
     )
     .all(userId, id, id);
   if (rows.length > 500)
     throw new HttpError(413, "Too many active reminders to reconcile");
-  for (const row of rows) refreshOne(store, userId, unpack(row), new Date());
+  for (const row of rows)
+    await refreshOne(store, userId, unpack(row), new Date());
 }
-function operation(store, userId, operationId, payload, fn) {
-  return store.atomic(() => {
+async function operation(store, userId, operationId, payload, fn) {
+  return await store.atomic(async () => {
     const key = JSON.stringify(payload);
-    const row = store.db
+    const row = await store.db
       .prepare(
         "SELECT data FROM records WHERE user_id=? AND kind='reminder_operation' AND json_extract(data,'$.operationId')=? LIMIT 1",
       )
@@ -180,8 +191,8 @@ function operation(store, userId, operationId, payload, fn) {
         );
       return old.result;
     }
-    const result = fn();
-    store.save(
+    const result = await fn();
+    await store.save(
       userId,
       "reminder_operation",
       { operationId, payload: key, result },
@@ -193,27 +204,29 @@ function operation(store, userId, operationId, payload, fn) {
   });
 }
 export function mountReminders(app, store) {
-  app.get("/api/reminders", (req, res) => {
-    res.json(store.list(req.user.id, "reminder"));
+  app.get("/api/reminders", async (req, res) => {
+    res.json(await store.list(req.user.id, "reminder"));
   });
-  app.post("/api/reminders", (req, res) => {
+  app.post("/api/reminders", async (req, res) => {
     const body = createSchema.parse(req.body),
       userId = req.user.id;
-    const result = operation(
+    const result = await operation(
       store,
       userId,
       body.operationId,
       { type: "create", ...body },
-      () => {
+      async () => {
         if (
-          store.db
-            .prepare(
-              "SELECT count(*) n FROM records WHERE user_id=? AND kind='reminder' AND json_extract(data,'$.state') IN ('scheduled','due')",
-            )
-            .get(userId).n >= 100
+          (
+            await store.db
+              .prepare(
+                "SELECT count(*) n FROM records WHERE user_id=? AND kind='reminder' AND json_extract(data,'$.state') IN ('scheduled','due')",
+              )
+              .get(userId)
+          ).n >= 100
         )
           throw new HttpError(413, "Limit of 100 active reminders reached");
-        const current = source(store, userId, body);
+        const current = await source(store, userId, body);
         if (current.unavailable)
           throw new HttpError(
             409,
@@ -222,7 +235,7 @@ export function mountReminders(app, store) {
         const data = { ...body };
         delete data.operationId;
         const now = new Date();
-        return store.save(
+        return await store.save(
           userId,
           "reminder",
           {
@@ -230,7 +243,7 @@ export function mountReminders(app, store) {
             precision: "date",
             sourceSignature: current.signature,
             state:
-              body.dueDate <= localDate(store, userId, now)
+              body.dueDate <= (await localDate(store, userId, now))
                 ? "due"
                 : "scheduled",
             createdAt: now.toISOString(),
@@ -245,19 +258,19 @@ export function mountReminders(app, store) {
     );
     res.status(201).json(result);
   });
-  app.post("/api/reminders/:id/action", (req, res) => {
+  app.post("/api/reminders/:id/action", async (req, res) => {
     const id = z.uuid().parse(req.params.id),
       body = actionSchema.parse(req.body),
       userId = req.user.id;
     if ((body.action === "snooze") !== !!body.dueDate)
       throw new HttpError(400, "Only snooze requires a new date");
-    const result = operation(
+    const result = await operation(
       store,
       userId,
       body.operationId,
       { type: "action", id, ...body },
-      () => {
-        const row = store.get(userId, id);
+      async () => {
+        const row = await store.get(userId, id);
         if (!row || row.kind !== "reminder")
           throw new HttpError(404, "Reminder not found");
         const item = unpack(row);
@@ -268,13 +281,13 @@ export function mountReminders(app, store) {
           );
         if (!active(item))
           throw new HttpError(409, "Reminder is no longer active");
-        const current = source(store, userId, item);
+        const current = await source(store, userId, item);
         if (current.unavailable || current.signature !== item.sourceSignature)
           throw new HttpError(
             409,
             "Reminder source changed. Refresh before continuing.",
           );
-        const today = localDate(store, userId, new Date());
+        const today = await localDate(store, userId, new Date());
         if (body.action === "snooze" && body.dueDate <= today)
           throw new HttpError(
             400,
@@ -283,7 +296,7 @@ export function mountReminders(app, store) {
         const data = { ...item };
         delete data.id;
         delete data.version;
-        return store.save(
+        return await store.save(
           userId,
           "reminder",
           {

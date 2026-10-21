@@ -1,6 +1,5 @@
 import { z } from "zod";
 import { HttpError } from "./security.js";
-
 const optionalDate = z
   .union([
     z.literal(""),
@@ -16,7 +15,6 @@ const optionalDate = z
       }, "Enter a valid calendar date"),
   ])
   .default("");
-
 export const applicationDetailsShape = {
   offerOutcome: z
     .enum(["Not recorded", "Pending", "Accepted", "Declined"])
@@ -42,7 +40,6 @@ export const applicationDetailsShape = {
     ])
     .default(""),
 };
-
 // Stage is intentionally independent: customizing stages must not rewrite facts.
 export function validateApplicationDetails(data) {
   const decided = ["Accepted", "Declined"].includes(data.offerOutcome);

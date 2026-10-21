@@ -3,20 +3,19 @@ import { resolve } from "node:path";
 import { createStore } from "./store.js";
 import { processRecruitingJobs } from "./recruiting.js";
 import { processReminders } from "./reminders.js";
-
 process.umask(0o077);
-const store = createStore(
+const store = await createStore(
   resolve(process.env.DATABASE_PATH || "data/offerly.sqlite"),
 );
 let stopping = false;
-function tick() {
-  if (stopping) return;
+let active = null;
+async function runTick() {
   for (const [kind, processWork] of [
     ["recruiting", processRecruitingJobs],
     ["reminders", processReminders],
   ]) {
     try {
-      const result = processWork(store, { now: new Date() });
+      const result = await processWork(store, { now: new Date() });
       if (result.failed)
         console.error(
           JSON.stringify({
@@ -31,17 +30,23 @@ function tick() {
     }
   }
 }
+function tick() {
+  if (stopping || active) return;
+  active = runTick().finally(() => {
+    active = null;
+  });
+}
 const timer = setInterval(tick, 1000);
-function stop() {
+async function stop() {
   if (stopping) return;
   stopping = true;
   clearInterval(timer);
-  store.db.close();
+  await active;
+  await store.db.close();
   if (process.connected) process.disconnect();
 }
 process.on("SIGTERM", stop);
 process.on("SIGINT", stop);
 process.on("disconnect", stop);
 tick();
-
 if (process.send) process.send({ type: "ready" });
