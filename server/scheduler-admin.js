@@ -83,11 +83,14 @@ try {
         "SELECT cron.schedule('offerly-workspace-tick','* * * * *','SELECT offerly.invoke_scheduler();')",
       );
       await client.query(
-        "SELECT cron.alter_job(jobid,active:=true) FROM cron.job WHERE jobname='offerly-workspace-tick'",
+        "SELECT cron.schedule('offerly-scanner-maintenance','15 * * * *','SELECT offerly.invoke_scanner_maintenance();')",
+      );
+      await client.query(
+        "SELECT cron.alter_job(jobid,active:=true) FROM cron.job WHERE jobname IN ('offerly-workspace-tick','offerly-scanner-maintenance')",
       );
       await client.query("COMMIT");
       console.log(
-        "Scheduler enabled: every minute. Credentials stored in Vault.",
+        "Workspace scheduler enabled every minute; scanner maintenance checked hourly. Credentials stored in Vault.",
       );
     } catch (error) {
       await client.query("ROLLBACK");
@@ -95,19 +98,23 @@ try {
     }
   } else if (command === "pause") {
     await client.query(
-      "SELECT cron.alter_job(jobid,active:=false) FROM cron.job WHERE jobname='offerly-workspace-tick'",
+      "SELECT cron.alter_job(jobid,active:=false) FROM cron.job WHERE jobname IN ('offerly-workspace-tick','offerly-scanner-maintenance')",
     );
     console.log("Scheduler paused. Queued work preserved.");
   } else {
     const queries = {
       schedule:
-        "SELECT jobname,schedule,active FROM cron.job WHERE jobname='offerly-workspace-tick'",
+        "SELECT jobname,schedule,active FROM cron.job WHERE jobname IN ('offerly-workspace-tick','offerly-scanner-maintenance')",
       worker:
         "SELECT started_at,finished_at,status,lease_until,result FROM offerly.scheduler_state WHERE id=1",
       dispatch:
         "SELECT d.dispatched_at,r.status_code,r.timed_out,r.error_msg FROM offerly.scheduler_dispatch d LEFT JOIN net._http_response r ON r.id=d.request_id WHERE d.id=1",
       recentRuns:
         "SELECT status,start_time,end_time FROM cron.job_run_details WHERE jobid IN (SELECT jobid FROM cron.job WHERE jobname='offerly-workspace-tick') ORDER BY start_time DESC LIMIT 5",
+      scanner:
+        "SELECT definitions_at,engine_version,updated_at,lease_until FROM offerly.scanner_state WHERE id=1",
+      scannerDispatch:
+        "SELECT d.dispatched_at,r.status_code,r.timed_out,r.error_msg FROM offerly.scanner_dispatch d LEFT JOIN net._http_response r ON r.id=d.request_id WHERE d.id=1",
     };
     const result = {};
     for (const [key, sql] of Object.entries(queries)) {

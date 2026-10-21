@@ -4,6 +4,11 @@ import { createConnection } from "node:net";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { HttpError, digest } from "./security.js";
+import {
+  reserveFileObject,
+  attachFileObject,
+  abandonFileObject,
+} from "./file-lifecycle.js";
 const MAX_FILE = 20 * 1024 * 1024,
   MAX_STORAGE = 100 * 1024 * 1024;
 export async function validateDocument(name, body) {
@@ -217,11 +222,18 @@ export function mountFiles(app, store, config, limit) {
   const scan =
     config.scanDocument ||
     ((body) => scanWithClamav(body, config.scannerSocket));
-  const needsScan = config.production || !!config.scannerSocket;
+  const needsScan =
+    config.production || !!config.scannerSocket || !!config.scanDocument;
   app.post("/api/files", async (req, res, next) => {
+    let key,
+      putStarted = false,
+      putConfirmed = false;
     try {
       await limit("upload:" + req.user.id, 5, 60000);
-      if (config.production && !config.scannerSocket && !config.scanDocument)
+      if (
+        (config.production && !config.scannerSocket && !config.scanDocument) ||
+        (config.vercel && !config.fileStorage)
+      )
         throw new HttpError(
           503,
           "Uploads unavailable until document scanning is configured",
@@ -238,10 +250,26 @@ export function mountFiles(app, store, config, limit) {
       const b = Buffer.from(f.body, "base64");
       if (b.toString("base64") !== f.body)
         throw new HttpError(400, "Invalid file encoding");
+      if (config.vercel && b.length > 2 * 1024 * 1024)
+        throw new HttpError(413, "Hosted documents must be 2 MB or smaller");
       const mime = await validateDocument(f.name, b);
-      if (needsScan) await scan(b);
-      // Ownership, quota and session are rechecked after asynchronous inspection.
       const id = randomUUID();
+      if (config.fileStorage) {
+        key = `documents/${req.user.id}/${id}`;
+        await reserveFileObject(store, {
+          key,
+          userId: req.user.id,
+          fileId: id,
+          size: b.length,
+        });
+      }
+      if (needsScan) await scan(b);
+      if (config.fileStorage) {
+        putStarted = true;
+        await config.fileStorage.put(key, b);
+        putConfirmed = true;
+      }
+      // Ownership, quota and session are rechecked after asynchronous inspection.
       await store.atomic(async () => {
         if (
           !(await db
@@ -261,14 +289,17 @@ export function mountFiles(app, store, config, limit) {
             "SELECT COALESCE(sum(length(body)),0) bytes,count(*) n FROM files WHERE user_id=?",
           )
           .get(req.user.id);
-        if (used.bytes + b.length > MAX_STORAGE || used.n >= 100)
+        if (
+          !config.fileStorage &&
+          (used.bytes + b.length > MAX_STORAGE || used.n >= 100)
+        )
           throw new HttpError(
             413,
             "Document storage limit reached (100 MB / 100 files)",
           );
         await db
           .prepare(
-            "INSERT INTO files(id,user_id,name,mime,hash,body,created_at,scanned_at) VALUES(?,?,?,?,?,?,?,?)",
+            "INSERT INTO files(id,user_id,name,mime,hash,body,created_at,scanned_at,storage_key,byte_size) VALUES(?,?,?,?,?,?,?,?,?,?)",
           )
           .run(
             id,
@@ -276,13 +307,40 @@ export function mountFiles(app, store, config, limit) {
             f.name,
             mime,
             digest(b),
-            b,
+            config.fileStorage ? Buffer.alloc(0) : b,
             new Date().toISOString(),
             needsScan ? new Date().toISOString() : null,
+            key || null,
+            b.length,
           );
+        if (key) await attachFileObject(store, key);
       });
       res.json({ id });
     } catch (e) {
+      if (key) {
+        try {
+          if (!putStarted) {
+            await db
+              .prepare(
+                "DELETE FROM file_objects WHERE storage_key=? AND state<>'attached'",
+              )
+              .run(key);
+          } else if (putConfirmed) {
+            if (await abandonFileObject(store, key)) {
+              await config.fileStorage.delete(key);
+              await db
+                .prepare(
+                  "DELETE FROM file_objects WHERE storage_key=? AND state='deleting'",
+                )
+                .run(key);
+            }
+          }
+          // A timed-out PUT can finish remotely. Keep its pending reservation
+          // until the cleanup grace period, including during account deletion.
+        } catch {
+          /* Durable cleanup retries storage or database failures. */
+        }
+      }
       next(e);
     }
   });
@@ -302,9 +360,24 @@ export function mountFiles(app, store, config, limit) {
         "Content-Security-Policy": "sandbox; default-src 'none'",
         "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(f.name)}`,
       });
-      res.send(Buffer.from(f.body));
+      res.send(await readDocumentBody(f, config));
     } catch (e) {
       next(e);
     }
   });
+}
+
+export async function readDocumentBody(file, config) {
+  if (file.storage_key) {
+    if (!config.fileStorage)
+      throw new HttpError(
+        503,
+        "Document storage unavailable. Try again later.",
+      );
+    return config.fileStorage.read(file.storage_key, {
+      size: Number(file.byte_size),
+      hash: file.hash,
+    });
+  }
+  return Buffer.from(file.body);
 }

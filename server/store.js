@@ -30,7 +30,23 @@ export async function createStore(path, options) {
     INSERT INTO scheduler_state(id) VALUES(1) ON CONFLICT(id) DO NOTHING;
     CREATE TABLE IF NOT EXISTS import_batches(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,rows TEXT NOT NULL,expires INTEGER NOT NULL,result TEXT,decisions TEXT);
     CREATE TABLE IF NOT EXISTS files(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,mime TEXT NOT NULL,hash TEXT NOT NULL,body BLOB NOT NULL,created_at TEXT NOT NULL);
+    CREATE TABLE IF NOT EXISTS file_objects(storage_key TEXT PRIMARY KEY,user_id TEXT NOT NULL,file_id TEXT NOT NULL,byte_size INTEGER NOT NULL CHECK(byte_size>0),expires_at INTEGER NOT NULL,state TEXT NOT NULL CHECK(state IN ('pending','attached','deleting')));
+    CREATE INDEX IF NOT EXISTS file_objects_owner ON file_objects(user_id);
+    CREATE INDEX IF NOT EXISTS file_objects_cleanup ON file_objects(state,expires_at);
+    CREATE TABLE IF NOT EXISTS scanner_state(id INTEGER PRIMARY KEY CHECK(id=1),snapshot_id TEXT NOT NULL DEFAULT '',definitions_at INTEGER NOT NULL DEFAULT 0,engine_version TEXT NOT NULL DEFAULT '',lease_until INTEGER NOT NULL DEFAULT 0,last_signed_at INTEGER NOT NULL DEFAULT 0,updated_at INTEGER NOT NULL DEFAULT 0);
+    INSERT INTO scanner_state(id) VALUES(1) ON CONFLICT(id) DO NOTHING;
   `);
+    const scannerColumns = await db
+      .prepare("PRAGMA table_info(scanner_state)")
+      .all();
+    if (!scannerColumns.some((c) => c.name === "previous_snapshot_id"))
+      await db.exec(
+        "ALTER TABLE scanner_state ADD COLUMN previous_snapshot_id TEXT NOT NULL DEFAULT ''",
+      );
+    if (!scannerColumns.some((c) => c.name === "retire_after"))
+      await db.exec(
+        "ALTER TABLE scanner_state ADD COLUMN retire_after INTEGER NOT NULL DEFAULT 0",
+      );
     if (
       !(await db.prepare("PRAGMA table_info(scheduler_state)").all()).some(
         (c) => c.name === "last_signed_at",
@@ -55,6 +71,13 @@ export async function createStore(path, options) {
       )
     )
       await db.exec("ALTER TABLE files ADD COLUMN scanned_at TEXT");
+    const fileColumns = await db.prepare("PRAGMA table_info(files)").all();
+    if (!fileColumns.some((c) => c.name === "storage_key"))
+      await db.exec("ALTER TABLE files ADD COLUMN storage_key TEXT");
+    if (!fileColumns.some((c) => c.name === "byte_size"))
+      await db.exec(
+        "ALTER TABLE files ADD COLUMN byte_size INTEGER CHECK(byte_size>0)",
+      );
     if (path !== ":memory:")
       for (const suffix of ["", "-wal", "-shm"])
         if (existsSync(path + suffix)) chmodSync(path + suffix, 0o600);

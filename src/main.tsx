@@ -47,6 +47,7 @@ import { Landing } from "./Landing";
 type Item = { id: string; version: number; [key: string]: any };
 type Workspace = {
   user: { name: string; email: string; timezone: string; stages: string[] };
+  filePolicy?: { maxBytes: number; exportIncludesFiles: boolean };
   applications: Item[];
   savedViews: Item[];
   contacts: Item[];
@@ -1818,6 +1819,10 @@ function App() {
               } else {
                 if (modal.kind === "document") {
                   if (!file) throw new Error("Choose a PDF or DOCX file");
+                  if (file.size > (w.filePolicy?.maxBytes ?? 20 * 1024 * 1024))
+                    throw new Error(
+                      `Choose a file smaller than ${(w.filePolicy?.maxBytes ?? 20 * 1024 * 1024) / 1024 / 1024} MB`,
+                    );
                   const body = await new Promise<string>((resolve, reject) => {
                     const reader = new FileReader();
                     reader.onload = () =>
@@ -2296,7 +2301,9 @@ function Editor({
                 {field("title", "Version name")}
                 {field("label", "Type", ["Resume", "Cover letter", "Other"])}
                 <label className="wide">
-                  File (PDF or DOCX, up to 20 MB)
+                  File (PDF or DOCX, up to{" "}
+                  {(w.filePolicy?.maxBytes ?? 20 * 1024 * 1024) / 1024 / 1024}{" "}
+                  MB)
                   <input
                     type="file"
                     accept=".pdf,.docx"
@@ -2305,9 +2312,9 @@ function Editor({
                   />
                 </label>
                 <p className="muted wide">
-                  Documents download as attachments. Production uploads require
-                  malware screening; local development uploads are not scanned
-                  unless a scanner is configured.
+                  Documents stay private and download as attachments. Security
+                  screening may take up to a minute. Local development files are
+                  scanned only when a scanner is configured.
                 </p>
               </>
             )}
@@ -2487,11 +2494,15 @@ function SettingsPage({
         <section className="panel settings-panel space-top">
           <h2>Your data belongs to you</h2>
           <p>
-            Download your full workspace, including history and original files,
-            or export applications as CSV.
+            {w.filePolicy?.exportIncludesFiles === false
+              ? "Export your workspace and history with private document links. Download each original file from Documents, or export applications as CSV."
+              : "Download your full workspace, including history and original files, or export applications as CSV."}
           </p>
           <a className="secondary" href="/api/export.json">
-            <Download size={16} /> Full workspace export
+            <Download size={16} />{" "}
+            {w.filePolicy?.exportIncludesFiles === false
+              ? "Workspace export with document links"
+              : "Full workspace export"}
           </a>
           <a className="text-button" href="/api/export.csv">
             Download application CSV

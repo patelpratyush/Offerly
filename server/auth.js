@@ -3,6 +3,7 @@ import { promisify } from "node:util";
 import { z } from "zod";
 import { stages } from "./store.js";
 import { HttpError, digest } from "./security.js";
+import { queueAccountFileDeletion } from "./file-lifecycle.js";
 const derive = promisify(scrypt),
   parameters = { N: 131072, r: 8, p: 1, maxmem: 256 * 1024 * 1024 };
 let activeHashes = 0;
@@ -65,11 +66,13 @@ export function mountAuth(app, store, config, limit) {
     timezone: z.string().max(100).optional(),
     invitation: z.string().max(256).optional(),
   });
-  app.get("/api/auth/config", (req, res) =>
+  app.get("/api/auth/config", async (req, res) =>
     res.json({
       registrationEnabled: !config.production || !!config.registrationToken,
       invitationRequired: config.production && !!config.registrationToken,
-      uploadsAvailable: !config.production || !!config.scannerSocket,
+      uploadsAvailable: config.uploadsAvailable
+        ? await config.uploadsAvailable()
+        : !config.production || !!config.scannerSocket || !!config.scanDocument,
     }),
   );
   app.post("/api/auth/:action", async (req, res, next) => {
@@ -290,6 +293,7 @@ export function mountAuth(app, store, config, limit) {
           )
           .get(req.sessionHash, req.user.id, Date.now(), Date.now() - 1800000);
         if (!session) throw new HttpError(401, "Sign in again");
+        await queueAccountFileDeletion(store, req.user.id);
         const result = await db
           .prepare("DELETE FROM users WHERE id=? AND password=?")
           .run(req.user.id, req.user.password);

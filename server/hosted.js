@@ -1,8 +1,11 @@
-import { timingSafeEqual, createHmac } from "node:crypto";
 import { createApp } from "./app.js";
 import { createStore } from "./store.js";
-import { securityConfig, digest } from "./security.js";
+import { securityConfig } from "./security.js";
+import { schedulerAuthorization } from "./scheduler-auth.js";
 import { runScheduler } from "./scheduler.js";
+import { createBlobStorage } from "./blob-storage.js";
+import { scanWithSandbox } from "./sandbox-scanner.js";
+import { processFileCleanup } from "./file-lifecycle.js";
 
 export function createHostedHandler({
   env = process.env,
@@ -21,9 +24,44 @@ export function createHostedHandler({
     });
     const store = await storeFactory(env.DATABASE_URL);
     try {
+      config.uploadsAvailable = async () => false;
+      if (env.BLOB_STORE_ID)
+        config.fileStorage = createBlobStorage({ storeId: env.BLOB_STORE_ID });
+      if (config.fileStorage && env.HOSTED_UPLOADS_ENABLED === "true") {
+        config.scanDocument = async (body) => {
+          const state = await store.db
+            .prepare(
+              "SELECT snapshot_id,definitions_at FROM scanner_state WHERE id=1",
+            )
+            .get();
+          await scanWithSandbox(body, {
+            snapshotId: state?.snapshot_id,
+            definitionsAt: Number(state?.definitions_at),
+          });
+        };
+        config.uploadsAvailable = async () => {
+          const state = await store.db
+            .prepare(
+              "SELECT snapshot_id,definitions_at FROM scanner_state WHERE id=1",
+            )
+            .get();
+          return (
+            !!state?.snapshot_id &&
+            Number(state.definitions_at) >= Date.now() - 48 * 60 * 60 * 1000
+          );
+        };
+      }
+      const cleanupStorage = env.BLOB_STORE_ID
+        ? createBlobStorage({ storeId: env.BLOB_STORE_ID })
+        : undefined;
       // Detect unapplied migrations before accepting traffic.
       await store.db.prepare("SELECT id FROM users LIMIT 1").all();
-      return { app: await createApp(store, config), store, config };
+      return {
+        app: await createApp(store, config),
+        store,
+        config,
+        cleanupStorage,
+      };
     } catch (error) {
       await store.db.close();
       throw error;
@@ -37,52 +75,28 @@ export function createHostedHandler({
         new URL(req.url, "https://localhost").pathname === "/api/jobs/run";
       let signedAt = 0;
       if (isJob) {
-        if (
-          !env.APP_ORIGIN ||
-          req.headers.host !== new URL(env.APP_ORIGIN).host ||
-          req.headers["x-forwarded-proto"] !== "https"
-        ) {
-          res.statusCode = 400;
+        const authorization = schedulerAuthorization(req, env, "/api/jobs/run");
+        if (authorization.status !== 200) {
+          res.statusCode = authorization.status;
           return res.end();
         }
-        const secret = env.CRON_SECRET;
-        const at = req.headers["x-offerly-scheduler-at"];
-        const signature = req.headers["x-offerly-scheduler-signature"];
-        if (
-          secret &&
-          typeof at === "string" &&
-          /^\d{13}$/.test(at) &&
-          typeof signature === "string" &&
-          /^[a-f0-9]{64}$/.test(signature) &&
-          Number(at) <= Date.now() + 5000 &&
-          Number(at) >= Date.now() - 60000 &&
-          timingSafeEqual(
-            Buffer.from(signature, "hex"),
-            createHmac("sha256", secret).update(`${at}:/api/jobs/run`).digest(),
-          )
-        )
-          signedAt = Number(at);
-        if (
-          req.method !== "GET" ||
-          !secret ||
-          secret.length < 32 ||
-          (!signedAt &&
-            !timingSafeEqual(
-              Buffer.from(digest(req.headers.authorization || "")),
-              Buffer.from(digest(`Bearer ${secret}`)),
-            ))
-        ) {
-          res.statusCode = 401;
-          return res.end();
-        }
+        signedAt = authorization.signedAt;
       }
       initialization ||= initialize().catch((error) => {
         initialization = undefined;
         throw error;
       });
-      const { app, store } = await initialization;
+      const { app, store, cleanupStorage } = await initialization;
       if (isJob) {
-        const result = await runScheduler(store, { signedAt });
+        const result = await runScheduler(store, {
+          signedAt,
+          ...(cleanupStorage
+            ? {
+                cleanup: (store, options) =>
+                  processFileCleanup(store, cleanupStorage, options),
+              }
+            : {}),
+        });
         console.info(JSON.stringify({ event: "scheduler_tick", ...result }));
         res.setHeader("Content-Type", "application/json");
         return res.end(JSON.stringify(result));

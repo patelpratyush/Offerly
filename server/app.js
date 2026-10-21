@@ -9,7 +9,7 @@ import {
   HttpError,
 } from "./security.js";
 import { mountAuth } from "./auth.js";
-import { mountFiles } from "./files.js";
+import { mountFiles, readDocumentBody } from "./files.js";
 import { mountImportRoutes } from "./imports.js";
 import { duplicatePairs, mountDuplicateRoutes } from "./duplicates.js";
 import { savedViewSchema, mountTracker } from "./tracker.js";
@@ -227,6 +227,10 @@ export async function createApp(store, options = {}) {
         email: u.email,
         timezone: u.timezone,
         stages: JSON.parse(u.stages),
+      },
+      filePolicy: {
+        maxBytes: config.vercel ? 2 * 1024 * 1024 : 20 * 1024 * 1024,
+        exportIncludesFiles: !config.vercel,
       },
       applications: await list(u.id, "application"),
       savedViews: (await list(u.id, "saved_view")).filter((v) => !v.archived),
@@ -475,6 +479,52 @@ export async function createApp(store, options = {}) {
   app.get("/api/export.json", async (req, res, next) => {
     try {
       await limit("export:" + req.user.id, 3, 3600000);
+      if (config.vercel) {
+        // One consistent snapshot; bytes are bounded before response headers.
+        const payload = await store.atomic(async () => ({
+          exportedAt: new Date().toISOString(),
+          timezone: req.user.timezone,
+          stages: JSON.parse(req.user.stages),
+          records: await db
+            .prepare("SELECT kind,id,data,version FROM records WHERE user_id=?")
+            .all(req.user.id),
+          imports: await db
+            .prepare(
+              "SELECT id,rows,decisions,result FROM import_batches WHERE user_id=?",
+            )
+            .all(req.user.id),
+          events: await db
+            .prepare("SELECT * FROM events WHERE user_id=?")
+            .all(req.user.id),
+          files: (
+            await db
+              .prepare(
+                "SELECT id,name,mime,hash,created_at,scanned_at FROM files WHERE user_id=?",
+              )
+              .all(req.user.id)
+          ).map((row) => ({
+            ...row,
+            body: null,
+            ...(config.production && !row.scanned_at
+              ? { omitted: "Document requires security screening" }
+              : {
+                  downloadPath: `/api/files/${row.id}`,
+                  omitted:
+                    "Download original document separately using its authenticated link",
+                }),
+          })),
+        }));
+        const json = JSON.stringify(payload);
+        if (Buffer.byteLength(json) > 3 * 1024 * 1024)
+          throw new HttpError(
+            413,
+            "Workspace exceeds hosted export size. Export applications as CSV and download documents individually.",
+          );
+        return res
+          .attachment("offerly-workspace.json")
+          .type("application/json")
+          .send(json);
+      }
       // Stream each bounded row/file instead of materializing the full workspace in memory.
       res.attachment("offerly-workspace.json").type("application/json");
       const write = async (chunk) => {
@@ -530,14 +580,26 @@ export async function createApp(store, options = {}) {
                   omitted: "Document requires security screening",
                 }),
               );
-            else {
+            else if (config.vercel) {
+              await write(
+                JSON.stringify({
+                  ...row,
+                  body: null,
+                  downloadPath: `/api/files/${row.id}`,
+                  omitted:
+                    "Download original document separately using its authenticated link",
+                }),
+              );
+            } else {
               const file = await db
-                .prepare("SELECT body FROM files WHERE id=? AND user_id=?")
+                .prepare("SELECT * FROM files WHERE id=? AND user_id=?")
                 .get(row.id, req.user.id);
               await write(
                 JSON.stringify({
                   ...row,
-                  body: Buffer.from(file.body).toString("base64"),
+                  body: (await readDocumentBody(file, config)).toString(
+                    "base64",
+                  ),
                 }),
               );
             }

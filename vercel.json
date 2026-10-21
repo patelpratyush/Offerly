@@ -3,8 +3,15 @@
   "framework": "vite",
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "functions": { "api/index.js": { "maxDuration": 60 } },
+  "functions": {
+    "api/index.js": { "maxDuration": 90 },
+    "api/scanner-maintenance.js": { "maxDuration": 300 }
+  },
   "rewrites": [
+    {
+      "source": "/api/jobs/scanner",
+      "destination": "/api/scanner-maintenance"
+    },
     { "source": "/api/:path*", "destination": "/api/index" },
     { "source": "/((?!api(?:/|$)).*)", "destination": "/index.html" }
   ]

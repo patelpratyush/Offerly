@@ -26,7 +26,9 @@ async function fixture(t) {
     .run("session-digest", "owner", Date.now() + 10000, Date.now());
   await store.save("owner", "applications", { company: "Snapshot test" });
   await store.db
-    .prepare("INSERT INTO files VALUES(?,?,?,?,?,?,?,?)")
+    .prepare(
+      "INSERT INTO files (id,user_id,name,mime,hash,body,created_at,scanned_at) VALUES(?,?,?,?,?,?,?,?)",
+    )
     .run(
       "file",
       "owner",

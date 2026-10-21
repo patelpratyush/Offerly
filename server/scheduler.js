@@ -3,7 +3,7 @@ import { processRecruitingJobs } from "./recruiting.js";
 import { processReminders } from "./reminders.js";
 
 // Persistent lease and cursors survive cold starts and separate Vercel instances.
-// Lease exceeds the hosted function's 60-second maximum lifetime.
+// Lease exceeds the hosted function's 90-second maximum lifetime.
 export async function runScheduler(
   store,
   {
@@ -11,6 +11,7 @@ export async function runScheduler(
     signedAt = 0,
     recruiting = processRecruitingJobs,
     reminders = processReminders,
+    cleanup,
   } = {},
 ) {
   const owner = randomUUID();
@@ -18,7 +19,7 @@ export async function runScheduler(
     .prepare(
       "UPDATE scheduler_state SET lease_owner=?,lease_until=?,started_at=?,status='running',last_signed_at=CASE WHEN ?>last_signed_at THEN ? ELSE last_signed_at END WHERE id=1 AND lease_until<=? AND (CAST(? AS BIGINT)=0 OR last_signed_at<?) RETURNING recruiting_cursor,reminder_cursor",
     )
-    .get(owner, now + 90000, now, signedAt, signedAt, now, signedAt, signedAt);
+    .get(owner, now + 120000, now, signedAt, signedAt, now, signedAt, signedAt);
   if (!state) return { skipped: true, reason: "already_running_or_replayed" };
   const deadline = Date.now() + 35000;
   try {
@@ -36,7 +37,14 @@ export async function runScheduler(
       cursor: state.reminder_cursor,
       deadline,
     });
-    const result = { recruiting: reviewResult, reminders: reminderResult };
+    const cleanupResult = cleanup
+      ? await cleanup(store, { deadline: deadline + 5000 })
+      : undefined;
+    const result = {
+      recruiting: reviewResult,
+      reminders: reminderResult,
+      ...(cleanupResult ? { cleanup: cleanupResult } : {}),
+    };
     await store.db
       .prepare(
         "UPDATE scheduler_state SET reminder_cursor=?,lease_owner='',lease_until=0,finished_at=?,status='completed',result=? WHERE id=1 AND lease_owner=?",
