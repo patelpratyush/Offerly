@@ -31,7 +31,11 @@ async function setup(t, overrides = {}) {
   const server = createServer(handler).listen(0, "127.0.0.1");
   await new Promise((resolve) => server.once("listening", resolve));
   t.after(async () => { server.closeAllConnections(); await new Promise((resolve) => server.close(resolve)); await store.db.close(); });
-  async function request({ at = Date.now(), headers = sign(at), endpoint = path, method = "GET" } = {}) {
+  let lastRequestAt = 0;
+  async function request({ at = Math.max(overrides.requestNow?.() ?? Date.now(), lastRequestAt + 1), headers = sign(at), endpoint = path, method = "GET" } = {}) {
+    // Distinct requests must not accidentally reuse a signed millisecond.
+    // Explicit timestamps remain unchanged for deliberate replay tests.
+    lastRequestAt = Math.max(lastRequestAt, at);
     return new Promise((resolve, reject) => {
       const outgoing = httpRequest(`http://127.0.0.1:${server.address().port}${endpoint}`, {
         method, headers: { Host: "offerly.test", "x-forwarded-proto": "https", ...headers },
@@ -125,7 +129,8 @@ test("refresh failure preserves working snapshot and releases lease without expo
 
 test("snapshot retirement waits for grace and passes active snapshot guard; failure stays durable", async (t) => {
   let canRetire = false;
-  const { store, calls, request } = await setup(t, { retire: async () => canRetire });
+  const requestAt = Date.now();
+  const { store, calls, request } = await setup(t, { retire: async () => canRetire, requestNow: () => requestAt });
   await seed(store, { updated_at: Date.now(), previous_snapshot_id: "snap_previous", retire_after: Date.now() + 120000 });
   await request();
   assert.equal(calls.retired.length, 0);
@@ -140,7 +145,10 @@ test("snapshot retirement waits for grace and passes active snapshot guard; fail
   assert.equal((await store.db.prepare("SELECT previous_snapshot_id FROM scanner_state").get()).previous_snapshot_id, "snap_previous");
   await store.db.prepare("UPDATE scanner_state SET updated_at=? WHERE id=1").run(Date.now());
   canRetire = true;
-  await request();
+  const retired = await request();
+  assert.equal(retired.status, 200);
+  assert.deepEqual(retired.data, { skipped: true });
+  assert.equal(calls.retired.length, 3);
   assert.equal((await store.db.prepare("SELECT previous_snapshot_id FROM scanner_state").get()).previous_snapshot_id, "");
   assert.equal(calls.refreshed.length, 0);
 });
