@@ -1953,7 +1953,7 @@ function Auth({
               : "Pick up where you left off."}
         </p>
         <form
-          key={recovery ? "recover" : mode}
+          key={recovery ? "recover" : "credentials"}
           onSubmit={async (e) => {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.currentTarget));

@@ -139,6 +139,9 @@ test("password change signs out all sessions and new password restores access", 
   await page
     .getByRole("button", { name: "Already have an account? Sign in" })
     .click();
+  await expect(
+    page.getByRole("heading", { name: "Welcome back." }),
+  ).toBeVisible();
   await page.getByLabel("Email address").fill(email);
   await page
     .getByLabel("Password", { exact: true })
