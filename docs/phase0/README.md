@@ -1,13 +1,13 @@
 # Phase 0 integration validation
 
-Updated October 22, 2026. **Phase 0 remains partial: live Gmail authorization and body retrieval passed, but the first all-mail scan stopped early and model quality failed.** A configured client, synthetic fixture, or functioning manual tracker does not establish live mailbox integration.
+Updated October 22, 2026. **Phase 0 remains partial: live Gmail authorization and body retrieval passed, but the all-mail scan stopped at Google HTTP 403 early and model quality failed.** A configured client, synthetic fixture, or functioning manual tracker does not establish live mailbox integration.
 
 ## Evidence and exit gates
 
 | Build-plan item | Evidence | State |
 | --- | --- | --- |
 | Test boards on three platforms | Six live public-board probes across Greenhouse, Lever, and Ashby, plus in-memory description retrieval; bounded adapters and malformed-feed regressions | Technical prototype verified; see [sources](sources.md) and [probe report](source-probe.json) |
-| Gmail authorization and consented import | Official scope/policy research, exact Desktop-client setup, local credential readiness command, bounded import acceptance contract | Real Google authorization succeeded; at least 100 messages read locally; first full-mailbox traversal stopped early; temporary grant revoked |
+| Gmail authorization and consented import | Official scope/policy research, exact Desktop-client setup, local credential readiness command, bounded import acceptance contract | Real Google authorization succeeded; 107 messages read locally; full-mailbox traversal stopped at Google HTTP 403; initial temporary grant revoked; reusable Keychain authorization subsequently stored and reused without browser approval, paced scan running |
 | Small labeled matching/fit set | Twelve synthetic messages and six synthetic profile/listing pairs, separate development/held-out splits, strict prediction schemas and metric denominators | Authored synthetic set ready; independent human labels and representative real-mail evaluation remain open |
 | Extraction and matching model prototype | Real local Ollama baseline within the zero-extra-spend constraint; see [model report](model-report.json) | Baseline failed quality: mail 4/8 valid outputs; fit compensation 1/4 and recency 2/4 correct. Production model remains unselected |
 | Source conditions and mailbox launch dependencies | Source-specific official documentation, conservative read-only scope, no public catalog permission assumed; Google testing/restricted-scope dependencies recorded | Research complete for prototype; provider/employer rollout conditions and real OAuth proof remain explicit |
@@ -24,7 +24,7 @@ Updated October 22, 2026. **Phase 0 remains partial: live Gmail authorization an
 
 ## Mailbox and model data boundaries
 
-The owner explicitly authorized reading all emails, including personal messages, across mailbox history on October 22, 2026. The local proof may paginate the full mailbox, including Spam and Trash, but must process one message at a time without fetching separate attachments or decoding/saving inline attachment parts (which Gmail may include in MIME responses). A Google browser authorization is still required. Keep access/refresh tokens and message content in memory only for the local proof. Do not persist unrelated mail, export bodies, or send personal mailbox content to model providers. Retain only aggregate counts without message identifiers, addresses, subjects, or bodies. Revoke the temporary grant and discard tokens at exit.
+The owner explicitly authorized reading all emails, including personal messages, across mailbox history on October 22, 2026. The local proof may paginate the full mailbox, including Spam and Trash, but must process one message at a time without fetching separate attachments or decoding/saving inline attachment parts (which Gmail may include in MIME responses). A Google browser authorization is still required. Owner requested reusable access: keep refresh credentials in macOS Keychain and access tokens/message content in memory. Do not persist unrelated mail, export bodies, or send personal mailbox content to model providers. Retain only aggregate counts without message identifiers, addresses, subjects, or bodies. Retain the reusable Keychain grant until explicit disconnect or Google expiry/revocation; clear in-memory token references at exit.
 
 The model evaluation uses only checked-in fictional cases. Inputs exclude gold labels and rationale. Freeze inputs and prompt before held-out execution. Keep independent predictions and failures; do not repair outputs using labels or tune a second prompt against held-out answers. Small synthetic scores never open the PRD automatic-update gate. Review-only behavior stays mandatory.
 

@@ -24,7 +24,7 @@
     "phase0:sources": "node scripts/phase0-sources.js",
     "phase0:gmail": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/phase0-gmail-readiness.js",
     "phase0:model": "node scripts/phase0-model.js",
-    "phase0:test": "node --test tests/job-sources.test.js tests/phase0-evaluation.test.js tests/phase0-readiness.test.js tests/phase0-model.test.js tests/phase0-gmail.test.js",
+    "phase0:test": "node --test tests/job-sources.test.js tests/phase0-evaluation.test.js tests/phase0-readiness.test.js tests/phase0-model.test.js tests/phase0-gmail.test.js tests/gmail-keychain.test.js",
     "phase0:gmail:live": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/phase0-gmail.js"
   },
   "dependencies": {

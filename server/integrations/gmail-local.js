@@ -14,10 +14,16 @@ import { setTimeout as delay } from "node:timers/promises";
 import { OAuth2Client } from "google-auth-library";
 
 const FAILURE_CODES = new Set([
+  "keychain_access_denied",
+  "keychain_operation_failed",
+  "keychain_input_invalid",
+  "keychain_response_invalid",
+  "keychain_unavailable",
   "configuration_invalid",
   "authorization_cancelled",
   "authorization_timeout",
   "authorization_scope_missing",
+  "authorization_refresh_failed",
   "authorization_revocation_failed",
   "request_rejected",
   "gmail_request_failed",
@@ -33,6 +39,71 @@ const FAILURE_CODES = new Set([
   "cancelled",
   "browser_unavailable",
 ]);
+const PROVIDER_REASONS = new Set([
+  "rateLimitExceeded",
+  "userRateLimitExceeded",
+  "dailyLimitExceeded",
+  "forbidden",
+  "domainPolicy",
+  "insufficientPermissions",
+  "accessNotConfigured",
+  "authError",
+  "badRequest",
+  "backendError",
+  "notFound",
+  "quotaExceeded",
+  "unrecognized",
+]);
+const TRANSIENT_403 = new Set(["rateLimitExceeded", "userRateLimitExceeded"]);
+
+// Read at most 64 KiB. Return fixed taxonomy only, never Google's message/details.
+export async function providerReason(response) {
+  if (
+    !response.headers.get("content-type")?.includes("application/json") ||
+    Number(response.headers.get("content-length") || 0) > 65536 ||
+    !response.body
+  ) {
+    await response.body?.cancel();
+    return "unrecognized";
+  }
+  const reader = response.body.getReader(),
+    chunks = [];
+  let bytes = 0;
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      bytes += value.length;
+      if (bytes > 65536) return "unrecognized";
+      chunks.push(Buffer.from(value));
+    }
+    const errors = JSON.parse(Buffer.concat(chunks).toString("utf8"))?.error
+      ?.errors;
+    if (!Array.isArray(errors) || errors.length < 1 || errors.length > 20)
+      return "unrecognized";
+    const reasons = errors.map((error) =>
+      PROVIDER_REASONS.has(error?.reason) ? error.reason : "unrecognized",
+    );
+    return reasons.find((reason) => !TRANSIENT_403.has(reason)) || reasons[0];
+  } catch {
+    return "unrecognized";
+  } finally {
+    await reader.cancel().catch(() => {});
+  }
+}
+
+function retryDelay(response, attempt) {
+  const header = response.headers.get("retry-after") || "";
+  const seconds = /^\d+(?:\.\d+)?$/.test(header)
+    ? Number(header)
+    : Number.isFinite(Date.parse(header))
+      ? Math.max(0, (Date.parse(header) - Date.now()) / 1000)
+      : 0;
+  const milliseconds = Number.isFinite(seconds) ? seconds * 1000 : Infinity;
+  if (milliseconds > 60000) return null;
+  return Math.max(1000 * 2 ** attempt, milliseconds);
+}
+
 function proofError(code, httpStatus) {
   const error = new Error(code);
   error.code = code;
@@ -55,6 +126,11 @@ export function safeFailure(error) {
     error.httpStatus <= 599
   )
     result.httpStatus = error.httpStatus;
+  if (
+    code === "gmail_request_failed" &&
+    PROVIDER_REASONS.has(error.providerReason)
+  )
+    result.providerReason = error.providerReason;
   return result;
 }
 
@@ -125,9 +201,24 @@ export function validateCallback(url, expectedState) {
   return code && code.length <= 4096 ? code : null;
 }
 
+export function createLocalClient(clientConfig, { signal, redirectUri } = {}) {
+  const client = new OAuth2Client({ ...clientConfig, redirectUri });
+  const request = client.transporter.request.bind(client.transporter);
+  client.transporter.request = (options) =>
+    request({
+      ...options,
+      timeout: 20000,
+      retry: false,
+      maxContentLength: 65536,
+      maxRedirects: 0,
+      signal,
+    });
+  return client;
+}
+
 export async function authorizeLocal(
   clientConfig,
-  { openBrowser, signal, timeoutMs = 180000 } = {},
+  { openBrowser, signal, timeoutMs = 180000, persistent = false } = {},
 ) {
   const state = randomBytes(32).toString("base64url");
   let finish,
@@ -183,21 +274,11 @@ export async function authorizeLocal(
       server.listen(0, "127.0.0.1", resolve);
     });
     const redirectUri = `http://127.0.0.1:${server.address().port}/oauth2/callback`;
-    const client = new OAuth2Client({ ...clientConfig, redirectUri });
-    const request = client.transporter.request.bind(client.transporter);
-    client.transporter.request = (options) =>
-      request({
-        ...options,
-        timeout: 20000,
-        retry: false,
-        maxContentLength: 65536,
-        maxRedirects: 0,
-        signal,
-      });
+    const client = createLocalClient(clientConfig, { signal, redirectUri });
     const pkce = await client.generateCodeVerifierAsync();
     const authUrl = client.generateAuthUrl({
       scope: [SCOPE],
-      access_type: "online",
+      access_type: persistent ? "offline" : "online",
       prompt: "consent",
       state,
       code_challenge_method: "S256",
@@ -241,6 +322,9 @@ export async function boundedJson(
   url,
   {
     token,
+    getAccessToken,
+    beforeRequest = async () => {},
+    onRetry = () => {},
     fetchImpl = fetch,
     signal,
     cap = 16 * 1024 * 1024,
@@ -255,11 +339,22 @@ export async function boundedJson(
     )
   )
     throw proofError("request_rejected");
-  for (let attempt = 0; attempt < 3; attempt++) {
+  for (let attempt = 0; attempt <= 6; attempt++) {
     let response;
     try {
+      await beforeRequest();
+      let accessToken = token;
+      if (getAccessToken) {
+        try {
+          accessToken = await getAccessToken();
+        } catch {
+          throw proofError("authorization_refresh_failed");
+        }
+      }
+      if (typeof accessToken !== "string" || !accessToken)
+        throw proofError("authorization_scope_missing");
       response = await fetchImpl(parsed, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { Authorization: `Bearer ${accessToken}` },
         redirect: "error",
         signal: AbortSignal.any([
           AbortSignal.timeout(20000),
@@ -267,6 +362,7 @@ export async function boundedJson(
         ]),
       });
     } catch (error) {
+      if (FAILURE_CODES.has(error?.code)) throw error;
       throw proofError(
         signal?.aborted
           ? "cancelled"
@@ -275,14 +371,27 @@ export async function boundedJson(
             : "gmail_network_failed",
       );
     }
-    if ((response.status === 429 || response.status >= 500) && attempt < 2) {
-      await response.body?.cancel();
-      await sleep(1000 * (attempt + 1), undefined, { signal });
-      continue;
-    }
     if (!response.ok) {
-      await response.body?.cancel();
-      throw proofError("gmail_request_failed", response.status);
+      const reason = await providerReason(response);
+      const retryable =
+        response.status === 429 ||
+        response.status >= 500 ||
+        (response.status === 403 && TRANSIENT_403.has(reason));
+      const maximumRetries =
+        response.status === 403 && TRANSIENT_403.has(reason) ? 6 : 2;
+      const waitMs = retryDelay(response, attempt);
+      if (retryable && attempt < maximumRetries && waitMs !== null) {
+        onRetry({
+          attempt: attempt + 1,
+          delayMs: waitMs,
+          providerReason: reason,
+        });
+        await sleep(waitMs, undefined, { signal });
+        continue;
+      }
+      const error = proofError("gmail_request_failed", response.status);
+      error.providerReason = reason;
+      throw error;
     }
     if (Number(response.headers.get("content-length") || 0) > cap) {
       await response.body?.cancel();
@@ -356,13 +465,18 @@ export function inspectBody(payload) {
 
 export async function scanAllMail({
   token,
+  getAccessToken,
   signal,
   fetchImpl,
   progress = () => {},
-  sleep,
+  sleep = delay,
+  requestIntervalMs = 1000,
+  now = Date.now,
 } = {}) {
   const counts = {
     pages: 0,
+    requestRetries: 0,
+    lastRetryDelayMs: 0,
     messagesRead: 0,
     messagesSkippedDeleted: 0,
     messagesSkippedOversized: 0,
@@ -374,6 +488,18 @@ export async function scanAllMail({
     completed: false,
   };
   progress({ ...counts });
+  let lastRequestAt = -Infinity;
+  const beforeRequest = async () => {
+    const waitMs = Math.max(0, lastRequestAt + requestIntervalMs - now());
+    if (waitMs > 0) await sleep(waitMs, undefined, { signal });
+    if (signal?.aborted) throw proofError("cancelled");
+    lastRequestAt = now();
+  };
+  const onRetry = (info) => {
+    counts.requestRetries++;
+    counts.lastRetryDelayMs = info.delayMs;
+    progress({ ...counts });
+  };
   let pageToken;
   const pageTokens = new Set();
   do {
@@ -385,6 +511,9 @@ export async function scanAllMail({
     if (pageToken) url.searchParams.set("pageToken", pageToken);
     const page = await boundedJson(url, {
       token,
+      getAccessToken,
+      beforeRequest,
+      onRetry,
       signal,
       fetchImpl,
       sleep,
@@ -409,6 +538,9 @@ export async function scanAllMail({
       try {
         const message = await boundedJson(messageUrl, {
           token,
+          getAccessToken,
+          beforeRequest,
+          onRetry,
           signal,
           fetchImpl,
           sleep,

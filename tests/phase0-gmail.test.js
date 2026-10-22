@@ -3,12 +3,16 @@ import assert from "node:assert/strict";
 import {
   validateCallback,
   authorizeLocal,
-  boundedJson,
+  boundedJson as boundedJsonImpl,
   inspectBody,
-  scanAllMail,
+  scanAllMail as scanAllMailImpl,
   revokeLocal,
   SCOPE,
 } from "../server/integrations/gmail-local.js";
+const boundedJson = (url, options = {}) =>
+  boundedJsonImpl(url, { token: "SYNTHETIC", ...options });
+const scanAllMail = (options = {}) =>
+  scanAllMailImpl({ token: "SYNTHETIC", ...options });
 const json = (data) =>
   new Response(JSON.stringify(data), {
     headers: { "content-type": "application/json" },
@@ -97,6 +101,7 @@ test("all-mail pagination includes spam/trash, fetches bodies sequentially, neve
     });
   };
   const counts = await scanAllMail({
+    requestIntervalMs: 0,
     token: "TOKEN",
     fetchImpl,
     progress: (value) => progress.push(value),
@@ -138,7 +143,10 @@ test("network caps, redirect rejection, fixed host, bounded retries and paginati
   );
   assert.equal(tries, 3);
   await assert.rejects(
-    scanAllMail({ fetchImpl: async () => json({ nextPageToken: "same" }) }),
+    scanAllMail({
+      requestIntervalMs: 0,
+      fetchImpl: async () => json({ nextPageToken: "same" }),
+    }),
     /pagination_invalid/,
   );
 });
@@ -188,12 +196,14 @@ test("safe diagnostics retain HTTP category but never raw error messages, URLs o
   assert.deepEqual(safeFailure(caught), {
     failure: "gmail_request_failed",
     httpStatus: 403,
+    providerReason: "unrecognized",
   });
 });
 
 test("deleted and oversized messages yield partial scan with complete pagination; progress keeps counts before later fatal failure", async () => {
   const progress = [];
   const counts = await scanAllMail({
+    requestIntervalMs: 0,
     progress: (c) => progress.push(c),
     fetchImpl: async (url) => {
       if (url.pathname.endsWith("/messages"))
@@ -221,6 +231,7 @@ test("deleted and oversized messages yield partial scan with complete pagination
   const failedProgress = [];
   await assert.rejects(
     scanAllMail({
+      requestIntervalMs: 0,
       progress: (c) => failedProgress.push(c),
       fetchImpl: async (url) => {
         if (url.pathname.endsWith("/messages"))
@@ -236,4 +247,223 @@ test("deleted and oversized messages yield partial scan with complete pagination
   );
   assert.equal(failedProgress.at(-1).messagesRead, 1);
   assert.equal(failedProgress.at(-1).completed, false);
+});
+
+test("403 retries only documented transient reasons, honors bounded Retry-After, and redacts arbitrary provider fields", async () => {
+  const { safeFailure, providerReason } =
+    await import("../server/integrations/gmail-local.js");
+  for (const reason of ["rateLimitExceeded", "userRateLimitExceeded"]) {
+    let tries = 0;
+    const delays = [];
+    const result = await boundedJson(
+      "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+      {
+        sleep: async (ms) => delays.push(ms),
+        fetchImpl: async () => {
+          if (++tries === 3) return json({ messages: [] });
+          return new Response(
+            JSON.stringify({
+              error: {
+                message: "PRIVATE TOKEN EMAIL",
+                errors: [{ reason, message: "PRIVATE BODY" }],
+              },
+            }),
+            {
+              status: 403,
+              headers: {
+                "content-type": "application/json",
+                "retry-after": "5",
+              },
+            },
+          );
+        },
+      },
+    );
+    assert.deepEqual(result, { messages: [] });
+    assert.equal(tries, 3);
+    assert.deepEqual(delays, [5000, 5000]);
+  }
+  for (const reason of [
+    "domainPolicy",
+    "dailyLimitExceeded",
+    "forbidden",
+    "insufficientPermissions",
+    "accessNotConfigured",
+    "PRIVATE MESSAGE",
+  ]) {
+    let tries = 0,
+      caught;
+    try {
+      await boundedJson(
+        "https://gmail.googleapis.com/gmail/v1/users/me/messages",
+        {
+          fetchImpl: async () => {
+            tries++;
+            return new Response(
+              JSON.stringify({
+                error: {
+                  message: "PRIVATE TOKEN",
+                  errors: [
+                    {
+                      reason,
+                      location: "PRIVATE ID",
+                      message: "PRIVATE ADDRESS",
+                    },
+                  ],
+                },
+              }),
+              { status: 403, headers: { "content-type": "application/json" } },
+            );
+          },
+        },
+      );
+    } catch (error) {
+      caught = error;
+    }
+    assert.equal(tries, 1);
+    assert.deepEqual(safeFailure(caught), {
+      failure: "gmail_request_failed",
+      httpStatus: 403,
+      providerReason: reason === "PRIVATE MESSAGE" ? "unrecognized" : reason,
+    });
+    assert.equal(
+      JSON.stringify(safeFailure(caught)).includes("PRIVATE"),
+      false,
+    );
+  }
+  assert.equal(
+    await providerReason(
+      new Response(
+        JSON.stringify({
+          error: {
+            errors: [
+              { reason: "rateLimitExceeded" },
+              { reason: "domainPolicy" },
+            ],
+          },
+        }),
+        { headers: { "content-type": "application/json" } },
+      ),
+    ),
+    "domainPolicy",
+  );
+  assert.equal(
+    await providerReason(
+      new Response("x".repeat(65537), {
+        headers: { "content-type": "application/json" },
+      }),
+    ),
+    "unrecognized",
+  );
+  assert.equal(
+    await providerReason(
+      new Response("{invalid", {
+        headers: { "content-type": "application/json" },
+      }),
+    ),
+    "unrecognized",
+  );
+});
+
+test("persistent authorization requests offline access; reusable client preserves safe transport defaults", async () => {
+  const { createLocalClient } =
+    await import("../server/integrations/gmail-local.js");
+  const client = createLocalClient({
+    clientId: "fake.apps.googleusercontent.com",
+    clientSecret: "synthetic",
+  });
+  assert.equal(client.credentials.access_token, undefined);
+  let auth;
+  await assert.rejects(
+    authorizeLocal(
+      {
+        clientId: "fake.apps.googleusercontent.com",
+        clientSecret: "synthetic",
+      },
+      {
+        persistent: true,
+        timeoutMs: 50,
+        openBrowser: (url) => {
+          auth = new URL(url);
+        },
+      },
+    ),
+    /authorization_timeout/,
+  );
+  assert.equal(auth.searchParams.get("access_type"), "offline");
+  assert.equal(auth.searchParams.get("scope"), SCOPE);
+});
+
+test("rate-limit retry ceiling, long Retry-After stop, refresh callback and one-second scan throttle", async () => {
+  const url = "https://gmail.googleapis.com/gmail/v1/users/me/messages";
+  let attempts = 0,
+    tokenRequests = 0;
+  const delays = [];
+  await assert.rejects(
+    boundedJson(url, {
+      getAccessToken: async () => `synthetic-${++tokenRequests}`,
+      sleep: async (ms) => delays.push(ms),
+      fetchImpl: async (_url, options) => {
+        attempts++;
+        assert.equal(
+          options.headers.Authorization,
+          `Bearer synthetic-${attempts}`,
+        );
+        return new Response(
+          JSON.stringify({
+            error: { errors: [{ reason: "rateLimitExceeded" }] },
+          }),
+          { status: 403, headers: { "content-type": "application/json" } },
+        );
+      },
+    }),
+    /gmail_request_failed/,
+  );
+  assert.equal(attempts, 7);
+  assert.equal(tokenRequests, 7);
+  assert.deepEqual(delays, [1000, 2000, 4000, 8000, 16000, 32000]);
+  attempts = 0;
+  await assert.rejects(
+    boundedJson(url, {
+      sleep: async () => assert.fail("must not retry before requested time"),
+      fetchImpl: async () => {
+        attempts++;
+        return new Response(
+          JSON.stringify({
+            error: { errors: [{ reason: "userRateLimitExceeded" }] },
+          }),
+          {
+            status: 403,
+            headers: {
+              "content-type": "application/json",
+              "retry-after": "61",
+            },
+          },
+        );
+      },
+    }),
+    /gmail_request_failed/,
+  );
+  assert.equal(attempts, 1);
+  let clock = 0,
+    reads = 0;
+  const requestTimes = [];
+  const counts = await scanAllMail({
+    getAccessToken: async () => `read-${++reads}`,
+    now: () => clock,
+    sleep: async (ms) => {
+      clock += ms;
+    },
+    fetchImpl: async (url) => {
+      requestTimes.push(clock);
+      if (url.pathname.endsWith("/messages"))
+        return json({ messages: [{ id: "aa" }, { id: "bb" }] });
+      return json({
+        payload: { mimeType: "text/plain", body: { data: "aGk" } },
+      });
+    },
+  });
+  assert.equal(counts.completed, true);
+  assert.deepEqual(requestTimes, [0, 1000, 2000]);
+  assert.equal(reads, 3);
 });
