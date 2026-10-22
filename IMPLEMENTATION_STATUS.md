@@ -2,6 +2,16 @@
 
 The original plan and PRD remain unchanged. This file records implementation evidence and gaps; it does not mark entire milestones complete.
 
+## Current checkpoint — October 22, 2026
+
+This section supersedes older historical checkpoint descriptions below. The private manual tracker, hosted Supabase/Vercel deployment, private scanned Blob uploads, hosted scheduler, and recovery-code password reset are implemented. Recent CI fixes are on main.
+
+Phase 0 validation now includes real public-board probes for Greenhouse, Lever and Ashby; bounded metadata-only evidence; Gmail Desktop-client readiness and exact owner setup; eighteen synthetic labeled examples; a strict evaluator; and actual local Ollama held-out inference with model/prompt/fixture provenance. The tiny model failed extraction/fit checks and is not enabled for application automation. A consented live Google authorization succeeded and at least 100 messages were read locally before the first all-mail scan stopped. Its grant was revoked. No mailbox content was persisted or sent to a model.
+
+**Phase 0 remains partial:** Google Desktop OAuth client is configured and owner consent covers all-mail local reading, but live OAuth and historical body retrieval now work, but the first full-mailbox traversal stopped early; source rollout conditions remain explicit; a production-quality model is not selected. Additional AI spend is capped at $0 by the owner. See [Phase 0 evidence](docs/phase0/README.md), [sources](docs/phase0/sources.md), [Gmail setup](docs/phase0/gmail.md), and [evaluation findings](docs/phase0/evaluation.md).
+
+The sections below retain prior implementation history and do not override this checkpoint.
+
 ## M0 — Integration validation: pending
 
 No external credentials, model provider, source permission decisions, or labeled mailbox data were provided. Gmail consent/import, source connectors, source conditions, extraction evaluation, and production stack/budget decisions remain open. Local stack: React/TypeScript, Express, SQLite; no external AI processing.

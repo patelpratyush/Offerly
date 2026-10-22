@@ -15,7 +15,7 @@ This is the execution sequence for the existing PRD and build plan, not a replac
 
 ## Operating assumptions
 
-- Keep the existing React/TypeScript, Express and SQLite stack for the invited single-instance pilot. Reassess deployment architecture against measured load before public launch.
+- Keep React/TypeScript and Express/Node. Production now uses Vercel and private Supabase PostgreSQL; SQLite remains for local development and isolated tests. Reassess capacity against measured load before public launch.
 - Use review-only recruiting updates until held-out evaluation demonstrates the PRD precision targets.
 - External sending, form submission, mailbox access and production deployment are not implicitly enabled by this roadmap.
 - Manual tracking remains usable without provider credentials or AI services.
@@ -30,3 +30,7 @@ The recruiting foundation accepts manually pasted evidence and explicit user-pro
 Reminders are explicitly configured, date-only, in-app reminders. They use the workspace timezone and cancel when their linked occurrence changes or completes. General follow-ups stop on closed applications; explicit unfinished tasks remain. Automatic reminder defaults, precise-time notifications, email/browser delivery, provider disconnect generations and the full email-event taxonomy belong to later integration slices.
 
 Next: step 3 needs a Gmail OAuth client, an approved redirect URI, a consented test mailbox, and retention/provider-processing decisions. The existing manual workspace remains usable without these dependencies.
+
+## Phase 0 validation checkpoint — October 22, 2026
+
+Real source probes, synthetic evaluation assets, local-model inference and Gmail setup/readiness evidence live in [Phase 0 validation](phase0/README.md). Phase 0 is partial until actual Gmail authorization/consented import and remaining access/model gates close. The tiny free local model failed quality checks; no inference output is applied to production records.

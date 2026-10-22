@@ -1,0 +1,47 @@
+{
+  "version": 1,
+  "split": "held-out",
+  "system": "ollama/qwen3:0.6b:phase0-local-v1",
+  "predictions": [
+    {
+      "id": "mail-ambiguity",
+      "applicationId": null,
+      "events": []
+    },
+    {
+      "id": "mail-schedule",
+      "applicationId": null,
+      "events": []
+    },
+    {
+      "id": "mail-rejection",
+      "applicationId": null,
+      "events": []
+    },
+    {
+      "id": "mail-offer",
+      "applicationId": "atlas-backend",
+      "events": ["rejection", "interview", "confirmation"]
+    },
+    {
+      "id": "mail-injection",
+      "applicationId": null,
+      "events": []
+    },
+    {
+      "id": "mail-agency",
+      "applicationId": "atlas-backend",
+      "events": ["rejection", "interview"]
+    },
+    {
+      "id": "mail-forward",
+      "applicationId": "atlas-backend",
+      "events": ["rejection", "confirmation"]
+    },
+    {
+      "id": "mail-future",
+      "applicationId": "atlas-backend",
+      "events": ["rejection", "interview"]
+    }
+  ]
+}

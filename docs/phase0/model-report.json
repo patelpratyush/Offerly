@@ -1,0 +1,180 @@
+{
+  "version": 1,
+  "promptVersion": "phase0-local-v1",
+  "model": "qwen3:0.6b",
+  "digest": "7df6b6e09427a769808717c0a93cadc4ae99ed4eb8bf5ca557c90846becea435",
+  "provider": "local Ollama",
+  "synthetic": true,
+  "heldOutRuns": 1,
+  "autoApplyEnabled": false,
+  "startedAt": "2026-10-22T23:01:04.877Z",
+  "results": {
+    "mail": {
+      "metrics": null,
+      "failures": 4,
+      "diagnostics": [
+        {
+          "id": "mail-ambiguity",
+          "status": "request-or-schema-failure",
+          "durationMs": 10526,
+          "category": "request-or-invalid-output"
+        },
+        {
+          "id": "mail-schedule",
+          "status": "request-or-schema-failure",
+          "durationMs": 2852,
+          "category": "request-or-invalid-output"
+        },
+        {
+          "id": "mail-rejection",
+          "status": "request-or-schema-failure",
+          "durationMs": 2569,
+          "category": "request-or-invalid-output"
+        },
+        {
+          "id": "mail-offer",
+          "status": "model-output",
+          "durationMs": 2870,
+          "usage": {
+            "promptTokens": 203,
+            "completionTokens": 35,
+            "totalDurationNs": 2865781693
+          }
+        },
+        {
+          "id": "mail-injection",
+          "status": "request-or-schema-failure",
+          "durationMs": 3358,
+          "category": "request-or-invalid-output"
+        },
+        {
+          "id": "mail-agency",
+          "status": "model-output",
+          "durationMs": 2458,
+          "usage": {
+            "promptTokens": 182,
+            "completionTokens": 31,
+            "totalDurationNs": 2454633615
+          }
+        },
+        {
+          "id": "mail-forward",
+          "status": "model-output",
+          "durationMs": 2501,
+          "usage": {
+            "promptTokens": 199,
+            "completionTokens": 30,
+            "totalDurationNs": 2497203313
+          }
+        },
+        {
+          "id": "mail-future",
+          "status": "model-output",
+          "durationMs": 2439,
+          "usage": {
+            "promptTokens": 187,
+            "completionTokens": 31,
+            "totalDurationNs": 2435742559
+          }
+        }
+      ],
+      "modelOutputCoverage": {
+        "numerator": 4,
+        "denominator": 8
+      },
+      "validCompleteSplit": false
+    },
+    "fit": {
+      "metrics": {
+        "system": "ollama/qwen3:0.6b:phase0-local-v1",
+        "split": "held-out",
+        "synthetic": true,
+        "examples": 4,
+        "eligibilityAccuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "compensationExactAccuracy": {
+          "numerator": 1,
+          "denominator": 4,
+          "value": 0.25
+        },
+        "recencyAccuracy": {
+          "numerator": 2,
+          "denominator": 4,
+          "value": 0.5
+        },
+        "scoreCoverage": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "provisionalRangeAgreement": {
+          "numerator": 2,
+          "denominator": 4,
+          "value": 0.5
+        },
+        "limitation": "Author-assigned synthetic ranges only; evidence text presence is checked but truth is not machine verified; no human relevance or recommendation usefulness claim."
+      },
+      "failures": 0,
+      "diagnostics": [
+        {
+          "id": "fit-visa",
+          "status": "model-output",
+          "durationMs": 10178,
+          "usage": {
+            "promptTokens": 258,
+            "completionTokens": 195,
+            "totalDurationNs": 10172430177
+          }
+        },
+        {
+          "id": "fit-stale",
+          "status": "model-output",
+          "durationMs": 8683,
+          "usage": {
+            "promptTokens": 225,
+            "completionTokens": 185,
+            "totalDurationNs": 8679447422
+          }
+        },
+        {
+          "id": "fit-currency",
+          "status": "model-output",
+          "durationMs": 10008,
+          "usage": {
+            "promptTokens": 243,
+            "completionTokens": 184,
+            "totalDurationNs": 10003176711
+          }
+        },
+        {
+          "id": "fit-unknown-date",
+          "status": "model-output",
+          "durationMs": 8057,
+          "usage": {
+            "promptTokens": 209,
+            "completionTokens": 168,
+            "totalDurationNs": 8052779432
+          }
+        }
+      ],
+      "modelOutputCoverage": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "validCompleteSplit": true
+    }
+  },
+  "finishedAt": "2026-10-22T23:02:11.408Z",
+  "fixtureSha256": {
+    "recruiting": "0648a7d23d73a4b204aa618463791cb0015ecf20b7e32a8081db2a888c89ebc3",
+    "job-fit": "c183c730902c19bf12cc967672c8cf8e187aa3e8ffbfd4beecfd99a8896f089d"
+  },
+  "systemPromptSha256": {
+    "mail": "4de87ee3e15b719ac99b14ac4af7cd45a4e87c0c191867c3857b00c54cae3e8f",
+    "fit": "6a16d5382434ca288a73ad92b1e184556281d1cc2f9dd8c71b1a3d1c4b36eb09"
+  },
+  "humanValidated": false
+}

@@ -1,9 +1,9 @@
 # Job Search App Build Plan
 
 **Owner:** Pratyush Patel  
-**Updated:** October 19, 2026  
+**Updated:** October 22, 2026
 **Version:** 1.1  
-**Status:** Proposed implementation plan  
+**Status:** Implementation in progress; Phase 0 live Gmail gate open
 **Platform:** Responsive web app first; browser extension later
 
 ## 1. Product objective
@@ -216,11 +216,13 @@ Separate public listing records from private candidate data. Enforce ownership i
 
 ### Phase 0 — Validate the integrations
 
-- [ ] Test sample boards across the first three source platforms.
-- [ ] Test Gmail authorization and a consented historical import.
-- [ ] Build a small labeled set for email matching and job-fit evaluation.
-- [ ] Confirm source access conditions and mailbox launch dependencies.
-- [ ] Select stack, hosting, model provider, and operating budget.
+- [x] Test sample boards across the first three source platforms. Six live public-board probes across Greenhouse, Lever, and Ashby, plus in-memory description retrieval; metadata evidence in `docs/phase0/source-probe.json`.
+- [ ] Test Gmail authorization and a consented historical import. Google Desktop OAuth client validated and owner authorized all-mail local reading; real Google approval and at least 100 historical message reads succeeded, with temporary grant revoked; full-mailbox traversal stopped early and remains under diagnosis.
+- [x] Build a small labeled set for email matching and job-fit evaluation. Eighteen fictional, developer-authored examples with separate development/held-out splits; not independently human-validated or representative launch evidence.
+- [ ] Confirm source access conditions and mailbox launch dependencies. Public API documentation, prototype constraints and Google testing/restricted-scope dependencies are recorded; provider/employer rollout conditions and actual mailbox proof remain open.
+- [x] Select stack, hosting, model provider, and operating budget for the prototype. Keep existing Vercel/Supabase stack; real local Ollama baseline honors $0 additional AI spend. Tiny model failed quality checks and is rejected for production extraction; hosted model selection remains gated on quality, privacy and budget.
+
+**Current result:** Phase 0 remains partial. Real collection and local model inference were exercised, but local Gmail authorization/body retrieval succeeded but full-mailbox traversal stopped early, and the tiny-model extraction baseline is unsuitable. See `docs/phase0/README.md` for evidence, exact owner setup and remaining gates. No automatic changes, external AI processing of real emails, paid AI calls or discovery UI were enabled.
 
 **Exit:** A working prototype proves collection, extraction, and matching on representative examples. Re-estimate the remaining work from actual findings.
 

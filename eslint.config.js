@@ -4,7 +4,13 @@ export default [
   { ignores: ["node_modules/**", "dist/**", "data/**", "test-results/**"] },
   {
     ...js.configs.recommended,
-    files: ["server/**/*.js", "api/**/*.js", "tests/**/*.js", "*.config.js"],
+    files: [
+      "server/**/*.js",
+      "api/**/*.js",
+      "scripts/**/*.js",
+      "tests/**/*.js",
+      "*.config.js",
+    ],
     languageOptions: {
       ecmaVersion: "latest",
       sourceType: "module",
