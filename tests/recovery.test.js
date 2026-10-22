@@ -135,7 +135,7 @@ test("generation requires password; rotation and normal password changes invalid
     400,
   );
 });
-test("concurrent recovery can commit only once and persistent throttles limit guesses", async (t) => {
+test("concurrent recovery can commit only once", async (t) => {
   const { request, email, cookie } = await setup(t);
   const generated = await request(
     "/account/recovery-codes",
@@ -158,7 +158,20 @@ test("concurrent recovery can commit only once and persistent throttles limit gu
   assert.ok(
     responses.every((response) => [200, 400, 409].includes(response.status)),
   );
-  for (let i = 0; i < 3; i++)
+  assert.equal(
+    (
+      await request("/auth/recover", {
+        email,
+        code: generated.data.codes[0],
+        newPassword,
+      })
+    ).status,
+    400,
+  );
+});
+test("persistent recovery throttles reject the sixth sequential guess", async (t) => {
+  const { request, email } = await setup(t);
+  for (let i = 0; i < 5; i++)
     assert.equal(
       (await request("/auth/recover", { email, code: "wrong", newPassword }))
         .status,
