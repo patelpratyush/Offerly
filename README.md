@@ -17,7 +17,7 @@ Open http://127.0.0.1:5173 and create an account. No API keys or external servic
 
 ## Implemented
 
-- Asynchronous scrypt authentication, persistent throttling, expiring/idle-limited HttpOnly sessions, CSRF/origin protection, account-scoped queries, and password change with session revocation.
+- Asynchronous scrypt authentication, persistent throttling, expiring/idle-limited HttpOnly sessions, CSRF/origin protection, account-scoped queries, and password change with session revocation. Password-confirmed recovery codes provide self-service password reset without an email provider.
 - Today dashboard with open tasks and explicitly scheduled interview rounds.
 - Applications: create/edit, board/table, shared company/source/date/work-arrangement filters, sorting, and stage/priority/response-owner filters, archive/restore, custom stage ordering, saved views, bounded atomic bulk edits, explicit compensation fields, unified application/child-record timeline with note revisions and historical link evidence, version conflict detection.
 - Contacts with multiple emails, explicit confirmation, field-level source/evidence, agency/hiring company, relationship, phone/LinkedIn and last interaction; many-to-many application links. Tasks and named interview rounds with independent status/date/timezone.
@@ -35,7 +35,7 @@ Open http://127.0.0.1:5173 and create an account. No API keys or external servic
 npm test
 npm run build
 npx playwright install chromium
-npx playwright test
+npm run test:e2e
 ```
 
 API tests use isolated in-memory databases. Browser tests create clearly named `test-*` accounts in the active local database and exercise desktop/mobile flows. Use a separate `DATABASE_PATH` when you want disposable end-to-end test data.
@@ -83,3 +83,11 @@ Verified online snapshots and restoration to a new database path are available t
 [Delivery steps](docs/DELIVERY_STEPS.md) tracks the full build sequence. Applications now support saved views, atomic bulk edits, explicit compensation and reversible duplicate merging. See [implementation status](IMPLEMENTATION_STATUS.md) for remaining PRD work and verification evidence.
 
 Browser tests use isolated ports `4173` (web) and `3002` (API), plus a temporary database. They do not reuse the development server or `DATABASE_PATH`. Leave these ports free when running `npm run test:e2e`; the normal development app stays on `5173`/`3001`.
+
+## Recover a forgotten password
+
+While signed in, open Settings → Recovery codes, confirm your current password, and generate a set. Save it in a password manager before dismissing it; codes cannot be displayed again. Each code contains 128 bits of randomness, and only its hash is stored.
+
+On sign-in, choose “Forgot password? Use a recovery code,” enter your email, a saved code, and a new password of at least 15 characters. Successful recovery signs out all sessions and invalidates the entire code set. Sign in and generate a new set. Normal password changes also invalidate recovery codes. If both password and codes are lost, this feature cannot recover the account.
+
+The browser test script runs desktop and mobile suites separately, each with a fresh temporary database, so their synthetic account creations do not share a signup rate-limit budget. Production limits remain enabled.

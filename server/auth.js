@@ -75,6 +75,53 @@ export function mountAuth(app, store, config, limit) {
         : !config.production || !!config.scannerSocket || !!config.scanDocument,
     }),
   );
+  app.post("/api/auth/recover", async (req, res, next) => {
+    try {
+      await limit("recovery-ip:" + req.ip, 20, 900000);
+      const input = z
+        .object({
+          email: z
+            .email()
+            .max(254)
+            .transform((v) => v.toLowerCase()),
+          code: z.string().max(128),
+          newPassword: z.string().min(15).max(256),
+        })
+        .parse(req.body);
+      await limit("recovery-email:" + input.email, 5, 900000);
+      const codeHash = digest(
+        input.code.trim().replaceAll("-", "").toLowerCase(),
+      );
+      // Perform expensive work regardless of whether this email exists.
+      const password = await hashPassword(input.newPassword);
+      await atomic(async () => {
+        const user = await db
+          .prepare("SELECT id,password FROM users WHERE email=?")
+          .get(input.email);
+        const code =
+          user &&
+          (await db
+            .prepare(
+              "SELECT code_hash FROM recovery_codes WHERE user_id=? AND code_hash=?",
+            )
+            .get(user.id, codeHash));
+        if (!code) throw new HttpError(400, "Email or recovery code incorrect");
+        const changed = await db
+          .prepare("UPDATE users SET password=? WHERE id=? AND password=?")
+          .run(password, user.id, user.password);
+        if (!changed.changes)
+          throw new HttpError(400, "Email or recovery code incorrect");
+        await db
+          .prepare("DELETE FROM recovery_codes WHERE user_id=?")
+          .run(user.id);
+        await db.prepare("DELETE FROM sessions WHERE user_id=?").run(user.id);
+      });
+      clear(res);
+      res.json({ ok: true });
+    } catch (error) {
+      next(error);
+    }
+  });
   app.post("/api/auth/:action", async (req, res, next) => {
     try {
       if (!["register", "login"].includes(req.params.action))
@@ -245,6 +292,41 @@ export function mountAuth(app, store, config, limit) {
     if (!fresh || fresh.password !== req.user.password || !session)
       throw new HttpError(401, "Sign in again");
   };
+  app.post("/api/account/recovery-codes", async (req, res, next) => {
+    try {
+      const { password } = z
+        .object({ password: z.string().min(1).max(256) })
+        .parse(req.body);
+      await reauthenticate(req, password);
+      const codes = Array.from({ length: 10 }, () =>
+        randomBytes(16).toString("hex").match(/.{4}/g).join("-"),
+      );
+      await atomic(async () => {
+        const session = await db
+          .prepare(
+            "SELECT token FROM sessions WHERE token=? AND user_id=? AND expires>? AND last_seen>?",
+          )
+          .get(req.sessionHash, req.user.id, Date.now(), Date.now() - 1800000);
+        const fresh = await db
+          .prepare("SELECT password FROM users WHERE id=?")
+          .get(req.user.id);
+        if (!session || fresh?.password !== req.user.password)
+          throw new HttpError(401, "Sign in again");
+        await db
+          .prepare("DELETE FROM recovery_codes WHERE user_id=?")
+          .run(req.user.id);
+        for (const code of codes)
+          await db
+            .prepare(
+              "INSERT INTO recovery_codes(user_id,code_hash) VALUES(?,?)",
+            )
+            .run(req.user.id, digest(code.replaceAll("-", "")));
+      });
+      res.json({ codes });
+    } catch (error) {
+      next(error);
+    }
+  });
   app.post("/api/account/password", async (req, res, next) => {
     try {
       const { currentPassword, newPassword } = z
@@ -271,6 +353,9 @@ export function mountAuth(app, store, config, limit) {
           .run(password, req.user.id, req.user.password);
         if (!updated.changes)
           throw new HttpError(409, "Account changed. Sign in again");
+        await db
+          .prepare("DELETE FROM recovery_codes WHERE user_id=?")
+          .run(req.user.id);
         await db
           .prepare("DELETE FROM sessions WHERE user_id=?")
           .run(req.user.id);

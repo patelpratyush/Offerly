@@ -1890,8 +1890,14 @@ function Auth({
   error: string;
   busy: boolean;
 }) {
-  const register = mode === "signup";
+  const [recovery, setRecovery] = useState(false);
+  const [recoveryBusy, setRecoveryBusy] = useState(false);
+  const [recoveryMessage, setRecoveryMessage] = useState("");
+  const [recoveryError, setRecoveryError] = useState("");
+  const register = !recovery && mode === "signup";
   const setRegister = (value: boolean) => {
+    setRecovery(false);
+    setRecoveryError("");
     window.location.hash = value ? "signup" : "signin";
   };
   const [authConfig, setAuthConfig] = useState<any>(null),
@@ -1933,17 +1939,42 @@ function Auth({
       <section className="auth-form">
         <span className="eyebrow">YOUR PERSONAL JOB SEARCH WORKSPACE</span>
         <h1 tabIndex={-1}>
-          {register ? "Make room for what’s next." : "Welcome back."}
+          {recovery
+            ? "Recover your workspace."
+            : register
+              ? "Make room for what’s next."
+              : "Welcome back."}
         </h1>
         <p>
-          {register
-            ? "Create your private workspace to get started."
-            : "Pick up where you left off."}
+          {recovery
+            ? "Use a saved recovery code to choose a new password. This signs out all sessions and invalidates every recovery code."
+            : register
+              ? "Create your private workspace to get started."
+              : "Pick up where you left off."}
         </p>
         <form
-          onSubmit={(e) => {
+          key={recovery ? "recover" : mode}
+          onSubmit={async (e) => {
             e.preventDefault();
             const data = Object.fromEntries(new FormData(e.currentTarget));
+            if (recovery) {
+              setRecoveryBusy(true);
+              setRecoveryError("");
+              try {
+                await api("/auth/recover", "POST", data);
+                setRecovery(false);
+                window.location.hash = "signin";
+                setRecoveryMessage(
+                  "Password reset. Sign in, then generate new recovery codes in Settings.",
+                );
+              } catch (error) {
+                setRecoveryError((error as Error).message);
+              } finally {
+                setRecoveryBusy(false);
+              }
+              return;
+            }
+            setRecoveryMessage("");
             onSubmit(register ? "register" : "login", {
               ...data,
               timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -1971,15 +2002,30 @@ function Auth({
               placeholder="you@example.com"
             />
           </label>
+          {recovery && (
+            <label>
+              Recovery code
+              <input
+                name="code"
+                autoComplete="off"
+                required
+                maxLength={128}
+                spellCheck={false}
+                autoCapitalize="none"
+              />
+            </label>
+          )}
           <label>
-            Password
+            {recovery ? "New password" : "Password"}
             <input
-              name="password"
+              name={recovery ? "newPassword" : "password"}
               type="password"
-              minLength={register ? 15 : 1}
+              minLength={register || recovery ? 15 : 1}
               maxLength={256}
               required
-              autoComplete={register ? "new-password" : "current-password"}
+              autoComplete={
+                register || recovery ? "new-password" : "current-password"
+              }
               placeholder={
                 register ? "At least 15 characters" : "Your password"
               }
@@ -2002,20 +2048,48 @@ function Auth({
               {configError}
             </p>
           )}
-          {error && (
+          {recoveryMessage && <p role="status">{recoveryMessage}</p>}
+          {recoveryError && (
+            <p role="alert" className="form-error">
+              {recoveryError}
+            </p>
+          )}
+          {!recovery && !recoveryMessage && error && (
             <p role="alert" className="form-error">
               {error}
             </p>
           )}
-          <button className="primary" disabled={busy || !authConfig}>
-            {busy
-              ? "Opening workspace…"
-              : register
-                ? "Create workspace"
-                : "Sign in"}
+          <button
+            className="primary"
+            disabled={busy || recoveryBusy || !authConfig}
+          >
+            {recoveryBusy
+              ? "Resetting password…"
+              : recovery
+                ? "Reset password"
+                : busy
+                  ? "Opening workspace…"
+                  : register
+                    ? "Create workspace"
+                    : "Sign in"}
             <ArrowRight size={17} />
           </button>
         </form>
+        {!register && (
+          <button
+            className="text-button"
+            disabled={recoveryBusy}
+            onClick={() => {
+              setRecovery(!recovery);
+              setRecoveryError("");
+              setRecoveryMessage("");
+            }}
+          >
+            {recovery
+              ? "Back to sign in"
+              : "Forgot password? Use a recovery code"}
+          </button>
+        )}
         {authConfig?.registrationEnabled && (
           <button
             className="text-button"
@@ -2367,6 +2441,68 @@ function Editor({
     </div>
   );
 }
+function RecoveryCodes({
+  run,
+  busy,
+}: {
+  run: (fn: () => Promise<any>) => void;
+  busy: boolean;
+}) {
+  const [codes, setCodes] = useState<string[]>([]);
+  return (
+    <section className="space-top">
+      <h2>Recovery codes</h2>
+      <p>
+        Save these codes in your password manager. Any one code can reset your
+        password without email. Generating new codes invalidates the previous
+        set; resetting your password invalidates all codes.
+      </p>
+      <form
+        onSubmit={(event) => {
+          event.preventDefault();
+          const form = event.currentTarget;
+          const password = new FormData(form).get("password");
+          setCodes([]);
+          run(async () => {
+            const result = await api("/account/recovery-codes", "POST", {
+              password,
+            });
+            form.reset();
+            setCodes(result.codes);
+          });
+        }}
+      >
+        <label>
+          Current password for recovery codes
+          <input
+            name="password"
+            type="password"
+            autoComplete="current-password"
+            required
+            maxLength={256}
+          />
+        </label>
+        <button className="secondary" disabled={busy}>
+          Generate new recovery codes
+        </button>
+      </form>
+      {codes.length > 0 && (
+        <div role="status">
+          <p>
+            Shown once. Save privately before dismissing. Anyone with a code and
+            your email can reset your password.
+          </p>
+          <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>
+            {codes.join("\n")}
+          </pre>
+          <button className="secondary" onClick={() => setCodes([])}>
+            I saved these codes — dismiss
+          </button>
+        </div>
+      )}
+    </section>
+  );
+}
 function SettingsPage({
   w,
   busy,
@@ -2447,7 +2583,8 @@ function SettingsPage({
           </button>
           <h2 className="space-top">Change password</h2>
           <p>
-            Changing your password signs out every session, including this one.
+            Changing your password signs out every session, including this one,
+            and invalidates recovery codes.
           </p>
           <form
             onSubmit={(e) => {
@@ -2484,6 +2621,7 @@ function SettingsPage({
               Change password and sign out
             </button>
           </form>
+          <RecoveryCodes run={run} busy={busy} />
           <h2 className="space-top">Email connections</h2>
           <span className="badge">Not connected</span>
           <p>

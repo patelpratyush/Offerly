@@ -10,7 +10,7 @@ GRANT USAGE ON ALL SEQUENCES IN SCHEMA offerly TO offerly_app;
 DO $$
 DECLARE table_name text;
 BEGIN
-  FOREACH table_name IN ARRAY ARRAY['users','sessions','records','events','import_batches','files','rate_limits','mutation_receipts','scheduler_state','file_objects','scanner_state'] LOOP
+  FOREACH table_name IN ARRAY ARRAY['users','recovery_codes','sessions','records','events','import_batches','files','rate_limits','mutation_receipts','scheduler_state','file_objects','scanner_state'] LOOP
     EXECUTE format('CREATE POLICY server_access ON offerly.%I TO offerly_app USING (true) WITH CHECK (true)', table_name);
   END LOOP;
 END $$;
