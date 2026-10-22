@@ -115,6 +115,35 @@ test("all-mail pagination includes spam/trash, fetches bodies sequentially, neve
   assert.equal(JSON.stringify(progress).includes("PERSONAL"), false);
   assert.equal(JSON.stringify(counts).includes("TOKEN"), false);
 });
+
+test("seven-day scan uses fixed Gmail search query and still includes spam/trash", async () => {
+  let requested;
+  const result = await scanAllMail({
+    query: "newer_than:7d",
+    fetchImpl: async (url) => {
+      requested = new URL(url);
+      return json({ messages: [] });
+    },
+  });
+  assert.equal(requested.searchParams.get("q"), "newer_than:7d");
+  assert.equal(requested.searchParams.get("includeSpamTrash"), "true");
+  assert.equal(result.completed, true);
+});
+
+test("Gmail scan rejects arbitrary search queries before network access", async () => {
+  let requests = 0;
+  await assert.rejects(
+    scanAllMail({
+      query: "from:someone@example.com",
+      fetchImpl: async () => {
+        requests++;
+        return json({ messages: [] });
+      },
+    }),
+    /request_rejected/,
+  );
+  assert.equal(requests, 0);
+});
 test("network caps, redirect rejection, fixed host, bounded retries and pagination cycle fail closed", async () => {
   await assert.rejects(
     boundedJson("https://attacker.invalid/gmail/v1/users/me/messages"),

@@ -6,9 +6,9 @@ The original plan and PRD remain unchanged. This file records implementation evi
 
 This section supersedes older historical checkpoint descriptions below. The private manual tracker, hosted Supabase/Vercel deployment, private scanned Blob uploads, hosted scheduler, and recovery-code password reset are implemented. Recent CI fixes are on main.
 
-Phase 0 validation now includes real public-board probes for Greenhouse, Lever and Ashby; bounded metadata-only evidence; Gmail Desktop-client readiness and exact owner setup; eighteen synthetic labeled examples; a strict evaluator; and actual local Ollama held-out inference with model/prompt/fixture provenance. The tiny model failed extraction/fit checks and is not enabled for application automation. A consented live Google authorization succeeded and 107 messages were read locally before the all-mail scan stopped at Google HTTP 403. Its temporary grant was revoked. Later, reusable authorization was stored in macOS login Keychain and proved by a separate-process sign-in without browser approval; a paced all-mail scan is running. No mailbox content was persisted or sent to a model.
+Phase 0 validation now includes real public-board probes for Greenhouse, Lever and Ashby; bounded metadata-only evidence; Gmail Desktop-client readiness and exact owner setup; eighteen synthetic labeled examples; a strict evaluator; and actual local Ollama held-out inference with model/prompt/fixture provenance. The tiny model failed extraction/fit checks and is not enabled for application automation. A consented seven-day Gmail scan read 612 messages across seven pages, with no skipped messages or retries. Reusable authorization was stored in macOS login Keychain and reused by a separate process without browser approval. The initial all-history scan was stopped at owner request after 389 messages. No mailbox content was persisted or sent to a model.
 
-**Phase 0 remains partial:** Google Desktop OAuth client is configured and owner consent covers all-mail local reading, but live OAuth and historical body retrieval now work, but the full-mailbox traversal stopped at Google HTTP 403; source rollout conditions remain explicit; a production-quality model is not selected. Additional AI spend is capped at $0 by the owner. See [Phase 0 evidence](docs/phase0/README.md), [sources](docs/phase0/sources.md), [Gmail setup](docs/phase0/gmail.md), and [evaluation findings](docs/phase0/evaluation.md).
+**Phase 0 remains partial:** Google Desktop OAuth and a seven-day local body-retrieval scan work, but full-history sync, production OAuth/storage, and two-hour History API sync are not implemented; source rollout conditions remain explicit; a production-quality model is not selected. Additional AI spend is capped at $0 by the owner. See [Phase 0 evidence](docs/phase0/README.md), [sources](docs/phase0/sources.md), [Gmail setup](docs/phase0/gmail.md), and [evaluation findings](docs/phase0/evaluation.md).
 
 The sections below retain prior implementation history and do not override this checkpoint.
 
@@ -18,26 +18,26 @@ No external credentials, model provider, source permission decisions, or labeled
 
 ## M1 — Manual tracker: step 1 implemented
 
-| Requirement | Status |
-| --- | --- |
-| Accounts and data isolation | Implemented locally; ownership regression tests included |
-| Application table and board | Stage shortcut strip, shared search/company/source/date/work-arrangement/priority/response-owner filters, date/company/priority sorting |
-| Custom stages and ordering | Implemented; occupied stages cannot be removed |
-| Rounds and manual scheduling | Implemented independently of application stage; no inferred completion |
-| Contacts, notes and tasks | Multiple emails, explicit identity confirmations, agency/hiring company, relationship, phone/LinkedIn, last interaction and field-level provenance; cross-account links rejected |
+| Requirement                       | Status                                                                                                                                                                             |
+| --------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Accounts and data isolation       | Implemented locally; ownership regression tests included                                                                                                                           |
+| Application table and board       | Stage shortcut strip, shared search/company/source/date/work-arrangement/priority/response-owner filters, date/company/priority sorting                                            |
+| Custom stages and ordering        | Implemented; occupied stages cannot be removed                                                                                                                                     |
+| Rounds and manual scheduling      | Implemented independently of application stage; no inferred completion                                                                                                             |
+| Contacts, notes and tasks         | Multiple emails, explicit identity confirmations, agency/hiring company, relationship, phone/LinkedIn, last interaction and field-level provenance; cross-account links rejected   |
 | Document versions and submissions | Immutable private versions and explicit submission records with exact file/version/hash, date and purpose; corrections/retractions retain history; real scanner deployment pending |
-| Offer outcomes | Pending/accepted/declined with validated received/decision dates, independent of stage; CSV support |
-| Listing evidence | Capture date/source, immutable description revisions and legacy unknowns; CSV and full JSON export |
-| Timeline | Tabbed detail with unified child events, historical links/unlinks, note revisions, before/after changes, actor attribution |
-| CSV import/export | Guided column mapping, explicit date formats, invalid rows and within-file duplicates, per-row decisions, atomic commits and replay protection; stable export IDs |
-| Export/deletion | Full JSON with original files; cascade deletion and session invalidation |
-| Responsive layout | Desktop/mobile browser workflow checks included |
-| Optimistic concurrency | Version checks on record edits |
-| Advanced application fields | Work arrangement, employment type and compensation amounts/currency/period/base-or-total basis implemented; unknowns remain explicit |
-| Assessments | Independent status, deadline, manual completion date/results, Today deadlines and timeline |
-| Duplicate review | Compare, keep separate, archive, or preview and merge linked records; version-checked reversal preserves later edits and immutable file bytes |
-| Advanced tracking | Account-owned saved filters/layout/sort; atomic bulk stage/priority/response-owner/archive changes (up to 100 selections), seven-day replay receipts |
-| Public release readiness | Security hardening and CI added; public auth verification/recovery, live scanner/TLS/encrypted storage, generic mutation idempotency, load/security/restore validation pending |
+| Offer outcomes                    | Pending/accepted/declined with validated received/decision dates, independent of stage; CSV support                                                                                |
+| Listing evidence                  | Capture date/source, immutable description revisions and legacy unknowns; CSV and full JSON export                                                                                 |
+| Timeline                          | Tabbed detail with unified child events, historical links/unlinks, note revisions, before/after changes, actor attribution                                                         |
+| CSV import/export                 | Guided column mapping, explicit date formats, invalid rows and within-file duplicates, per-row decisions, atomic commits and replay protection; stable export IDs                  |
+| Export/deletion                   | Full JSON with original files; cascade deletion and session invalidation                                                                                                           |
+| Responsive layout                 | Desktop/mobile browser workflow checks included                                                                                                                                    |
+| Optimistic concurrency            | Version checks on record edits                                                                                                                                                     |
+| Advanced application fields       | Work arrangement, employment type and compensation amounts/currency/period/base-or-total basis implemented; unknowns remain explicit                                               |
+| Assessments                       | Independent status, deadline, manual completion date/results, Today deadlines and timeline                                                                                         |
+| Duplicate review                  | Compare, keep separate, archive, or preview and merge linked records; version-checked reversal preserves later edits and immutable file bytes                                      |
+| Advanced tracking                 | Account-owned saved filters/layout/sort; atomic bulk stage/priority/response-owner/archive changes (up to 100 selections), seven-day replay receipts                               |
+| Public release readiness          | Security hardening and CI added; public auth verification/recovery, live scanner/TLS/encrypted storage, generic mutation idempotency, load/security/restore validation pending     |
 
 ## M2–M5 — Not implemented
 

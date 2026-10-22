@@ -1,14 +1,17 @@
 # Phase 0 Gmail validation
 
-Updated October 22, 2026. Real local Google authorization and historical body
-retrieval succeeded. All-mail scans initially stopped after about 100 messages
-with HTTP 403 `rateLimitExceeded`; full traversal has not yet passed. Reusable offline authorization was stored in macOS login Keychain and successfully reused by a separate process without opening a browser. A paced all-mail scan is now running. This does
+Updated October 22, 2026. A consented seven-day scan completed: 612 messages,
+seven pages, zero skips or retries. Reusable offline authorization was stored in
+macOS login Keychain and reused by a separate process without browser approval.
+An all-history scan hit a Google `rateLimitExceeded` error near 100 messages; a
+later all-history attempt was stopped at owner request after 389 messages. This does
 not validate recruiting extraction, matching, ongoing sync, or hosted OAuth.
 
 ## Authorization and data boundaries
 
 Owner explicitly authorized reading all emails, including personal messages,
-across history, including Spam and Trash. Owner subsequently requested reusable
+across history, including Spam and Trash. The latest proof scans the past seven
+days. Owner requested reusable
 access instead of repeated permission prompts. Request only
 `https://www.googleapis.com/auth/gmail.readonly`: no sending, modifying, labeling,
 or deleting email. The scope is restricted; metadata scope does not provide bodies
@@ -55,6 +58,8 @@ npm run phase0:gmail
 npm run phase0:gmail:live -- --authorize-only
 # Read all returned messages locally; output aggregates only.
 npm run phase0:gmail:live -- --all-mail
+# User-requested quick scan of the past seven days.
+npm run phase0:gmail:live -- --last-7-days
 # Revoke Google grant and remove local Keychain token.
 npm run phase0:gmail:live -- --disconnect
 ```
@@ -87,6 +92,23 @@ Keychain grant until explicit disconnect or Google expiry/revocation.
 [Message list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/list),
 [Message retrieval](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.messages/get),
 [Error handling](https://developers.google.com/workspace/gmail/api/guides/handle-errors)
+
+## Planned two-hour production sync
+
+Production target: run incremental Gmail sync every two hours with `history.list`
+and a per-account `historyId`. A successful initial import establishes the cursor;
+an expired cursor (HTTP 404) triggers an idempotent resync. Store cursor, dedupe
+state and encrypted per-account refresh credentials server-side; honor disconnect
+and account deletion. The existing Supabase Cron can dispatch due work. Current
+Vercel Hobby Cron allows only one invocation per day, so it does not meet this
+two-hour cadence. New messages should produce evidence-backed review items; user
+approves tracker changes. Extraction must pass held-out quality targets before
+any autonomous application updates. This design is not implemented.
+
+See [Gmail synchronization](https://developers.google.com/workspace/gmail/api/guides/sync),
+[history.list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list),
+[Supabase scheduler](../SUPABASE_VERCEL.md), and
+[Vercel Cron limits](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
 
 ## Hosted and public release gates
 

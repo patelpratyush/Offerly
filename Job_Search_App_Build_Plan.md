@@ -217,12 +217,12 @@ Separate public listing records from private candidate data. Enforce ownership i
 ### Phase 0 — Validate the integrations
 
 - [x] Test sample boards across the first three source platforms. Six live public-board probes across Greenhouse, Lever, and Ashby, plus in-memory description retrieval; metadata evidence in `docs/phase0/source-probe.json`.
-- [ ] Test Gmail authorization and a consented historical import. Google Desktop OAuth client validated and owner authorized all-mail local reading; real Google approval and 107 historical message reads succeeded, with temporary grant revoked; full-mailbox traversal stopped early and remains under diagnosis.
+- [ ] Test Gmail authorization and a consented historical import. Google Desktop OAuth validated; consented seven-day scan completed across 612 messages, zero skips or retries. Full-history scan was stopped at owner request after 389 messages. Reusable credentials work in local macOS Keychain. Production storage and sync remain open.
 - [x] Build a small labeled set for email matching and job-fit evaluation. Eighteen fictional, developer-authored examples with separate development/held-out splits; not independently human-validated or representative launch evidence.
-- [ ] Confirm source access conditions and mailbox launch dependencies. Public API documentation, prototype constraints and Google testing/restricted-scope dependencies are recorded; provider/employer rollout conditions and actual mailbox proof remain open.
+- [ ] Confirm source access conditions and mailbox launch dependencies. Public API documentation, prototype constraints and Google testing/restricted-scope dependencies are recorded; provider/employer rollout conditions and hosted mailbox integration remain open.
 - [x] Select stack, hosting, model provider, and operating budget for the prototype. Keep existing Vercel/Supabase stack; real local Ollama baseline honors $0 additional AI spend. Tiny model failed quality checks and is rejected for production extraction; hosted model selection remains gated on quality, privacy and budget.
 
-**Current result:** Phase 0 remains partial. Real collection and local model inference were exercised, but local Gmail authorization/body retrieval succeeded but full-mailbox traversal stopped early, and the tiny-model extraction baseline is unsuitable. See `docs/phase0/README.md` for evidence, exact owner setup and remaining gates. No automatic changes, external AI processing of real emails, paid AI calls or discovery UI were enabled.
+**Current result:** Phase 0 remains partial. Board collection and consented seven-day Gmail body retrieval work locally; full-history sync, production Gmail integration, and a production-quality model remain open. The tiny-model extraction baseline is unsuitable. See `docs/phase0/README.md` for evidence, exact owner setup and remaining gates. No automatic changes, external AI processing of real emails, paid AI calls or discovery UI were enabled.
 
 **Exit:** A working prototype proves collection, extraction, and matching on representative examples. Re-estimate the remaining work from actual findings.
 
@@ -237,7 +237,7 @@ Separate public listing records from private candidate data. Enforce ownership i
 
 ### Phase 2 — Automate recruiting updates
 
-- [ ] Historical Gmail import and ongoing sync.
+- [ ] Historical Gmail import and ongoing sync. Production target: Gmail History API incremental sync every two hours via existing Supabase cron, with expiry fallback, idempotency, and evidence-backed review items. Do not apply application changes without user review until extraction quality passes held-out targets.
 - [ ] Event extraction, application matching, contact extraction.
 - [ ] Evidence, review queue, correction, and undo.
 - [ ] Reply ownership, waiting indicators, Today, and reminders.

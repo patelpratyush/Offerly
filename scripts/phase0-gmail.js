@@ -22,10 +22,12 @@ const manualRemoval = () =>
 const args = process.argv.slice(2);
 if (
   args.length !== 1 ||
-  !["--authorize-only", "--all-mail", "--disconnect"].includes(args[0])
+  !["--authorize-only", "--all-mail", "--last-7-days", "--disconnect"].includes(
+    args[0],
+  )
 ) {
   console.error(
-    "Usage: node scripts/phase0-gmail.js --authorize-only | --all-mail | --disconnect",
+    "Usage: node scripts/phase0-gmail.js --authorize-only | --all-mail | --last-7-days | --disconnect",
   );
   process.exitCode = 2;
 } else {
@@ -37,7 +39,10 @@ if (
   let retained = false;
   const report = {
     check: "gmail-local-live-proof",
-    allMailIncludingSpamTrash: args[0] === "--all-mail",
+    allMailIncludingSpamTrash: ["--all-mail", "--last-7-days"].includes(
+      args[0],
+    ),
+    dateWindow: args[0] === "--last-7-days" ? "newer_than:7d" : "all-history",
     authorizationValidated: false,
     mailboxAccessPerformed: false,
     completed: false,
@@ -127,10 +132,11 @@ if (
       report.credentialsStoredInKeychain = retained;
       report.accessRetained = retained;
       report.authorizationValidated = true;
-      if (args[0] === "--all-mail") {
+      if (["--all-mail", "--last-7-days"].includes(args[0])) {
         report.mailboxAccessPerformed = true;
         report.counts = await scanAllMail({
           getAccessToken: async () => (await client.getAccessToken()).token,
+          ...(args[0] === "--last-7-days" ? { query: "newer_than:7d" } : {}),
           signal: controller.signal,
           progress: (counts) => {
             const previous = report.counts;

@@ -465,6 +465,7 @@ export function inspectBody(payload) {
 
 export async function scanAllMail({
   token,
+  query,
   getAccessToken,
   signal,
   fetchImpl,
@@ -473,6 +474,8 @@ export async function scanAllMail({
   requestIntervalMs = 1000,
   now = Date.now,
 } = {}) {
+  if (query !== undefined && query !== "newer_than:7d")
+    throw proofError("request_rejected");
   const counts = {
     pages: 0,
     requestRetries: 0,
@@ -508,6 +511,7 @@ export async function scanAllMail({
     );
     url.searchParams.set("maxResults", "100");
     url.searchParams.set("includeSpamTrash", "true");
+    if (query) url.searchParams.set("q", query);
     if (pageToken) url.searchParams.set("pageToken", pageToken);
     const page = await boundedJson(url, {
       token,

@@ -1,17 +1,17 @@
 # Phase 0 integration validation
 
-Updated October 22, 2026. **Phase 0 remains partial: live Gmail authorization and body retrieval passed, but the all-mail scan stopped at Google HTTP 403 early and model quality failed.** A configured client, synthetic fixture, or functioning manual tracker does not establish live mailbox integration.
+Updated October 22, 2026. **Phase 0 remains partial: 612 messages read in a successful seven-day scan, while model quality failed and full-history sync remains unverified.** A configured client, synthetic fixture, or functioning manual tracker does not establish live mailbox integration.
 
 ## Evidence and exit gates
 
-| Build-plan item | Evidence | State |
-| --- | --- | --- |
-| Test boards on three platforms | Six live public-board probes across Greenhouse, Lever, and Ashby, plus in-memory description retrieval; bounded adapters and malformed-feed regressions | Technical prototype verified; see [sources](sources.md) and [probe report](source-probe.json) |
-| Gmail authorization and consented import | Official scope/policy research, exact Desktop-client setup, local credential readiness command, bounded import acceptance contract | Real Google authorization succeeded; 107 messages read locally; full-mailbox traversal stopped at Google HTTP 403; initial temporary grant revoked; reusable Keychain authorization subsequently stored and reused without browser approval, paced scan running |
-| Small labeled matching/fit set | Twelve synthetic messages and six synthetic profile/listing pairs, separate development/held-out splits, strict prediction schemas and metric denominators | Authored synthetic set ready; independent human labels and representative real-mail evaluation remain open |
-| Extraction and matching model prototype | Real local Ollama baseline within the zero-extra-spend constraint; see [model report](model-report.json) | Baseline failed quality: mail 4/8 valid outputs; fit compensation 1/4 and recency 2/4 correct. Production model remains unselected |
-| Source conditions and mailbox launch dependencies | Source-specific official documentation, conservative read-only scope, no public catalog permission assumed; Google testing/restricted-scope dependencies recorded | Research complete for prototype; provider/employer rollout conditions and real OAuth proof remain explicit |
-| Stack, hosting, model and operating budget | Decisions below | Prototype choices recorded; production model choice remains gated on privacy and quality evaluation |
+| Build-plan item                                   | Evidence                                                                                                                                                          | State                                                                                                                                                                                                                                 |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Test boards on three platforms                    | Six live public-board probes across Greenhouse, Lever, and Ashby, plus in-memory description retrieval; bounded adapters and malformed-feed regressions           | Technical prototype verified; see [sources](sources.md) and [probe report](source-probe.json)                                                                                                                                         |
+| Gmail authorization and consented import          | Official scope/policy research, exact Desktop-client setup, local credential readiness command, bounded import acceptance contract                                | Seven-day Gmail scan completed: 612 messages read, seven pages, zero skipped or retried. Keychain authorization reused by a separate process. Full-history scan was stopped at owner request after 389 messages; no content persisted |
+| Small labeled matching/fit set                    | Twelve synthetic messages and six synthetic profile/listing pairs, separate development/held-out splits, strict prediction schemas and metric denominators        | Authored synthetic set ready; independent human labels and representative real-mail evaluation remain open                                                                                                                            |
+| Extraction and matching model prototype           | Real local Ollama baseline within the zero-extra-spend constraint; see [model report](model-report.json)                                                          | Baseline failed quality: mail 4/8 valid outputs; fit compensation 1/4 and recency 2/4 correct. Production model remains unselected                                                                                                    |
+| Source conditions and mailbox launch dependencies | Source-specific official documentation, conservative read-only scope, no public catalog permission assumed; Google testing/restricted-scope dependencies recorded | Prototype scan works; production OAuth, Gmail history cursor, retention and employer/source rollout conditions remain open                                                                                                            |
+| Stack, hosting, model and operating budget        | Decisions below                                                                                                                                                   | Prototype choices recorded; production model choice remains gated on privacy and quality evaluation                                                                                                                                   |
 
 ## Selected architecture and budget
 
@@ -23,6 +23,8 @@ Updated October 22, 2026. **Phase 0 remains partial: live Gmail authorization an
 - Initial pilot remains two invited users, no billing feature, no automatic status changes, no outgoing messages, and no automated applications. Before a larger pilot, declare message/listing volumes, choose a hosted inference budget, and measure actual cost per active user.
 
 ## Mailbox and model data boundaries
+
+Production sync target: check connected Gmail accounts every two hours using the Gmail History API and a per-account `historyId`, rather than repeatedly scanning seven days. Perform an initial bounded sync to establish the cursor; if Google returns 404 for an expired cursor, do a deduplicated full resync. The existing Supabase cron can dispatch due sync work. The current Hobby Vercel Cron restriction is once daily, so do not schedule a two-hour Vercel Cron without a plan that supports it. New mail should create evidence-backed review items; user approves application changes. This production integration is not implemented. See [Gmail synchronization](https://developers.google.com/workspace/gmail/api/guides/sync), [history.list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list), and [Vercel Cron limits](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
 
 The owner explicitly authorized reading all emails, including personal messages, across mailbox history on October 22, 2026. The local proof may paginate the full mailbox, including Spam and Trash, but must process one message at a time without fetching separate attachments or decoding/saving inline attachment parts (which Gmail may include in MIME responses). A Google browser authorization is still required. Owner requested reusable access: keep refresh credentials in macOS Keychain and access tokens/message content in memory. Do not persist unrelated mail, export bodies, or send personal mailbox content to model providers. Retain only aggregate counts without message identifiers, addresses, subjects, or bodies. Retain the reusable Keychain grant until explicit disconnect or Google expiry/revocation; clear in-memory token references at exit.
 
@@ -36,7 +38,7 @@ Future durable Gmail access requires encrypted credential storage, disconnect/re
 npm run phase0:sources
 npm run phase0:gmail
 # After explicit consent; opens Google browser authorization:
-npm run phase0:gmail:live -- --all-mail
+npm run phase0:gmail:live -- --last-7-days
 npm run phase0:model
 npm run phase0:test
 ```
