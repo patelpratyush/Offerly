@@ -1,0 +1,33 @@
+{
+  "version": 1,
+  "split": "dev",
+  "system": "ollama/qwen3:4b:phase0-local-v2",
+  "predictions": [
+    {
+      "id": "mail-confirmation",
+      "applicationId": "atlas-backend",
+      "events": [
+        "confirmation"
+      ]
+    },
+    {
+      "id": "mail-assessment",
+      "applicationId": "atlas-data",
+      "events": [
+        "assessment"
+      ]
+    },
+    {
+      "id": "mail-newsletter",
+      "applicationId": "atlas-backend",
+      "events": []
+    },
+    {
+      "id": "mail-quoted",
+      "applicationId": "atlas-backend",
+      "events": [
+        "confirmation"
+      ]
+    }
+  ]
+}

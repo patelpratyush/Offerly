@@ -1,9 +1,9 @@
 # Job Search App Build Plan
 
 **Owner:** Pratyush Patel  
-**Updated:** October 22, 2026
+**Updated:** October 23, 2026
 **Version:** 1.1  
-**Status:** Implementation in progress; Phase 0 live Gmail gate open
+**Status:** Implementation in progress; Phase 0 model validation in progress
 **Platform:** Responsive web app first; browser extension later
 
 ## 1. Product objective
@@ -217,12 +217,12 @@ Separate public listing records from private candidate data. Enforce ownership i
 ### Phase 0 — Validate the integrations
 
 - [x] Test sample boards across the first three source platforms. Six live public-board probes across Greenhouse, Lever, and Ashby, plus in-memory description retrieval; metadata evidence in `docs/phase0/source-probe.json`.
-- [ ] Test Gmail authorization and a consented historical import. Google Desktop OAuth validated; consented seven-day scan completed across 612 messages, zero skips or retries. Full-history scan was stopped at owner request after 389 messages. Reusable credentials work in local macOS Keychain. Production storage and sync remain open.
+- [x] Test Gmail authorization and a consented historical import prototype. Seven-day retrieval completed across 612 messages, zero skips or retries. A separate bounded 20-message recruiting import produced one structured unresolved review candidate and 19 abstentions; replay created no new candidates. All message/evidence data stayed in memory; no app records changed. Credentials reused from local macOS login Keychain. Production import and two-hour sync remain Phase 2 work.
 - [x] Build a small labeled set for email matching and job-fit evaluation. Eighteen fictional, developer-authored examples with separate development/held-out splits; not independently human-validated or representative launch evidence.
-- [ ] Confirm source access conditions and mailbox launch dependencies. Public API documentation, prototype constraints and Google testing/restricted-scope dependencies are recorded; provider/employer rollout conditions and hosted mailbox integration remain open.
+- [x] Confirm source access conditions and mailbox launch dependencies for the prototype. Current provider documentation and Google testing/restricted-scope conditions are reviewed in `docs/phase0/access-decision.md`. Bounded prototype access is established; public catalog permissions and hosted Gmail release gates remain explicitly unresolved for later phases.
 - [x] Select stack, hosting, model provider, and operating budget for the prototype. Keep existing Vercel/Supabase stack; real local Ollama baseline honors $0 additional AI spend. Tiny model failed quality checks and is rejected for production extraction; hosted model selection remains gated on quality, privacy and budget.
 
-**Current result:** Phase 0 remains partial. Board collection and consented seven-day Gmail body retrieval work locally; full-history sync, production Gmail integration, and a production-quality model remain open. The tiny-model extraction baseline is unsuitable. See `docs/phase0/README.md` for evidence, exact owner setup and remaining gates. No automatic changes, external AI processing of real emails, paid AI calls or discovery UI were enabled.
+**Current result:** Bounded Phase 0 feasibility investigation is documented with a no-go for shipping AI matching. Board retrieval, bounded Gmail candidate import/replay, synthetic labeled cases, prototype stack/budget, and source-dependency review are complete. Local model fresh run produced 19/24 valid outputs; raw link precision was 72.2%, guarded precision 100% at 68.4% coverage, and event recall 77.8% on the valid-only synthetic slice. The formal Phase 0 exit is **not passed** because the working extraction/matching quality gate failed. Keep automatic changes disabled. GPT API remains unevaluated: owner set $0 extra spend and Gateway has no credits. Hosted Gmail, two-hour sync, public discovery permissions, and representative release-quality validation remain later gates. See `docs/phase0/README.md` for evidence and next decision. No external AI processing of real emails, paid API calls or discovery UI were enabled.
 
 **Exit:** A working prototype proves collection, extraction, and matching on representative examples. Re-estimate the remaining work from actual findings.
 

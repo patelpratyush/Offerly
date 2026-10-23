@@ -1,0 +1,244 @@
+{
+  "version": 1,
+  "promptVersion": "phase0-local-v2",
+  "model": "qwen3:4b",
+  "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "provider": "local Ollama",
+  "synthetic": true,
+  "split": "dev",
+  "heldOutRuns": 0,
+  "outputArtifactsImmutable": true,
+  "generationOptions": {
+    "seed": 0,
+    "temperature": 0,
+    "num_ctx": 4096,
+    "num_predict": 512,
+    "think": false,
+    "requestTimeoutMs": 60000
+  },
+  "autoApplyEnabled": false,
+  "startedAt": "2026-10-23T09:56:20.523Z",
+  "results": {
+    "mail": {
+      "modelOutputCoverage": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "validCompleteSplit": true,
+      "metrics": {
+        "system": "ollama/qwen3:4b:phase0-local-v2",
+        "split": "dev",
+        "synthetic": true,
+        "examples": 4,
+        "applicationLinkPrecision": {
+          "numerator": 3,
+          "denominator": 4,
+          "value": 0.75
+        },
+        "applicationLinkRecall": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "applicationLinkCoverage": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "fullAbstentionRate": {
+          "numerator": 0,
+          "denominator": 4,
+          "value": 0
+        },
+        "eventPrecision": {
+          "numerator": 2,
+          "denominator": 3,
+          "value": 0.6666666666666666
+        },
+        "eventRecall": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "perEvent": {
+          "confirmation": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 2,
+              "value": 0.5
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "assessment": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "interview": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "rejection": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "offer": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          }
+        },
+        "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+      },
+      "failures": 0,
+      "diagnostics": [
+        {
+          "id": "mail-confirmation",
+          "status": "model-output",
+          "durationMs": 17619,
+          "usage": {
+            "promptTokens": 308,
+            "completionTokens": 24,
+            "totalDurationNs": 17610237378
+          }
+        },
+        {
+          "id": "mail-assessment",
+          "status": "model-output",
+          "durationMs": 11220,
+          "usage": {
+            "promptTokens": 324,
+            "completionTokens": 25,
+            "totalDurationNs": 11216139446
+          }
+        },
+        {
+          "id": "mail-newsletter",
+          "status": "model-output",
+          "durationMs": 9325,
+          "usage": {
+            "promptTokens": 304,
+            "completionTokens": 20,
+            "totalDurationNs": 9321344456
+          }
+        },
+        {
+          "id": "mail-quoted",
+          "status": "model-output",
+          "durationMs": 11218,
+          "usage": {
+            "promptTokens": 330,
+            "completionTokens": 24,
+            "totalDurationNs": 11215166615
+          }
+        }
+      ]
+    },
+    "fit": {
+      "modelOutputCoverage": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "validCompleteSplit": true,
+      "metrics": {
+        "system": "ollama/qwen3:4b:phase0-local-v2",
+        "split": "dev",
+        "synthetic": true,
+        "examples": 2,
+        "eligibilityAccuracy": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "compensationExactAccuracy": {
+          "numerator": 1,
+          "denominator": 2,
+          "value": 0.5
+        },
+        "recencyAccuracy": {
+          "numerator": 1,
+          "denominator": 2,
+          "value": 0.5
+        },
+        "scoreCoverage": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "provisionalRangeAgreement": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "limitation": "Author-assigned synthetic ranges only; evidence text presence is checked but truth is not machine verified; no human relevance or recommendation usefulness claim."
+      },
+      "failures": 0,
+      "diagnostics": [
+        {
+          "id": "fit-backend",
+          "status": "model-output",
+          "durationMs": 46685,
+          "usage": {
+            "promptTokens": 345,
+            "completionTokens": 130,
+            "totalDurationNs": 46680167274
+          }
+        },
+        {
+          "id": "fit-senior",
+          "status": "model-output",
+          "durationMs": 22337,
+          "usage": {
+            "promptTokens": 325,
+            "completionTokens": 86,
+            "totalDurationNs": 22334217858
+          }
+        }
+      ]
+    }
+  },
+  "fixtureSha256": {
+    "recruiting": "0648a7d23d73a4b204aa618463791cb0015ecf20b7e32a8081db2a888c89ebc3",
+    "job-fit": "c183c730902c19bf12cc967672c8cf8e187aa3e8ffbfd4beecfd99a8896f089d"
+  },
+  "systemPromptSha256": {
+    "mail": "0bf82a023b6826992e5084bc578bf725e4d7cba6adbc9a0677724f4e83bb6175",
+    "fit": "98883fde64cc67464c6068b3c34cb8ecfd3d0ef893acd78bbbb50050a4686fc8"
+  },
+  "humanValidated": false,
+  "finishedAt": "2026-10-23T09:58:18.958Z"
+}

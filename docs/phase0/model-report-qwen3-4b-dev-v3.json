@@ -1,0 +1,224 @@
+{
+  "version": 1,
+  "promptVersion": "phase0-local-v3",
+  "model": "qwen3:4b",
+  "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "provider": "local Ollama",
+  "synthetic": true,
+  "split": "dev",
+  "heldOutRuns": 0,
+  "outputArtifactsImmutable": true,
+  "developmentDemonstrations": {
+    "mail": 2,
+    "fit": 0,
+    "independentlyEvaluated": false
+  },
+  "generationOptions": {
+    "seed": 0,
+    "temperature": 0,
+    "num_ctx": 4096,
+    "num_predict": 512,
+    "think": false,
+    "requestTimeoutMs": 60000
+  },
+  "autoApplyEnabled": false,
+  "startedAt": "2026-10-23T10:00:15.974Z",
+  "results": {
+    "mail": {
+      "modelOutputCoverage": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "validCompleteSplit": true,
+      "metrics": {
+        "system": "ollama/qwen3:4b:phase0-local-v3",
+        "split": "dev",
+        "synthetic": true,
+        "examples": 4,
+        "applicationLinkPrecision": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "applicationLinkRecall": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "applicationLinkCoverage": {
+          "numerator": 3,
+          "denominator": 4,
+          "value": 0.75
+        },
+        "fullAbstentionRate": {
+          "numerator": 1,
+          "denominator": 4,
+          "value": 0.25
+        },
+        "eventPrecision": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "eventRecall": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "perEvent": {
+          "confirmation": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "assessment": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "interview": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "rejection": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "offer": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          }
+        },
+        "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+      },
+      "failures": 0,
+      "diagnostics": [
+        {
+          "id": "mail-confirmation",
+          "status": "model-output",
+          "durationMs": 18506,
+          "usage": {
+            "promptTokens": 464,
+            "completionTokens": 24,
+            "totalDurationNs": 18496066320
+          }
+        },
+        {
+          "id": "mail-assessment",
+          "status": "model-output",
+          "durationMs": 15858,
+          "usage": {
+            "promptTokens": 480,
+            "completionTokens": 24,
+            "totalDurationNs": 15852475518
+          }
+        },
+        {
+          "id": "mail-newsletter",
+          "status": "model-output",
+          "durationMs": 17614,
+          "usage": {
+            "promptTokens": 460,
+            "completionTokens": 16,
+            "totalDurationNs": 17607567096
+          }
+        },
+        {
+          "id": "mail-quoted",
+          "status": "model-output",
+          "durationMs": 15894,
+          "usage": {
+            "promptTokens": 486,
+            "completionTokens": 19,
+            "totalDurationNs": 15887751813
+          }
+        }
+      ]
+    },
+    "fit": {
+      "modelOutputCoverage": {
+        "numerator": 1,
+        "denominator": 2
+      },
+      "validCompleteSplit": false,
+      "metrics": null,
+      "failures": 1,
+      "diagnostics": [
+        {
+          "id": "fit-backend",
+          "status": "request-or-schema-failure",
+          "durationMs": 60007,
+          "category": "timeout"
+        },
+        {
+          "id": "fit-senior",
+          "status": "model-output",
+          "durationMs": 40546,
+          "usage": {
+            "promptTokens": 366,
+            "completionTokens": 107,
+            "totalDurationNs": 40534603836
+          }
+        }
+      ],
+      "pipeline": {
+        "version": "explicit-listing-facts-v1",
+        "source": "Whitelisted listing description, postedAt and asOf only; no gold labels",
+        "changedFields": [
+          "compensation",
+          "confirmedLast24Hours"
+        ],
+        "metrics": null,
+        "limitation": "Deterministic input-derived facts are reported separately from raw model quality; scores, eligibility and evidence remain model outputs."
+      }
+    }
+  },
+  "fixtureSha256": {
+    "recruiting": "0648a7d23d73a4b204aa618463791cb0015ecf20b7e32a8081db2a888c89ebc3",
+    "job-fit": "c183c730902c19bf12cc967672c8cf8e187aa3e8ffbfd4beecfd99a8896f089d"
+  },
+  "systemPromptSha256": {
+    "mail": "d1887c9abd7fe92eda01cd8a3c7e26a0f8e4d06ba21ff33848106c68b395d73a",
+    "fit": "1857906b6a21fff9b7a487ad90c7673b73a5963b108f25054da36e51f4e670d2"
+  },
+  "humanValidated": false,
+  "finishedAt": "2026-10-23T10:03:04.432Z"
+}

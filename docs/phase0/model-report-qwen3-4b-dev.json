@@ -1,0 +1,236 @@
+{
+  "version": 1,
+  "promptVersion": "phase0-local-v1",
+  "model": "qwen3:4b",
+  "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "provider": "local Ollama",
+  "synthetic": true,
+  "split": "dev",
+  "heldOutRuns": 0,
+  "outputArtifactsImmutable": true,
+  "autoApplyEnabled": false,
+  "startedAt": "2026-10-23T09:53:17.571Z",
+  "results": {
+    "mail": {
+      "modelOutputCoverage": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "validCompleteSplit": true,
+      "metrics": {
+        "system": "ollama/qwen3:4b:phase0-local-v1",
+        "split": "dev",
+        "synthetic": true,
+        "examples": 4,
+        "applicationLinkPrecision": {
+          "numerator": 3,
+          "denominator": 4,
+          "value": 0.75
+        },
+        "applicationLinkRecall": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "applicationLinkCoverage": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "fullAbstentionRate": {
+          "numerator": 0,
+          "denominator": 4,
+          "value": 0
+        },
+        "eventPrecision": {
+          "numerator": 1,
+          "denominator": 4,
+          "value": 0.25
+        },
+        "eventRecall": {
+          "numerator": 1,
+          "denominator": 2,
+          "value": 0.5
+        },
+        "perEvent": {
+          "confirmation": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 1,
+              "value": 0
+            }
+          },
+          "assessment": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "interview": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 1,
+              "value": 0
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "rejection": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 2,
+              "value": 0
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "offer": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          }
+        },
+        "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+      },
+      "failures": 0,
+      "diagnostics": [
+        {
+          "id": "mail-confirmation",
+          "status": "model-output",
+          "durationMs": 32634,
+          "usage": {
+            "promptTokens": 177,
+            "completionTokens": 26,
+            "totalDurationNs": 32613859555
+          }
+        },
+        {
+          "id": "mail-assessment",
+          "status": "model-output",
+          "durationMs": 11539,
+          "usage": {
+            "promptTokens": 193,
+            "completionTokens": 25,
+            "totalDurationNs": 11532730687
+          }
+        },
+        {
+          "id": "mail-newsletter",
+          "status": "model-output",
+          "durationMs": 11533,
+          "usage": {
+            "promptTokens": 173,
+            "completionTokens": 26,
+            "totalDurationNs": 11526171170
+          }
+        },
+        {
+          "id": "mail-quoted",
+          "status": "model-output",
+          "durationMs": 11684,
+          "usage": {
+            "promptTokens": 199,
+            "completionTokens": 26,
+            "totalDurationNs": 11679515717
+          }
+        }
+      ]
+    },
+    "fit": {
+      "modelOutputCoverage": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "validCompleteSplit": true,
+      "metrics": {
+        "system": "ollama/qwen3:4b:phase0-local-v1",
+        "split": "dev",
+        "synthetic": true,
+        "examples": 2,
+        "eligibilityAccuracy": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "compensationExactAccuracy": {
+          "numerator": 1,
+          "denominator": 2,
+          "value": 0.5
+        },
+        "recencyAccuracy": {
+          "numerator": 0,
+          "denominator": 2,
+          "value": 0
+        },
+        "scoreCoverage": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "provisionalRangeAgreement": {
+          "numerator": 1,
+          "denominator": 2,
+          "value": 0.5
+        },
+        "limitation": "Author-assigned synthetic ranges only; evidence text presence is checked but truth is not machine verified; no human relevance or recommendation usefulness claim."
+      },
+      "failures": 0,
+      "diagnostics": [
+        {
+          "id": "fit-backend",
+          "status": "model-output",
+          "durationMs": 26321,
+          "usage": {
+            "promptTokens": 243,
+            "completionTokens": 71,
+            "totalDurationNs": 26310427679
+          }
+        },
+        {
+          "id": "fit-senior",
+          "status": "model-output",
+          "durationMs": 19352,
+          "usage": {
+            "promptTokens": 223,
+            "completionTokens": 74,
+            "totalDurationNs": 19349672966
+          }
+        }
+      ]
+    }
+  },
+  "fixtureSha256": {
+    "recruiting": "0648a7d23d73a4b204aa618463791cb0015ecf20b7e32a8081db2a888c89ebc3",
+    "job-fit": "c183c730902c19bf12cc967672c8cf8e187aa3e8ffbfd4beecfd99a8896f089d"
+  },
+  "systemPromptSha256": {
+    "mail": "4de87ee3e15b719ac99b14ac4af7cd45a4e87c0c191867c3857b00c54cae3e8f",
+    "fit": "6a16d5382434ca288a73ad92b1e184556281d1cc2f9dd8c71b1a3d1c4b36eb09"
+  },
+  "humanValidated": false,
+  "finishedAt": "2026-10-23T09:55:10.672Z"
+}

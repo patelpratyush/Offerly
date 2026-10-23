@@ -1,0 +1,599 @@
+{
+  "version": 1,
+  "mode": "fresh",
+  "model": "qwen3:4b",
+  "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "promptVersion": "phase0-local-v3",
+  "options": {
+    "think": false,
+    "numPredict": 512,
+    "requestTimeoutMs": 180000
+  },
+  "sourceSha256": {
+    "runner": "5927847e7285a37ff200f30934de598e417c147fe93d95c4953a286238c7a005",
+    "frozenModelModule": "a18d86f516022e2ebb6c38af49b09fc722be9f7046227d87131e752d892914af",
+    "guard": "221024386b294a83d43e6c1f13f762169a8981764c8d21abdba3138227254e80",
+    "evaluator": "eba7b84f66923092c289c0336b7ffc17df5bd5b471423f65908319099a8a9f56"
+  },
+  "fixtureSha256": "4f052061f42af090dd2cf5465ddc87c959d7d03b824c197f57fe5e88dba2faf8",
+  "systemPromptSha256": {
+    "mail": "d1887c9abd7fe92eda01cd8a3c7e26a0f8e4d06ba21ff33848106c68b395d73a",
+    "fit": "1857906b6a21fff9b7a487ad90c7673b73a5963b108f25054da36e51f4e670d2"
+  },
+  "synthetic": true,
+  "humanValidated": false,
+  "autoApplyEnabled": false,
+  "startedAt": "2026-10-23T22:54:41.933Z",
+  "freshRuns": 1,
+  "raw": {
+    "version": 1,
+    "split": "held-out",
+    "system": "ollama/qwen3:4b:phase0-local-v3:think=false",
+    "predictions": [
+      {
+        "id": "fresh-01",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-02",
+        "applicationId": "fresh-app-02",
+        "events": [
+          "assessment"
+        ]
+      },
+      {
+        "id": "fresh-03",
+        "applicationId": "fresh-app-03",
+        "events": [
+          "interview"
+        ]
+      },
+      {
+        "id": "fresh-04",
+        "applicationId": "fresh-app-04",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-05",
+        "applicationId": "fresh-app-05",
+        "events": [
+          "offer"
+        ]
+      },
+      {
+        "id": "fresh-06",
+        "applicationId": "fresh-app-06",
+        "events": [
+          "confirmation"
+        ]
+      },
+      {
+        "id": "fresh-07",
+        "applicationId": "fresh-app-07",
+        "events": []
+      },
+      {
+        "id": "fresh-08",
+        "applicationId": "fresh-app-08",
+        "events": [
+          "interview"
+        ]
+      },
+      {
+        "id": "fresh-09",
+        "applicationId": "fresh-app-09",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-10",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-11",
+        "applicationId": "fresh-app-11",
+        "events": [
+          "assessment"
+        ]
+      },
+      {
+        "id": "fresh-12",
+        "applicationId": "fresh-app-12",
+        "events": [
+          "interview"
+        ]
+      },
+      {
+        "id": "fresh-13",
+        "applicationId": "fresh-app-13",
+        "events": []
+      },
+      {
+        "id": "fresh-14",
+        "applicationId": "fresh-app-14",
+        "events": [
+          "assessment"
+        ]
+      },
+      {
+        "id": "fresh-15",
+        "applicationId": "fresh-app-15",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-16",
+        "applicationId": "fresh-app-16",
+        "events": [
+          "interview"
+        ]
+      },
+      {
+        "id": "fresh-17",
+        "applicationId": "fresh-app-17",
+        "events": [
+          "confirmation"
+        ]
+      },
+      {
+        "id": "fresh-18",
+        "applicationId": "fresh-app-18",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-19",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-20",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-21",
+        "applicationId": "fresh-app-21",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-22",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-23",
+        "applicationId": "fresh-app-23",
+        "events": []
+      },
+      {
+        "id": "fresh-24",
+        "applicationId": null,
+        "events": []
+      }
+    ]
+  },
+  "guarded": {
+    "version": 1,
+    "split": "held-out",
+    "system": "ollama/qwen3:4b:phase0-local-v3:think=false+source-evidence-veto",
+    "predictions": [
+      {
+        "id": "fresh-01",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-02",
+        "applicationId": "fresh-app-02",
+        "events": [
+          "assessment"
+        ]
+      },
+      {
+        "id": "fresh-03",
+        "applicationId": "fresh-app-03",
+        "events": [
+          "interview"
+        ]
+      },
+      {
+        "id": "fresh-04",
+        "applicationId": "fresh-app-04",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-05",
+        "applicationId": "fresh-app-05",
+        "events": [
+          "offer"
+        ]
+      },
+      {
+        "id": "fresh-06",
+        "applicationId": "fresh-app-06",
+        "events": [
+          "confirmation"
+        ]
+      },
+      {
+        "id": "fresh-07",
+        "applicationId": "fresh-app-07",
+        "events": []
+      },
+      {
+        "id": "fresh-08",
+        "applicationId": "fresh-app-08",
+        "events": [
+          "interview"
+        ]
+      },
+      {
+        "id": "fresh-09",
+        "applicationId": "fresh-app-09",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-10",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-11",
+        "applicationId": "fresh-app-11",
+        "events": [
+          "assessment"
+        ]
+      },
+      {
+        "id": "fresh-12",
+        "applicationId": "fresh-app-12",
+        "events": [
+          "interview"
+        ]
+      },
+      {
+        "id": "fresh-13",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-14",
+        "applicationId": null,
+        "events": [
+          "assessment"
+        ]
+      },
+      {
+        "id": "fresh-15",
+        "applicationId": null,
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-16",
+        "applicationId": null,
+        "events": [
+          "interview"
+        ]
+      },
+      {
+        "id": "fresh-17",
+        "applicationId": "fresh-app-17",
+        "events": [
+          "confirmation"
+        ]
+      },
+      {
+        "id": "fresh-18",
+        "applicationId": "fresh-app-18",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-19",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-20",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-21",
+        "applicationId": "fresh-app-21",
+        "events": [
+          "rejection"
+        ]
+      },
+      {
+        "id": "fresh-22",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-23",
+        "applicationId": null,
+        "events": []
+      },
+      {
+        "id": "fresh-24",
+        "applicationId": null,
+        "events": []
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "id": "fresh-01",
+      "valid": false,
+      "durationMs": 180198,
+      "category": "timeout"
+    },
+    {
+      "id": "fresh-02",
+      "valid": true,
+      "durationMs": 27850,
+      "usage": {
+        "promptTokens": 468,
+        "completionTokens": 26,
+        "totalDurationNs": 27566139985
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-03",
+      "valid": true,
+      "durationMs": 49320,
+      "usage": {
+        "promptTokens": 469,
+        "completionTokens": 27,
+        "totalDurationNs": 49291383081
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-04",
+      "valid": true,
+      "durationMs": 18976,
+      "usage": {
+        "promptTokens": 462,
+        "completionTokens": 27,
+        "totalDurationNs": 18903294479
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-05",
+      "valid": true,
+      "durationMs": 25184,
+      "usage": {
+        "promptTokens": 458,
+        "completionTokens": 26,
+        "totalDurationNs": 25105470690
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-06",
+      "valid": true,
+      "durationMs": 50634,
+      "usage": {
+        "promptTokens": 480,
+        "completionTokens": 26,
+        "totalDurationNs": 50531073096
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-07",
+      "valid": true,
+      "durationMs": 27434,
+      "usage": {
+        "promptTokens": 503,
+        "completionTokens": 21,
+        "totalDurationNs": 27385389219
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-08",
+      "valid": true,
+      "durationMs": 85682,
+      "usage": {
+        "promptTokens": 507,
+        "completionTokens": 27,
+        "totalDurationNs": 85620906410
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-09",
+      "valid": true,
+      "durationMs": 36278,
+      "usage": {
+        "promptTokens": 473,
+        "completionTokens": 23,
+        "totalDurationNs": 36208004505
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-10",
+      "valid": false,
+      "durationMs": 38696,
+      "category": "request-or-invalid-output"
+    },
+    {
+      "id": "fresh-11",
+      "valid": true,
+      "durationMs": 31397,
+      "usage": {
+        "promptTokens": 467,
+        "completionTokens": 26,
+        "totalDurationNs": 31264484940
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-12",
+      "valid": true,
+      "durationMs": 58291,
+      "usage": {
+        "promptTokens": 476,
+        "completionTokens": 27,
+        "totalDurationNs": 58137748050
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-13",
+      "valid": true,
+      "durationMs": 68455,
+      "usage": {
+        "promptTokens": 483,
+        "completionTokens": 21,
+        "totalDurationNs": 68361639072
+      },
+      "guardReason": "no_source_evidence"
+    },
+    {
+      "id": "fresh-14",
+      "valid": true,
+      "durationMs": 25434,
+      "usage": {
+        "promptTokens": 489,
+        "completionTokens": 26,
+        "totalDurationNs": 25402258003
+      },
+      "guardReason": "no_source_evidence"
+    },
+    {
+      "id": "fresh-15",
+      "valid": true,
+      "durationMs": 17606,
+      "usage": {
+        "promptTokens": 478,
+        "completionTokens": 23,
+        "totalDurationNs": 17597994497
+      },
+      "guardReason": "no_source_evidence"
+    },
+    {
+      "id": "fresh-16",
+      "valid": true,
+      "durationMs": 25173,
+      "usage": {
+        "promptTokens": 490,
+        "completionTokens": 27,
+        "totalDurationNs": 25152726646
+      },
+      "guardReason": "no_source_evidence"
+    },
+    {
+      "id": "fresh-17",
+      "valid": true,
+      "durationMs": 25910,
+      "usage": {
+        "promptTokens": 513,
+        "completionTokens": 26,
+        "totalDurationNs": 25898207102
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-18",
+      "valid": true,
+      "durationMs": 30149,
+      "usage": {
+        "promptTokens": 489,
+        "completionTokens": 27,
+        "totalDurationNs": 30142499210
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-19",
+      "valid": false,
+      "durationMs": 17475,
+      "category": "request-or-invalid-output"
+    },
+    {
+      "id": "fresh-20",
+      "valid": false,
+      "durationMs": 21397,
+      "category": "request-or-invalid-output"
+    },
+    {
+      "id": "fresh-21",
+      "valid": true,
+      "durationMs": 20076,
+      "usage": {
+        "promptTokens": 484,
+        "completionTokens": 27,
+        "totalDurationNs": 20057684428
+      },
+      "guardReason": "explicit_requisition"
+    },
+    {
+      "id": "fresh-22",
+      "valid": true,
+      "durationMs": 14473,
+      "usage": {
+        "promptTokens": 459,
+        "completionTokens": 16,
+        "totalDurationNs": 14468814763
+      },
+      "guardReason": "no_proposal"
+    },
+    {
+      "id": "fresh-23",
+      "valid": true,
+      "durationMs": 16537,
+      "usage": {
+        "promptTokens": 460,
+        "completionTokens": 21,
+        "totalDurationNs": 16528048986
+      },
+      "guardReason": "no_source_evidence"
+    },
+    {
+      "id": "fresh-24",
+      "valid": false,
+      "durationMs": 20376,
+      "category": "request-or-invalid-output"
+    }
+  ],
+  "complete": false,
+  "coverage": {
+    "numerator": 19,
+    "attempted": 24,
+    "denominator": 24
+  },
+  "rawMetrics": null,
+  "guardedMetrics": null,
+  "guardReasons": {
+    "explicit_requisition": 13,
+    "no_source_evidence": 5,
+    "no_proposal": 1
+  },
+  "fullAbstentions": 8,
+  "linksVetoed": 5,
+  "finishedAt": "2026-10-23T23:10:14.991Z"
+}

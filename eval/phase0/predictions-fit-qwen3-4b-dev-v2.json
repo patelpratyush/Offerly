@@ -1,0 +1,40 @@
+{
+  "version": 1,
+  "split": "dev",
+  "system": "ollama/qwen3:4b:phase0-local-v2",
+  "predictions": [
+    {
+      "id": "fit-backend",
+      "score": 95,
+      "eligibility": "unknown",
+      "evidence": [
+        "explicitly matched Node.js/PostgreSQL",
+        "missing required skills: workAuthorization is unknown",
+        "seniority: 2 years experience matches 1-3 years requirement",
+        "preferred skills: none explicitly mentioned",
+        "preferences: remote is true, location matches"
+      ],
+      "compensation": {
+        "base": 120010,
+        "total": null,
+        "currency": "USD"
+      },
+      "confirmedLast24Hours": true
+    },
+    {
+      "id": "fit-senior",
+      "score": 0,
+      "eligibility": "unknown",
+      "evidence": [
+        "Missing required skill: Rust",
+        "Experience: 2 years (required: 10 years)"
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": false
+    }
+  ]
+}

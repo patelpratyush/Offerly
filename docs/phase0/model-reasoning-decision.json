@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "arm": "nonthinking-v3-with-source-guard",
+  "allDevExact": false,
+  "medianDurationMs": null,
+  "options": {
+    "think": false,
+    "numPredict": 512,
+    "requestTimeoutMs": 180000
+  },
+  "sourceSha256": {
+    "runner": "5927847e7285a37ff200f30934de598e417c147fe93d95c4953a286238c7a005",
+    "frozenModelModule": "a18d86f516022e2ebb6c38af49b09fc722be9f7046227d87131e752d892914af",
+    "guard": "221024386b294a83d43e6c1f13f762169a8981764c8d21abdba3138227254e80",
+    "evaluator": "eba7b84f66923092c289c0336b7ffc17df5bd5b471423f65908319099a8a9f56"
+  },
+  "devSourceSha256": {
+    "runner": "5927847e7285a37ff200f30934de598e417c147fe93d95c4953a286238c7a005",
+    "frozenModelModule": "a18d86f516022e2ebb6c38af49b09fc722be9f7046227d87131e752d892914af",
+    "guard": "221024386b294a83d43e6c1f13f762169a8981764c8d21abdba3138227254e80",
+    "evaluator": "eba7b84f66923092c289c0336b7ffc17df5bd5b471423f65908319099a8a9f56"
+  },
+  "guardUpdatedAfterDev": false,
+  "expectedFreshSha256": "4f052061f42af090dd2cf5465ddc87c959d7d03b824c197f57fe5e88dba2faf8",
+  "systemPromptSha256": {
+    "mail": "d1887c9abd7fe92eda01cd8a3c7e26a0f8e4d06ba21ff33848106c68b395d73a",
+    "fit": "1857906b6a21fff9b7a487ad90c7673b73a5963b108f25054da36e51f4e670d2"
+  },
+  "devReport": "docs/phase0/model-reasoning-dev.json",
+  "frozenAt": "2026-10-23T22:54:31.880Z",
+  "rationale": "Selection uses raw dev correctness/latency only; reviewed source-veto updates are separately hashed before fresh evaluation. No fresh labels read."
+}

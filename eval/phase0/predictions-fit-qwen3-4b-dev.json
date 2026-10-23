@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "split": "dev",
+  "system": "ollama/qwen3:4b:phase0-local-v1",
+  "predictions": [
+    {
+      "id": "fit-backend",
+      "score": 0,
+      "eligibility": "unknown",
+      "evidence": [
+        "workAuthorization is unknown"
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": false
+    },
+    {
+      "id": "fit-senior",
+      "score": 0,
+      "eligibility": "unknown",
+      "evidence": [
+        "workAuthorization is unknown"
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": false
+    }
+  ]
+}

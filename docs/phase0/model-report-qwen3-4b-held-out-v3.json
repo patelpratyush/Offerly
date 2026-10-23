@@ -1,0 +1,352 @@
+{
+  "version": 1,
+  "fixtureSha256": {
+    "recruiting": "0648a7d23d73a4b204aa618463791cb0015ecf20b7e32a8081db2a888c89ebc3",
+    "job-fit": "c183c730902c19bf12cc967672c8cf8e187aa3e8ffbfd4beecfd99a8896f089d"
+  },
+  "systemPromptSha256": {
+    "mail": "d1887c9abd7fe92eda01cd8a3c7e26a0f8e4d06ba21ff33848106c68b395d73a",
+    "fit": "1857906b6a21fff9b7a487ad90c7673b73a5963b108f25054da36e51f4e670d2"
+  },
+  "humanValidated": false,
+  "runnerSourceSha256": "a18d86f516022e2ebb6c38af49b09fc722be9f7046227d87131e752d892914af",
+  "listingFactsSourceSha256": "513b3016ed1923a698bf84727764642f4afd8af809348f1dd9b591f53061074d",
+  "promptVersion": "phase0-local-v3",
+  "model": "qwen3:4b",
+  "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "provider": "local Ollama",
+  "synthetic": true,
+  "split": "held-out",
+  "heldOutRuns": 1,
+  "outputArtifactsImmutable": true,
+  "developmentDemonstrations": {
+    "mail": 2,
+    "fit": 0,
+    "independentlyEvaluated": false
+  },
+  "generationOptions": {
+    "seed": 0,
+    "temperature": 0,
+    "num_ctx": 4096,
+    "num_predict": 512,
+    "think": false,
+    "requestTimeoutMs": 180000
+  },
+  "autoApplyEnabled": false,
+  "startedAt": "2026-10-23T10:04:11.450Z",
+  "results": {
+    "mail": {
+      "modelOutputCoverage": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "validCompleteSplit": true,
+      "metrics": {
+        "system": "ollama/qwen3:4b:phase0-local-v3",
+        "split": "held-out",
+        "synthetic": true,
+        "examples": 8,
+        "applicationLinkPrecision": {
+          "numerator": 5,
+          "denominator": 6,
+          "value": 0.8333333333333334
+        },
+        "applicationLinkRecall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "applicationLinkCoverage": {
+          "numerator": 6,
+          "denominator": 8,
+          "value": 0.75
+        },
+        "fullAbstentionRate": {
+          "numerator": 2,
+          "denominator": 8,
+          "value": 0.25
+        },
+        "eventPrecision": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "eventRecall": {
+          "numerator": 3,
+          "denominator": 5,
+          "value": 0.6
+        },
+        "perEvent": {
+          "confirmation": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 2,
+              "value": 0
+            }
+          },
+          "assessment": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "interview": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "rejection": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "offer": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          }
+        },
+        "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+      },
+      "failures": 0,
+      "diagnostics": [
+        {
+          "id": "mail-ambiguity",
+          "status": "model-output",
+          "durationMs": 16541,
+          "usage": {
+            "promptTokens": 463,
+            "completionTokens": 18,
+            "totalDurationNs": 16527139041
+          }
+        },
+        {
+          "id": "mail-schedule",
+          "status": "model-output",
+          "durationMs": 19168,
+          "usage": {
+            "promptTokens": 481,
+            "completionTokens": 25,
+            "totalDurationNs": 19160992117
+          }
+        },
+        {
+          "id": "mail-rejection",
+          "status": "model-output",
+          "durationMs": 17185,
+          "usage": {
+            "promptTokens": 464,
+            "completionTokens": 21,
+            "totalDurationNs": 17181143781
+          }
+        },
+        {
+          "id": "mail-offer",
+          "status": "model-output",
+          "durationMs": 19541,
+          "usage": {
+            "promptTokens": 484,
+            "completionTokens": 24,
+            "totalDurationNs": 19537252031
+          }
+        },
+        {
+          "id": "mail-injection",
+          "status": "model-output",
+          "durationMs": 13988,
+          "usage": {
+            "promptTokens": 466,
+            "completionTokens": 16,
+            "totalDurationNs": 13983323041
+          }
+        },
+        {
+          "id": "mail-agency",
+          "status": "model-output",
+          "durationMs": 13956,
+          "usage": {
+            "promptTokens": 463,
+            "completionTokens": 16,
+            "totalDurationNs": 13953033453
+          }
+        },
+        {
+          "id": "mail-forward",
+          "status": "model-output",
+          "durationMs": 17356,
+          "usage": {
+            "promptTokens": 480,
+            "completionTokens": 19,
+            "totalDurationNs": 17350890464
+          }
+        },
+        {
+          "id": "mail-future",
+          "status": "model-output",
+          "durationMs": 16415,
+          "usage": {
+            "promptTokens": 468,
+            "completionTokens": 19,
+            "totalDurationNs": 16402983855
+          }
+        }
+      ]
+    },
+    "fit": {
+      "modelOutputCoverage": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "validCompleteSplit": true,
+      "metrics": {
+        "system": "ollama/qwen3:4b:phase0-local-v3",
+        "split": "held-out",
+        "synthetic": true,
+        "examples": 4,
+        "eligibilityAccuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "compensationExactAccuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "recencyAccuracy": {
+          "numerator": 3,
+          "denominator": 4,
+          "value": 0.75
+        },
+        "scoreCoverage": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "provisionalRangeAgreement": {
+          "numerator": 2,
+          "denominator": 4,
+          "value": 0.5
+        },
+        "limitation": "Author-assigned synthetic ranges only; evidence text presence is checked but truth is not machine verified; no human relevance or recommendation usefulness claim."
+      },
+      "failures": 0,
+      "diagnostics": [
+        {
+          "id": "fit-visa",
+          "status": "model-output",
+          "durationMs": 68706,
+          "usage": {
+            "promptTokens": 395,
+            "completionTokens": 174,
+            "totalDurationNs": 68696434608
+          }
+        },
+        {
+          "id": "fit-stale",
+          "status": "model-output",
+          "durationMs": 44484,
+          "usage": {
+            "promptTokens": 362,
+            "completionTokens": 110,
+            "totalDurationNs": 44478121695
+          }
+        },
+        {
+          "id": "fit-currency",
+          "status": "model-output",
+          "durationMs": 61810,
+          "usage": {
+            "promptTokens": 380,
+            "completionTokens": 142,
+            "totalDurationNs": 61802990573
+          }
+        },
+        {
+          "id": "fit-unknown-date",
+          "status": "model-output",
+          "durationMs": 62122,
+          "usage": {
+            "promptTokens": 346,
+            "completionTokens": 157,
+            "totalDurationNs": 62116138230
+          }
+        }
+      ],
+      "pipeline": {
+        "version": "explicit-listing-facts-v1",
+        "source": "Whitelisted listing description, postedAt and asOf only; no gold labels",
+        "changedFields": [
+          "compensation",
+          "confirmedLast24Hours"
+        ],
+        "metrics": {
+          "system": "ollama/qwen3:4b:phase0-local-v3+explicit-listing-facts-v1",
+          "split": "held-out",
+          "synthetic": true,
+          "examples": 4,
+          "eligibilityAccuracy": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1
+          },
+          "compensationExactAccuracy": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1
+          },
+          "recencyAccuracy": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1
+          },
+          "scoreCoverage": {
+            "numerator": 4,
+            "denominator": 4,
+            "value": 1
+          },
+          "provisionalRangeAgreement": {
+            "numerator": 2,
+            "denominator": 4,
+            "value": 0.5
+          },
+          "limitation": "Author-assigned synthetic ranges only; evidence text presence is checked but truth is not machine verified; no human relevance or recommendation usefulness claim."
+        },
+        "limitation": "Deterministic input-derived facts are reported separately from raw model quality; scores, eligibility and evidence remain model outputs."
+      }
+    }
+  },
+  "finishedAt": "2026-10-23T10:10:22.802Z"
+}

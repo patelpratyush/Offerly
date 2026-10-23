@@ -1,0 +1,240 @@
+{
+  "version": 1,
+  "provenance": "Secondary valid-only slice; incomplete run; not launch-grade",
+  "sourceReport": "docs/phase0/model-reasoning-fresh.json",
+  "fixture": "eval/phase0/recruiting-fresh.json",
+  "fixtureSha256": "4f052061f42af090dd2cf5465ddc87c959d7d03b824c197f57fe5e88dba2faf8",
+  "completeRun": false,
+  "validExamples": 19,
+  "plannedExamples": 24,
+  "excluded": [
+    {
+      "id": "fresh-01",
+      "category": "timeout",
+      "durationMs": 180198
+    },
+    {
+      "id": "fresh-10",
+      "category": "request-or-invalid-output",
+      "durationMs": 38696
+    },
+    {
+      "id": "fresh-19",
+      "category": "request-or-invalid-output",
+      "durationMs": 17475
+    },
+    {
+      "id": "fresh-20",
+      "category": "request-or-invalid-output",
+      "durationMs": 21397
+    },
+    {
+      "id": "fresh-24",
+      "category": "request-or-invalid-output",
+      "durationMs": 20376
+    }
+  ],
+  "rawMetrics": {
+    "system": "ollama/qwen3:4b:phase0-local-v3:think=false",
+    "split": "held-out",
+    "synthetic": true,
+    "examples": 19,
+    "applicationLinkPrecision": {
+      "numerator": 13,
+      "denominator": 18,
+      "value": 0.7222222222222222
+    },
+    "applicationLinkRecall": {
+      "numerator": 13,
+      "denominator": 13,
+      "value": 1
+    },
+    "applicationLinkCoverage": {
+      "numerator": 18,
+      "denominator": 19,
+      "value": 0.9473684210526315
+    },
+    "fullAbstentionRate": {
+      "numerator": 1,
+      "denominator": 19,
+      "value": 0.05263157894736842
+    },
+    "eventPrecision": {
+      "numerator": 14,
+      "denominator": 15,
+      "value": 0.9333333333333333
+    },
+    "eventRecall": {
+      "numerator": 14,
+      "denominator": 18,
+      "value": 0.7777777777777778
+    },
+    "perEvent": {
+      "confirmation": {
+        "precision": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 2,
+          "denominator": 4,
+          "value": 0.5
+        }
+      },
+      "assessment": {
+        "precision": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 3,
+          "denominator": 5,
+          "value": 0.6
+        }
+      },
+      "interview": {
+        "precision": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        }
+      },
+      "rejection": {
+        "precision": {
+          "numerator": 4,
+          "denominator": 5,
+          "value": 0.8
+        },
+        "recall": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        }
+      },
+      "offer": {
+        "precision": {
+          "numerator": 1,
+          "denominator": 1,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 1,
+          "denominator": 1,
+          "value": 1
+        }
+      }
+    },
+    "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+  },
+  "guardedMetrics": {
+    "system": "ollama/qwen3:4b:phase0-local-v3:think=false+source-evidence-veto",
+    "split": "held-out",
+    "synthetic": true,
+    "examples": 19,
+    "applicationLinkPrecision": {
+      "numerator": 13,
+      "denominator": 13,
+      "value": 1
+    },
+    "applicationLinkRecall": {
+      "numerator": 13,
+      "denominator": 13,
+      "value": 1
+    },
+    "applicationLinkCoverage": {
+      "numerator": 13,
+      "denominator": 19,
+      "value": 0.6842105263157895
+    },
+    "fullAbstentionRate": {
+      "numerator": 3,
+      "denominator": 19,
+      "value": 0.15789473684210525
+    },
+    "eventPrecision": {
+      "numerator": 14,
+      "denominator": 15,
+      "value": 0.9333333333333333
+    },
+    "eventRecall": {
+      "numerator": 14,
+      "denominator": 18,
+      "value": 0.7777777777777778
+    },
+    "perEvent": {
+      "confirmation": {
+        "precision": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 2,
+          "denominator": 4,
+          "value": 0.5
+        }
+      },
+      "assessment": {
+        "precision": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 3,
+          "denominator": 5,
+          "value": 0.6
+        }
+      },
+      "interview": {
+        "precision": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        }
+      },
+      "rejection": {
+        "precision": {
+          "numerator": 4,
+          "denominator": 5,
+          "value": 0.8
+        },
+        "recall": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        }
+      },
+      "offer": {
+        "precision": {
+          "numerator": 1,
+          "denominator": 1,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 1,
+          "denominator": 1,
+          "value": 1
+        }
+      }
+    },
+    "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+  },
+  "limitations": [
+    "Excludes invalid, timed-out, or failed outputs; these remain failures in full-run coverage.",
+    "Synthetic authored labels are not independently human validated.",
+    "Small valid-only slice cannot establish production accuracy or safe automatic stage changes."
+  ]
+}

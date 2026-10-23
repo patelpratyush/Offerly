@@ -1,14 +1,14 @@
 # Implementation status
 
-The original plan and PRD remain unchanged. This file records implementation evidence and gaps; it does not mark entire milestones complete.
+The PRD and build plan define scope; this file records implementation evidence and gaps. Milestone completion must follow the recorded acceptance results.
 
-## Current checkpoint — October 22, 2026
+## Current checkpoint — October 23, 2026
 
 This section supersedes older historical checkpoint descriptions below. The private manual tracker, hosted Supabase/Vercel deployment, private scanned Blob uploads, hosted scheduler, and recovery-code password reset are implemented. Recent CI fixes are on main.
 
-Phase 0 validation now includes real public-board probes for Greenhouse, Lever and Ashby; bounded metadata-only evidence; Gmail Desktop-client readiness and exact owner setup; eighteen synthetic labeled examples; a strict evaluator; and actual local Ollama held-out inference with model/prompt/fixture provenance. The tiny model failed extraction/fit checks and is not enabled for application automation. A consented seven-day Gmail scan read 612 messages across seven pages, with no skipped messages or retries. Reusable authorization was stored in macOS login Keychain and reused by a separate process without browser approval. The initial all-history scan was stopped at owner request after 389 messages. No mailbox content was persisted or sent to a model.
+Phase 0 has verified six public-board probes, real seven-day Gmail retrieval (612 messages), reusable local Keychain authorization, and a bounded historical recruiting import: 20 messages yielded one structured unresolved review candidate and 19 abstentions; replay created zero new candidates. No mailbox content or evidence was persisted or sent to AI. Eighteen fictional labeled cases and strict evaluation/provenance tooling exist. Current source access and Google dependencies are reviewed in [access decision](docs/phase0/access-decision.md); this is not public-catalog permission or hosted OAuth approval.
 
-**Phase 0 remains partial:** Google Desktop OAuth and a seven-day local body-retrieval scan work, but full-history sync, production OAuth/storage, and two-hour History API sync are not implemented; source rollout conditions remain explicit; a production-quality model is not selected. Additional AI spend is capped at $0 by the owner. See [Phase 0 evidence](docs/phase0/README.md), [sources](docs/phase0/sources.md), [Gmail setup](docs/phase0/gmail.md), and [evaluation findings](docs/phase0/evaluation.md).
+Phase 0 feasibility evidence is now recorded, with a no-go on production AI matching. Fresh synthetic run returned 19/24 valid model outputs; raw link precision was 13/18 and event recall 14/18. A source-evidence guard raised valid-only link precision to 13/13 while reducing coverage to 13/19. These tiny, developer-authored synthetic results do not meet PRD quality gates. GPT API is a possible next synthetic-only comparison if free credits are verified; additional AI spend remains capped at $0 and real mail must not go to external AI without separate opt-in. Hosted OAuth/storage, two-hour incremental sync, workspace application import, representative release accuracy, and public discovery remain later release work. See [Phase 0 evidence](docs/phase0/README.md), [import proof](docs/phase0/import-proof-report.json), and [evaluation](docs/phase0/evaluation.md).
 
 The sections below retain prior implementation history and do not override this checkpoint.
 

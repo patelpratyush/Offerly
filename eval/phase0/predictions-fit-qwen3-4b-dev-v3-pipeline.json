@@ -1,0 +1,37 @@
+{
+  "version": 1,
+  "split": "dev",
+  "system": "ollama/qwen3:4b:phase0-local-v3+explicit-listing-facts-v1",
+  "predictions": [
+    {
+      "id": "fit-backend",
+      "score": null,
+      "eligibility": "unknown",
+      "evidence": [
+        "REQUEST_OR_SCHEMA_FAILURE: not a model prediction"
+      ],
+      "compensation": {
+        "base": 120000,
+        "total": null,
+        "currency": "USD"
+      },
+      "confirmedLast24Hours": true
+    },
+    {
+      "id": "fit-senior",
+      "score": 0,
+      "eligibility": "unknown",
+      "evidence": [
+        "Missing required skill: Rust (required by listing)",
+        "Experience gap: Profile shows 2 years, listing requires 10 years",
+        "Work authorization is unknown (separate eligibility constraint)"
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": true
+    }
+  ]
+}

@@ -1,0 +1,81 @@
+{
+  "version": 1,
+  "split": "held-out",
+  "system": "ollama/qwen3:4b:phase0-local-v3",
+  "predictions": [
+    {
+      "id": "fit-visa",
+      "score": 85,
+      "eligibility": "unknown",
+      "evidence": [
+        "Work authorization is unknown, which is a required constraint",
+        "Required skills: Node.js and PostgreSQL are explicitly matched",
+        "Seniority: 2 years experience matches the role's implied seniority (backend engineer)",
+        "Preferred skills: None explicitly stated, but Node.js/Post: strong match",
+        "Salary: Base USD 1: 100000, Total USD 150000 (explicitly stated)"
+      ],
+      "compensation": {
+        "base": 100000,
+        "total": 150000,
+        "currency": "USD"
+      },
+      "confirmedLast24Hours": false
+    },
+    {
+      "id": "fit-stale",
+      "score": 95,
+      "eligibility": "unknown",
+      "evidence": [
+        "explicitly matched Node.js/PostgreSQL",
+        "missing workAuthorization",
+        "2 years experience matches 35% experience weight",
+        "remote matches profile remote",
+        "location matches profile location"
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": false
+    },
+    {
+      "id": "fit-currency",
+      "score": 95,
+      "eligibility": "unknown",
+      "evidence": [
+        "explicitly matched Node.js/PostgreSQL",
+        "missing workAuthorization",
+        "2 years experience matches required skills",
+        "base salary: 110000 CAD",
+        "total salary: 1400:00 CAD",
+        "confirmedLast24Hours: true"
+      ],
+      "compensation": {
+        "base": 110000,
+        "total": 140000,
+        "currency": "CAD"
+      },
+      "confirmedLast24Hours": true
+    },
+    {
+      "id": "fit-unknown-date",
+      "score": 100,
+      "eligibility": "unknown",
+      "evidence": [
+        "explicitly matched Node.js/PostgreSQL",
+        "required skills: Node.js, PostgreSQL (both matched)",
+        "seniority: 2 years experience (matches 35% weight)",
+        "preferred skills: none explicitly stated (0% weight)",
+        "preferences: remote (explicitly stated, but not a required skill)",
+        "workAuthorization: unknown (separate eligibility constraint, not a missing technical skill)"
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": false
+    }
+  ]
+}

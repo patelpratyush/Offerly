@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "split": "dev",
+  "system": "ollama/qwen3:4b:phase0-local-v3:think=true",
+  "predictions": [
+    {
+      "id": "mail-confirmation",
+      "applicationId": null,
+      "events": []
+    }
+  ]
+}

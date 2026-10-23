@@ -1,0 +1,29 @@
+{
+  "observedDate": "2026-10-23",
+  "command": "npm run phase0:import",
+  "check": "phase0-local-historical-import",
+  "rulesVersion": "candidate-rules-v1",
+  "completed": true,
+  "contentPersisted": false,
+  "externalAiUsed": false,
+  "workspaceMutations": false,
+  "matchingAccuracyValidated": false,
+  "productionReady": false,
+  "selection": {
+    "selectedMessages": 20,
+    "selectionLimit": 20,
+    "moreMatchingMessages": true,
+    "fullMailboxScanned": false
+  },
+  "counts": {
+    "scanned": 20,
+    "candidates": 1,
+    "candidateEvents": 1,
+    "unresolvedReviewItems": 1,
+    "abstentions": 19,
+    "replayDuplicates": 20
+  },
+  "replayCreatesZeroNewCandidates": true,
+  "structuredCandidatesDemonstrated": true,
+  "limitation": "Observed aggregate from real local run. Candidate correctness is not independently labeled. This proves memory-only structured candidate import/replay, not application matching, persisted workspace import, or full mailbox coverage."
+}

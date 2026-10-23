@@ -1,0 +1,73 @@
+{
+  "version": 1,
+  "mode": "dev",
+  "model": "qwen3:4b",
+  "digest": "359d7dd4bcdab3d86b87d73ac27966f4dbb9f5efdfcc75d34a8764a09474fae7",
+  "promptVersion": "phase0-local-v3",
+  "options": {
+    "think": true,
+    "numPredict": 1024,
+    "requestTimeoutMs": 180000
+  },
+  "sourceSha256": {
+    "runner": "5927847e7285a37ff200f30934de598e417c147fe93d95c4953a286238c7a005",
+    "frozenModelModule": "a18d86f516022e2ebb6c38af49b09fc722be9f7046227d87131e752d892914af",
+    "guard": "221024386b294a83d43e6c1f13f762169a8981764c8d21abdba3138227254e80",
+    "evaluator": "eba7b84f66923092c289c0336b7ffc17df5bd5b471423f65908319099a8a9f56"
+  },
+  "fixtureSha256": "0648a7d23d73a4b204aa618463791cb0015ecf20b7e32a8081db2a888c89ebc3",
+  "systemPromptSha256": {
+    "mail": "d1887c9abd7fe92eda01cd8a3c7e26a0f8e4d06ba21ff33848106c68b395d73a",
+    "fit": "1857906b6a21fff9b7a487ad90c7673b73a5963b108f25054da36e51f4e670d2"
+  },
+  "synthetic": true,
+  "humanValidated": false,
+  "autoApplyEnabled": false,
+  "startedAt": "2026-10-23T10:16:06.153Z",
+  "freshRuns": 0,
+  "raw": {
+    "version": 1,
+    "split": "dev",
+    "system": "ollama/qwen3:4b:phase0-local-v3:think=true",
+    "predictions": [
+      {
+        "id": "mail-confirmation",
+        "applicationId": null,
+        "events": []
+      }
+    ]
+  },
+  "guarded": {
+    "version": 1,
+    "split": "dev",
+    "system": "ollama/qwen3:4b:phase0-local-v3:think=true+source-evidence-veto",
+    "predictions": [
+      {
+        "id": "mail-confirmation",
+        "applicationId": null,
+        "events": []
+      }
+    ]
+  },
+  "diagnostics": [
+    {
+      "id": "mail-confirmation",
+      "valid": false,
+      "durationMs": 180021,
+      "category": "timeout",
+      "exact": false
+    }
+  ],
+  "complete": false,
+  "coverage": {
+    "numerator": 0,
+    "attempted": 1,
+    "denominator": 4
+  },
+  "rawMetrics": null,
+  "guardedMetrics": null,
+  "guardReasons": {},
+  "fullAbstentions": 1,
+  "linksVetoed": 0,
+  "finishedAt": "2026-10-23T10:19:06.181Z"
+}
