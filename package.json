@@ -44,7 +44,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "yauzl": "^3.4.0",
-    "zod": "^4.0.0"
+    "zod": "^4.6.6"
   },
   "devDependencies": {
     "@axe-core/playwright": "^4.14.0",
@@ -61,5 +61,10 @@
   },
   "engines": {
     "node": ">=24"
+  },
+  "overrides": {
+    "@vercel/cli-config": {
+      "zod": "$zod"
+    }
   }
 }
