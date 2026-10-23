@@ -52,3 +52,5 @@ Bounded Phase 0 feasibility work is recorded, including model failure and releas
 Hosted web OAuth, per-user encrypted credentials, resumable two-hour History API sync, importing applications into the actual workspace, and complete recruiting-event/contact extraction belong to Phase 2. Public source permissions and discovery collection belong to Phase 3. Full-history scanning is not required to prove this explicitly bounded Phase 0 import. The [access decision](access-decision.md) records these boundaries.
 
 No new delivery date is estimated from this spike. M2 planning depends on model quality and privacy choice, Google hosted OAuth approval, credential lifecycle/storage, durable incremental sync, review-queue wiring, and representative human-reviewed acceptance data. Re-estimate after model/API budget access and hosted OAuth feasibility are resolved; the integration prototype does not validate the broader delivery timeline.
+
+See the consolidated [production-readiness blockers](production-readiness.md) for required owner account/domain work, Google restricted-scope review, AI budget/credential conditions, and measurable quality gates.
