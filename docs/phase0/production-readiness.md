@@ -7,12 +7,15 @@ included here.
 
 ## Current decision
 
-Phase 0 prototype evidence is complete, but its formal acceptance gate is not.
-The latest synthetic run had 19/24 valid outputs, five request/output failures,
-72.2% raw link precision, 100% guarded precision at 68.4% link coverage, and
-77.8% event recall on the valid-only slice. See [evaluation](evaluation.md).
-Do not enable model-driven status changes or describe the model as production
-ready.
+Phase 0 feasibility work is complete; proceed with Phase 1 manual-first tracking.
+Production acceptance remains closed. GPT-6 Luna's one synthetic run returned
+valid output for 42/42 calls. Across 32 repository-held-out mail cases, pooled
+raw link precision was 22/23 (95.7%), guarded precision 22/22 (100%) at 22/32
+(68.8%) coverage, and event recall 24/25 (96%). Fresh-set raw link precision
+was 17/18 (94.4%). Held-out fit score coverage was 0/4. These cases are not
+representative or independently human-labeled, and automatic-status precision
+was not established. See [evaluation](evaluation.md). No model-driven status
+changes or production model calls are enabled.
 
 ## Required before a production Gmail connection
 
@@ -30,15 +33,13 @@ That is suitable for short private tests with reconnects, not unattended sync.
 
 ## Required before enabling an AI provider
 
-- Owner's standing additional-AI spend limit is **$0**. The local Vercel AI
-  Gateway check returned zero credits and a verification error; no OpenAI API key
-  is configured in the local process or root env files. OpenAI free credits, if any, are account
-  specific; do not assume they exist or enable auto-recharge. [Prepaid credits](https://help.openai.com/en/articles/8264644-how-can-i-set-up-prepaid-billing)
-- GPT API comparison may run on synthetic fixtures only after usable free credits
-  and a server-side credential are confirmed. Keep keys out of browser bundles,
-  logs, git, and chat. Use strict structured output, fixed token/time limits,
-  per-run caps, and fail-closed validation. Schema adherence does not validate
-  factual correctness. [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs)
+- Owner authorized one bounded synthetic-only GPT comparison using existing API
+  credit. It cost $0.0020071 by reported token usage; no auto-recharge or recurring
+  requests were enabled. Local key is in ignored, mode-600 `.env`; never print,
+  commit, or expose it to client code. The one-time runner uses strict Structured
+  Outputs, fixed endpoint/model, no tools, 384 output-token cap, and $0.10
+  estimated preflight ceiling. Schema adherence does not validate factual
+  correctness. [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses)
 - OpenAI API input is not used for training by default, but abuse-monitoring logs
   may retain prompts and responses up to 30 days. Sending real Gmail content
   requires a separate explicit user opt-in and an updated retention/privacy

@@ -24,7 +24,9 @@
     "phase0:sources": "node scripts/phase0-sources.js",
     "phase0:gmail": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/phase0-gmail-readiness.js",
     "phase0:model": "node scripts/phase0-model.js",
-    "phase0:test": "node --test tests/job-sources.test.js tests/phase0-evaluation.test.js tests/phase0-readiness.test.js tests/phase0-model.test.js tests/phase0-reasoning.test.js tests/recruiting-match-guard.test.js tests/phase0-gmail.test.js tests/gmail-keychain.test.js tests/phase0-import-proof.test.js",
+    "phase0:openai": "node --env-file=.env scripts/phase0-openai.js",
+    "phase0:openai:analyze": "node scripts/phase0-openai-analysis.js",
+    "phase0:test": "node --test tests/job-sources.test.js tests/phase0-evaluation.test.js tests/phase0-readiness.test.js tests/phase0-model.test.js tests/phase0-openai.test.js tests/phase0-reasoning.test.js tests/recruiting-match-guard.test.js tests/phase0-gmail.test.js tests/gmail-keychain.test.js tests/phase0-import-proof.test.js",
     "phase0:gmail:live": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/phase0-gmail.js",
     "phase0:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/phase0-import-proof.js",
     "phase0:valid-metrics": "node scripts/phase0-valid-only-metrics.js"

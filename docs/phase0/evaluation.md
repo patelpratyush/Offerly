@@ -1,6 +1,6 @@
 # Phase 0 evaluation assets
 
-Status: synthetic preparation and real local baseline evaluation complete; baseline failed quality checks. Independent pilot review and representative real-mail evaluation **not performed**. These hand-authored fictional cases contain no user emails. They are a small smoke/regression set, not evidence of launch precision. The author assigned expected labels, so they are not independently labeled or a representative consented historical-mail sample.
+Status: local baseline and one GPT-6 Luna comparison complete. Fixtures remain developer-authored and fictional. Independent pilot review and representative real-mail evaluation **not performed**; these results are not launch-quality evidence.
 
 ## Assets and split discipline
 
@@ -243,20 +243,48 @@ latency ranged from **14.5s to 180.2s** for these cases. Results miss the PRD ev
 recall target and raw link precision target; guarded coverage is low. Keep automatic
 stage changes disabled.
 
-### GPT API as next evaluation candidate
+### Frozen GPT-6 Luna comparison (2026-10-23)
 
-GPT API is a plausible next candidate for extraction quality and practical
-latency, but only a benchmark can tell whether it beats this local model. Current owner cap
-remains **$0 additional spend**, and the configured Vercel AI Gateway reported no
-credits. Do not call a paid endpoint until usable free credits are verified.
-Start with synthetic cases only, strict Structured Outputs schema, no tools, low
-token limits, server-side API key, and hard application-level per-run/request
-limits. Schema validity still cannot guarantee correct event or application choice;
-retain source evidence checks and human approval.
+One run evaluated `gpt-6-luna` with `phase0-gpt-v1` across the existing
+development and held-out fixtures plus the separate 24-example fresh mail set.
+Inputs were synthetic only. The 42 calls returned schema-valid outputs; usage was
+12,831 input tokens and 1,448 output tokens, with reported token cost **$0.0020071**.
+The runner applied a $0.10 preflight cap, `max_output_tokens: 384`, no tools,
+`store: false`, a fixed endpoint, one request per case, and immutable artifacts.
+API key stays in ignored local `.env`; the command is `npm run phase0:openai`.
 
-OpenAI says API data is not used for training by default, while abuse-monitoring
-logs may retain prompts and responses for up to 30 days. Real Gmail requires a
-separate, explicit opt-in before sending message content to any external model.
-See [current API pricing](https://developers.openai.com/api/docs/pricing?tab=suite),
+Across the original 8 held-out mail cases plus 24 fresh cases (32 total), raw
+application-link precision was **22/23 (95.7%)**, link recall **22/22 (100%)**,
+and event recall **24/25 (96%)**. The existing deterministic source-evidence
+guard vetoed the unsupported link on `fresh-23`, producing **22/22 (100%)**
+guarded precision at **22/32 (68.8%)** coverage. On the fresh 24-case set alone,
+raw precision was **17/18 (94.4%)**. Original held-out mail event recall was
+4/5 (80%); fresh-set event recall was 20/20 (100%). Small-sample denominators
+make these point estimates unstable.
+
+Held-out job-fit outputs got eligibility, explicit compensation, and recency
+correct on 4/4 cases, but returned null score on **4/4**, so score coverage was
+0/4. Development fit score fell within provisional author ranges for 1/2 cases.
+These labels are author judgments, not calibrated relevance ratings.
+
+**Decision:** GPT-6 Luna is a candidate for a future human-review email
+extraction prototype only. It is not connected to app runtime. Do not enable
+automatic application or stage changes. The fresh-set raw link precision missed
+the 95% target, and a deterministic guard cannot prove correctness on new mail.
+The 98% automatic-status precision gate and end-to-end stage mapping, chronology,
+replay, and correction gates remain untested. The fixture set is public to the
+developer and not independent human evaluation; production acceptance remains
+closed. Phase 1 manual tracking can proceed.
+
+OpenAI lists API data as excluded from model training by default; abuse-monitoring
+logs may retain prompts and responses for up to 30 days. Real Gmail requires
+separate explicit opt-in before sending content to any external model. See
+[current model and price](https://developers.openai.com/api/docs/models/gpt-6-luna),
 [data controls](https://developers.openai.com/api/docs/guides/your-data?content_language=English),
-and [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs).
+and [Structured Outputs](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=responses).
+
+Artifacts: [GPT report](model-report-gpt-6-luna-v1.json),
+[reproducible pooled/guarded analysis](model-analysis-gpt-6-luna-v1.json),
+[held-out mail](../../eval/phase0/predictions-mail-gpt-6-luna-held-out-v1.json),
+[fresh mail](../../eval/phase0/predictions-mail-gpt-6-luna-fresh-held-out-v1.json),
+[held-out fit](../../eval/phase0/predictions-fit-gpt-6-luna-held-out-v1.json).

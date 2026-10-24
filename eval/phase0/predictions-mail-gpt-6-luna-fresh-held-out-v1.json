@@ -1,0 +1,165 @@
+{
+  "version": 1,
+  "split": "held-out",
+  "system": "openai/gpt-6-luna:phase0-gpt-v1",
+  "predictions": [
+    {
+      "id": "fresh-01",
+      "applicationId": "fresh-app-01",
+      "events": [
+        "confirmation"
+      ]
+    },
+    {
+      "id": "fresh-02",
+      "applicationId": "fresh-app-02",
+      "events": [
+        "assessment"
+      ]
+    },
+    {
+      "id": "fresh-03",
+      "applicationId": "fresh-app-03",
+      "events": [
+        "interview"
+      ]
+    },
+    {
+      "id": "fresh-04",
+      "applicationId": "fresh-app-04",
+      "events": [
+        "rejection"
+      ]
+    },
+    {
+      "id": "fresh-05",
+      "applicationId": "fresh-app-05",
+      "events": [
+        "offer"
+      ]
+    },
+    {
+      "id": "fresh-06",
+      "applicationId": "fresh-app-06",
+      "events": [
+        "confirmation"
+      ]
+    },
+    {
+      "id": "fresh-07",
+      "applicationId": "fresh-app-07",
+      "events": [
+        "assessment"
+      ]
+    },
+    {
+      "id": "fresh-08",
+      "applicationId": "fresh-app-08",
+      "events": [
+        "interview"
+      ]
+    },
+    {
+      "id": "fresh-09",
+      "applicationId": "fresh-app-09",
+      "events": [
+        "rejection"
+      ]
+    },
+    {
+      "id": "fresh-10",
+      "applicationId": "fresh-app-10",
+      "events": [
+        "offer"
+      ]
+    },
+    {
+      "id": "fresh-11",
+      "applicationId": "fresh-app-11",
+      "events": [
+        "confirmation",
+        "assessment"
+      ]
+    },
+    {
+      "id": "fresh-12",
+      "applicationId": "fresh-app-12",
+      "events": [
+        "interview",
+        "assessment"
+      ]
+    },
+    {
+      "id": "fresh-13",
+      "applicationId": null,
+      "events": [
+        "confirmation"
+      ]
+    },
+    {
+      "id": "fresh-14",
+      "applicationId": null,
+      "events": [
+        "assessment"
+      ]
+    },
+    {
+      "id": "fresh-15",
+      "applicationId": null,
+      "events": [
+        "rejection"
+      ]
+    },
+    {
+      "id": "fresh-16",
+      "applicationId": null,
+      "events": [
+        "interview"
+      ]
+    },
+    {
+      "id": "fresh-17",
+      "applicationId": "fresh-app-17",
+      "events": [
+        "confirmation"
+      ]
+    },
+    {
+      "id": "fresh-18",
+      "applicationId": "fresh-app-18",
+      "events": [
+        "rejection"
+      ]
+    },
+    {
+      "id": "fresh-19",
+      "applicationId": "fresh-app-19",
+      "events": []
+    },
+    {
+      "id": "fresh-20",
+      "applicationId": "fresh-app-20",
+      "events": []
+    },
+    {
+      "id": "fresh-21",
+      "applicationId": "fresh-app-21",
+      "events": []
+    },
+    {
+      "id": "fresh-22",
+      "applicationId": null,
+      "events": []
+    },
+    {
+      "id": "fresh-23",
+      "applicationId": "fresh-app-23",
+      "events": []
+    },
+    {
+      "id": "fresh-24",
+      "applicationId": null,
+      "events": []
+    }
+  ]
+}

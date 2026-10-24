@@ -1,0 +1,41 @@
+{
+  "version": 1,
+  "split": "dev",
+  "system": "openai/gpt-6-luna:phase0-gpt-v1",
+  "predictions": [
+    {
+      "id": "fit-backend",
+      "score": 100,
+      "eligibility": "unknown",
+      "evidence": [
+        "Matches required Node.js and PostgreSQL skills.",
+        "The 2 years of experience matches the stated 1–3 year requirement.",
+        "Work authorization is unknown, so eligibility cannot be determined.",
+        "Base compensation is explicitly listed as USD 120,000 annually; total compensation is not disclosed.",
+        "The explicit posting instant is within 24 hours of the as-of time."
+      ],
+      "compensation": {
+        "base": 120000,
+        "total": null,
+        "currency": "USD"
+      },
+      "confirmedLast24Hours": true
+    },
+    {
+      "id": "fit-senior",
+      "score": 16,
+      "eligibility": "unknown",
+      "evidence": [
+        "The listing requires 10 years of experience; the profile has 2 years.",
+        "The listing requires Rust; the profile lists Node.js and PostgreSQL, not Rust.",
+        "The profile’s work authorization is unknown, so eligibility cannot be determined."
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": true
+    }
+  ]
+}

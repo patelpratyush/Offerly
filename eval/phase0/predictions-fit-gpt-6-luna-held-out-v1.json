@@ -1,0 +1,76 @@
+{
+  "version": 1,
+  "split": "held-out",
+  "system": "openai/gpt-6-luna:phase0-gpt-v1",
+  "predictions": [
+    {
+      "id": "fit-visa",
+      "score": null,
+      "eligibility": "unknown",
+      "evidence": [
+        "Matches the required Node.js skill.",
+        "The listing requires existing US work authorization, but the candidate's work authorization is unknown.",
+        "Candidate has 2 years of experience; the listing gives no experience or seniority requirement to compare.",
+        "PostgreSQL is listed in the profile, but the listing specifies no other required or preferred skills."
+      ],
+      "compensation": {
+        "base": 100000,
+        "total": 150000,
+        "currency": "USD"
+      },
+      "confirmedLast24Hours": true
+    },
+    {
+      "id": "fit-stale",
+      "score": null,
+      "eligibility": "unknown",
+      "evidence": [
+        "The listing names Node.js and PostgreSQL, both matching the candidate’s listed skills.",
+        "The listing provides no explicit experience, seniority, or preferred-skill requirements to assess.",
+        "Work authorization is unknown, so eligibility cannot be determined.",
+        "The listing does not specify compensation or location/remote requirements."
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": false
+    },
+    {
+      "id": "fit-currency",
+      "score": null,
+      "eligibility": "unknown",
+      "evidence": [
+        "The listing specifies Node.js, which matches a profile skill.",
+        "The listing does not state experience, seniority, or preferred-skill requirements, so those fit dimensions cannot be assessed.",
+        "Work authorization is unknown, and the listing provides no authorization requirement.",
+        "The listing gives base compensation of CAD 110000 and total compensation of CAD 140000.",
+        "The explicit posting instant is within 24 hours of the supplied as-of time."
+      ],
+      "compensation": {
+        "base": 110000,
+        "total": 140000,
+        "currency": "CAD"
+      },
+      "confirmedLast24Hours": true
+    },
+    {
+      "id": "fit-unknown-date",
+      "score": null,
+      "eligibility": "unknown",
+      "evidence": [
+        "The listing identifies a Node.js backend role, matching the candidate’s Node.js skill.",
+        "PostgreSQL is a candidate skill, but the listing does not state whether it is required or preferred.",
+        "No explicit experience, seniority, work-authorization, location, remote-work, or compensation requirements are provided.",
+        "Work authorization is unknown, so eligibility cannot be determined."
+      ],
+      "compensation": {
+        "base": null,
+        "total": null,
+        "currency": null
+      },
+      "confirmedLast24Hours": false
+    }
+  ]
+}

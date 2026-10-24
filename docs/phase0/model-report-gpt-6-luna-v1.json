@@ -1,0 +1,815 @@
+{
+  "version": 1,
+  "status": "completed",
+  "provider": "OpenAI Responses API",
+  "model": "gpt-6-luna",
+  "promptVersion": "phase0-gpt-v1",
+  "fixtureSha256": {
+    "recruiting.json": "0648a7d23d73a4b204aa618463791cb0015ecf20b7e32a8081db2a888c89ebc3",
+    "recruiting-fresh.json": "4f052061f42af090dd2cf5465ddc87c959d7d03b824c197f57fe5e88dba2faf8",
+    "job-fit.json": "c183c730902c19bf12cc967672c8cf8e187aa3e8ffbfd4beecfd99a8896f089d"
+  },
+  "synthetic": true,
+  "humanValidated": false,
+  "plannedCalls": 42,
+  "preflightEstimatedMaxCostUsd": 0.022803,
+  "maxRunCostUsd": 0.1,
+  "maxOutputTokensPerCall": 384,
+  "toolsEnabled": false,
+  "responseStorageEnabled": false,
+  "startedAt": "2026-10-23T23:57:46.159Z",
+  "results": {
+    "dev.mail": {
+      "evaluation": {
+        "system": "openai/gpt-6-luna:phase0-gpt-v1",
+        "split": "dev",
+        "synthetic": true,
+        "examples": 4,
+        "applicationLinkPrecision": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "applicationLinkRecall": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "applicationLinkCoverage": {
+          "numerator": 3,
+          "denominator": 4,
+          "value": 0.75
+        },
+        "fullAbstentionRate": {
+          "numerator": 1,
+          "denominator": 4,
+          "value": 0.25
+        },
+        "eventPrecision": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "eventRecall": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "perEvent": {
+          "confirmation": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "assessment": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "interview": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "rejection": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "offer": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          }
+        },
+        "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+      },
+      "modelOutputCoverage": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "diagnostics": [
+        {
+          "id": "mail-confirmation",
+          "status": "model-output",
+          "durationMs": 2708,
+          "usage": {
+            "inputTokens": 290,
+            "outputTokens": 22
+          }
+        },
+        {
+          "id": "mail-assessment",
+          "status": "model-output",
+          "durationMs": 1322,
+          "usage": {
+            "inputTokens": 301,
+            "outputTokens": 21
+          }
+        },
+        {
+          "id": "mail-newsletter",
+          "status": "model-output",
+          "durationMs": 1087,
+          "usage": {
+            "inputTokens": 287,
+            "outputTokens": 18
+          }
+        },
+        {
+          "id": "mail-quoted",
+          "status": "model-output",
+          "durationMs": 931,
+          "usage": {
+            "inputTokens": 309,
+            "outputTokens": 20
+          }
+        }
+      ],
+      "predictions": "eval/phase0/predictions-mail-gpt-6-luna-dev-v1.json"
+    },
+    "dev.fit": {
+      "evaluation": {
+        "system": "openai/gpt-6-luna:phase0-gpt-v1",
+        "split": "dev",
+        "synthetic": true,
+        "examples": 2,
+        "eligibilityAccuracy": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "compensationExactAccuracy": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "recencyAccuracy": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "scoreCoverage": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "provisionalRangeAgreement": {
+          "numerator": 1,
+          "denominator": 2,
+          "value": 0.5
+        },
+        "limitation": "Author-assigned synthetic ranges only; evidence text presence is checked but truth is not machine verified; no human relevance or recommendation usefulness claim."
+      },
+      "modelOutputCoverage": {
+        "numerator": 2,
+        "denominator": 2
+      },
+      "diagnostics": [
+        {
+          "id": "fit-backend",
+          "status": "model-output",
+          "durationMs": 1629,
+          "usage": {
+            "inputTokens": 366,
+            "outputTokens": 117
+          }
+        },
+        {
+          "id": "fit-senior",
+          "status": "model-output",
+          "durationMs": 1844,
+          "usage": {
+            "inputTokens": 348,
+            "outputTokens": 92
+          }
+        }
+      ],
+      "predictions": "eval/phase0/predictions-fit-gpt-6-luna-dev-v1.json"
+    },
+    "held-out.mail": {
+      "evaluation": {
+        "system": "openai/gpt-6-luna:phase0-gpt-v1",
+        "split": "held-out",
+        "synthetic": true,
+        "examples": 8,
+        "applicationLinkPrecision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "applicationLinkRecall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "applicationLinkCoverage": {
+          "numerator": 5,
+          "denominator": 8,
+          "value": 0.625
+        },
+        "fullAbstentionRate": {
+          "numerator": 2,
+          "denominator": 8,
+          "value": 0.25
+        },
+        "eventPrecision": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "eventRecall": {
+          "numerator": 4,
+          "denominator": 5,
+          "value": 0.8
+        },
+        "perEvent": {
+          "confirmation": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 2,
+              "value": 0.5
+            }
+          },
+          "assessment": {
+            "precision": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            },
+            "recall": {
+              "numerator": 0,
+              "denominator": 0,
+              "value": null
+            }
+          },
+          "interview": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "rejection": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          },
+          "offer": {
+            "precision": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 1,
+              "denominator": 1,
+              "value": 1
+            }
+          }
+        },
+        "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+      },
+      "modelOutputCoverage": {
+        "numerator": 8,
+        "denominator": 8
+      },
+      "diagnostics": [
+        {
+          "id": "mail-ambiguity",
+          "status": "model-output",
+          "durationMs": 1467,
+          "usage": {
+            "inputTokens": 291,
+            "outputTokens": 20
+          }
+        },
+        {
+          "id": "mail-schedule",
+          "status": "model-output",
+          "durationMs": 862,
+          "usage": {
+            "inputTokens": 302,
+            "outputTokens": 22
+          }
+        },
+        {
+          "id": "mail-rejection",
+          "status": "model-output",
+          "durationMs": 1042,
+          "usage": {
+            "inputTokens": 290,
+            "outputTokens": 23
+          }
+        },
+        {
+          "id": "mail-offer",
+          "status": "model-output",
+          "durationMs": 1049,
+          "usage": {
+            "inputTokens": 302,
+            "outputTokens": 21
+          }
+        },
+        {
+          "id": "mail-injection",
+          "status": "model-output",
+          "durationMs": 678,
+          "usage": {
+            "inputTokens": 294,
+            "outputTokens": 18
+          }
+        },
+        {
+          "id": "mail-agency",
+          "status": "model-output",
+          "durationMs": 796,
+          "usage": {
+            "inputTokens": 290,
+            "outputTokens": 18
+          }
+        },
+        {
+          "id": "mail-forward",
+          "status": "model-output",
+          "durationMs": 887,
+          "usage": {
+            "inputTokens": 304,
+            "outputTokens": 20
+          }
+        },
+        {
+          "id": "mail-future",
+          "status": "model-output",
+          "durationMs": 1135,
+          "usage": {
+            "inputTokens": 294,
+            "outputTokens": 19
+          }
+        }
+      ],
+      "predictions": "eval/phase0/predictions-mail-gpt-6-luna-held-out-v1.json"
+    },
+    "held-out.fit": {
+      "evaluation": {
+        "system": "openai/gpt-6-luna:phase0-gpt-v1",
+        "split": "held-out",
+        "synthetic": true,
+        "examples": 4,
+        "eligibilityAccuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "compensationExactAccuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "recencyAccuracy": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "scoreCoverage": {
+          "numerator": 0,
+          "denominator": 4,
+          "value": 0
+        },
+        "provisionalRangeAgreement": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null
+        },
+        "limitation": "Author-assigned synthetic ranges only; evidence text presence is checked but truth is not machine verified; no human relevance or recommendation usefulness claim."
+      },
+      "modelOutputCoverage": {
+        "numerator": 4,
+        "denominator": 4
+      },
+      "diagnostics": [
+        {
+          "id": "fit-visa",
+          "status": "model-output",
+          "durationMs": 1525,
+          "usage": {
+            "inputTokens": 370,
+            "outputTokens": 112
+          }
+        },
+        {
+          "id": "fit-stale",
+          "status": "model-output",
+          "durationMs": 1504,
+          "usage": {
+            "inputTokens": 346,
+            "outputTokens": 103
+          }
+        },
+        {
+          "id": "fit-currency",
+          "status": "model-output",
+          "durationMs": 1893,
+          "usage": {
+            "inputTokens": 355,
+            "outputTokens": 132
+          }
+        },
+        {
+          "id": "fit-unknown-date",
+          "status": "model-output",
+          "durationMs": 1568,
+          "usage": {
+            "inputTokens": 334,
+            "outputTokens": 116
+          }
+        }
+      ],
+      "predictions": "eval/phase0/predictions-fit-gpt-6-luna-held-out-v1.json"
+    },
+    "fresh-held-out.mail": {
+      "evaluation": {
+        "system": "openai/gpt-6-luna:phase0-gpt-v1",
+        "split": "held-out",
+        "synthetic": true,
+        "examples": 24,
+        "applicationLinkPrecision": {
+          "numerator": 17,
+          "denominator": 18,
+          "value": 0.9444444444444444
+        },
+        "applicationLinkRecall": {
+          "numerator": 17,
+          "denominator": 17,
+          "value": 1
+        },
+        "applicationLinkCoverage": {
+          "numerator": 18,
+          "denominator": 24,
+          "value": 0.75
+        },
+        "fullAbstentionRate": {
+          "numerator": 2,
+          "denominator": 24,
+          "value": 0.08333333333333333
+        },
+        "eventPrecision": {
+          "numerator": 20,
+          "denominator": 20,
+          "value": 1
+        },
+        "eventRecall": {
+          "numerator": 20,
+          "denominator": 20,
+          "value": 1
+        },
+        "perEvent": {
+          "confirmation": {
+            "precision": {
+              "numerator": 5,
+              "denominator": 5,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 5,
+              "denominator": 5,
+              "value": 1
+            }
+          },
+          "assessment": {
+            "precision": {
+              "numerator": 5,
+              "denominator": 5,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 5,
+              "denominator": 5,
+              "value": 1
+            }
+          },
+          "interview": {
+            "precision": {
+              "numerator": 4,
+              "denominator": 4,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 4,
+              "denominator": 4,
+              "value": 1
+            }
+          },
+          "rejection": {
+            "precision": {
+              "numerator": 4,
+              "denominator": 4,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 4,
+              "denominator": 4,
+              "value": 1
+            }
+          },
+          "offer": {
+            "precision": {
+              "numerator": 2,
+              "denominator": 2,
+              "value": 1
+            },
+            "recall": {
+              "numerator": 2,
+              "denominator": 2,
+              "value": 1
+            }
+          }
+        },
+        "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+      },
+      "modelOutputCoverage": {
+        "numerator": 24,
+        "denominator": 24
+      },
+      "diagnostics": [
+        {
+          "id": "fresh-01",
+          "status": "model-output",
+          "durationMs": 923,
+          "usage": {
+            "inputTokens": 279,
+            "outputTokens": 23
+          }
+        },
+        {
+          "id": "fresh-02",
+          "status": "model-output",
+          "durationMs": 1617,
+          "usage": {
+            "inputTokens": 287,
+            "outputTokens": 23
+          }
+        },
+        {
+          "id": "fresh-03",
+          "status": "model-output",
+          "durationMs": 1155,
+          "usage": {
+            "inputTokens": 289,
+            "outputTokens": 24
+          }
+        },
+        {
+          "id": "fresh-04",
+          "status": "model-output",
+          "durationMs": 1309,
+          "usage": {
+            "inputTokens": 287,
+            "outputTokens": 24
+          }
+        },
+        {
+          "id": "fresh-05",
+          "status": "model-output",
+          "durationMs": 1652,
+          "usage": {
+            "inputTokens": 283,
+            "outputTokens": 23
+          }
+        },
+        {
+          "id": "fresh-06",
+          "status": "model-output",
+          "durationMs": 1321,
+          "usage": {
+            "inputTokens": 303,
+            "outputTokens": 23
+          }
+        },
+        {
+          "id": "fresh-07",
+          "status": "model-output",
+          "durationMs": 1564,
+          "usage": {
+            "inputTokens": 321,
+            "outputTokens": 23
+          }
+        },
+        {
+          "id": "fresh-08",
+          "status": "model-output",
+          "durationMs": 1144,
+          "usage": {
+            "inputTokens": 321,
+            "outputTokens": 24
+          }
+        },
+        {
+          "id": "fresh-09",
+          "status": "model-output",
+          "durationMs": 1417,
+          "usage": {
+            "inputTokens": 297,
+            "outputTokens": 24
+          }
+        },
+        {
+          "id": "fresh-10",
+          "status": "model-output",
+          "durationMs": 976,
+          "usage": {
+            "inputTokens": 300,
+            "outputTokens": 23
+          }
+        },
+        {
+          "id": "fresh-11",
+          "status": "model-output",
+          "durationMs": 1054,
+          "usage": {
+            "inputTokens": 288,
+            "outputTokens": 25
+          }
+        },
+        {
+          "id": "fresh-12",
+          "status": "model-output",
+          "durationMs": 1437,
+          "usage": {
+            "inputTokens": 296,
+            "outputTokens": 26
+          }
+        },
+        {
+          "id": "fresh-13",
+          "status": "model-output",
+          "durationMs": 902,
+          "usage": {
+            "inputTokens": 301,
+            "outputTokens": 20
+          }
+        },
+        {
+          "id": "fresh-14",
+          "status": "model-output",
+          "durationMs": 1014,
+          "usage": {
+            "inputTokens": 304,
+            "outputTokens": 20
+          }
+        },
+        {
+          "id": "fresh-15",
+          "status": "model-output",
+          "durationMs": 1439,
+          "usage": {
+            "inputTokens": 300,
+            "outputTokens": 21
+          }
+        },
+        {
+          "id": "fresh-16",
+          "status": "model-output",
+          "durationMs": 1022,
+          "usage": {
+            "inputTokens": 310,
+            "outputTokens": 21
+          }
+        },
+        {
+          "id": "fresh-17",
+          "status": "model-output",
+          "durationMs": 1154,
+          "usage": {
+            "inputTokens": 330,
+            "outputTokens": 23
+          }
+        },
+        {
+          "id": "fresh-18",
+          "status": "model-output",
+          "durationMs": 1438,
+          "usage": {
+            "inputTokens": 308,
+            "outputTokens": 24
+          }
+        },
+        {
+          "id": "fresh-19",
+          "status": "model-output",
+          "durationMs": 912,
+          "usage": {
+            "inputTokens": 289,
+            "outputTokens": 21
+          }
+        },
+        {
+          "id": "fresh-20",
+          "status": "model-output",
+          "durationMs": 1001,
+          "usage": {
+            "inputTokens": 290,
+            "outputTokens": 21
+          }
+        },
+        {
+          "id": "fresh-21",
+          "status": "model-output",
+          "durationMs": 886,
+          "usage": {
+            "inputTokens": 306,
+            "outputTokens": 21
+          }
+        },
+        {
+          "id": "fresh-22",
+          "status": "model-output",
+          "durationMs": 934,
+          "usage": {
+            "inputTokens": 282,
+            "outputTokens": 18
+          }
+        },
+        {
+          "id": "fresh-23",
+          "status": "model-output",
+          "durationMs": 898,
+          "usage": {
+            "inputTokens": 288,
+            "outputTokens": 21
+          }
+        },
+        {
+          "id": "fresh-24",
+          "status": "model-output",
+          "durationMs": 702,
+          "usage": {
+            "inputTokens": 299,
+            "outputTokens": 18
+          }
+        }
+      ],
+      "predictions": "eval/phase0/predictions-mail-gpt-6-luna-fresh-held-out-v1.json"
+    }
+  },
+  "completedAt": "2026-10-23T23:58:37.993Z",
+  "completedCalls": 42,
+  "usage": {
+    "inputTokens": 12831,
+    "outputTokens": 1448
+  },
+  "actualCostUsd": 0.0020071,
+  "resultsInterpretation": "Developer-authored synthetic fixtures only; not blind or independently human validated. No production readiness or automatic stage-change claim. Held-out prompts were frozen before this single run."
+}

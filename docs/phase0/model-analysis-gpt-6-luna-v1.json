@@ -1,0 +1,317 @@
+{
+  "version": 1,
+  "system": "openai/gpt-6-luna:phase0-gpt-v1",
+  "synthetic": true,
+  "humanValidated": false,
+  "pooledExamples": 32,
+  "raw": {
+    "system": "openai/gpt-6-luna:phase0-gpt-v1",
+    "split": "held-out",
+    "synthetic": true,
+    "examples": 32,
+    "applicationLinkPrecision": {
+      "numerator": 22,
+      "denominator": 23,
+      "value": 0.9565217391304348
+    },
+    "applicationLinkRecall": {
+      "numerator": 22,
+      "denominator": 22,
+      "value": 1
+    },
+    "applicationLinkCoverage": {
+      "numerator": 23,
+      "denominator": 32,
+      "value": 0.71875
+    },
+    "fullAbstentionRate": {
+      "numerator": 4,
+      "denominator": 32,
+      "value": 0.125
+    },
+    "eventPrecision": {
+      "numerator": 24,
+      "denominator": 24,
+      "value": 1
+    },
+    "eventRecall": {
+      "numerator": 24,
+      "denominator": 25,
+      "value": 0.96
+    },
+    "perEvent": {
+      "confirmation": {
+        "precision": {
+          "numerator": 6,
+          "denominator": 6,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 6,
+          "denominator": 7,
+          "value": 0.8571428571428571
+        }
+      },
+      "assessment": {
+        "precision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        }
+      },
+      "interview": {
+        "precision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        }
+      },
+      "rejection": {
+        "precision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        }
+      },
+      "offer": {
+        "precision": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        }
+      }
+    },
+    "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+  },
+  "guarded": {
+    "system": "openai/gpt-6-luna:phase0-gpt-v1",
+    "split": "held-out",
+    "synthetic": true,
+    "examples": 32,
+    "applicationLinkPrecision": {
+      "numerator": 22,
+      "denominator": 22,
+      "value": 1
+    },
+    "applicationLinkRecall": {
+      "numerator": 22,
+      "denominator": 22,
+      "value": 1
+    },
+    "applicationLinkCoverage": {
+      "numerator": 22,
+      "denominator": 32,
+      "value": 0.6875
+    },
+    "fullAbstentionRate": {
+      "numerator": 5,
+      "denominator": 32,
+      "value": 0.15625
+    },
+    "eventPrecision": {
+      "numerator": 24,
+      "denominator": 24,
+      "value": 1
+    },
+    "eventRecall": {
+      "numerator": 24,
+      "denominator": 25,
+      "value": 0.96
+    },
+    "perEvent": {
+      "confirmation": {
+        "precision": {
+          "numerator": 6,
+          "denominator": 6,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 6,
+          "denominator": 7,
+          "value": 0.8571428571428571
+        }
+      },
+      "assessment": {
+        "precision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        }
+      },
+      "interview": {
+        "precision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        }
+      },
+      "rejection": {
+        "precision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        }
+      },
+      "offer": {
+        "precision": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 3,
+          "denominator": 3,
+          "value": 1
+        }
+      }
+    },
+    "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+  },
+  "freshRaw": {
+    "system": "openai/gpt-6-luna:phase0-gpt-v1",
+    "split": "held-out",
+    "synthetic": true,
+    "examples": 24,
+    "applicationLinkPrecision": {
+      "numerator": 17,
+      "denominator": 18,
+      "value": 0.9444444444444444
+    },
+    "applicationLinkRecall": {
+      "numerator": 17,
+      "denominator": 17,
+      "value": 1
+    },
+    "applicationLinkCoverage": {
+      "numerator": 18,
+      "denominator": 24,
+      "value": 0.75
+    },
+    "fullAbstentionRate": {
+      "numerator": 2,
+      "denominator": 24,
+      "value": 0.08333333333333333
+    },
+    "eventPrecision": {
+      "numerator": 20,
+      "denominator": 20,
+      "value": 1
+    },
+    "eventRecall": {
+      "numerator": 20,
+      "denominator": 20,
+      "value": 1
+    },
+    "perEvent": {
+      "confirmation": {
+        "precision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        }
+      },
+      "assessment": {
+        "precision": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 5,
+          "denominator": 5,
+          "value": 1
+        }
+      },
+      "interview": {
+        "precision": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        }
+      },
+      "rejection": {
+        "precision": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 4,
+          "denominator": 4,
+          "value": 1
+        }
+      },
+      "offer": {
+        "precision": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        },
+        "recall": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1
+        }
+      }
+    },
+    "limitation": "Synthetic offline extraction/link metrics only. No model, human relevance, auto-apply safety, date, or compensation validation claim."
+  },
+  "guardVetoes": [
+    {
+      "id": "fresh-23",
+      "reason": "no_source_evidence"
+    }
+  ],
+  "limitation": "Developer-authored repository fixtures only; not a blind or independent human evaluation. Guarded precision and small point estimates do not establish production or automatic-stage safety.",
+  "inputSha256": {
+    "recruiting.json": "0648a7d23d73a4b204aa618463791cb0015ecf20b7e32a8081db2a888c89ebc3",
+    "predictions-mail-gpt-6-luna-held-out-v1.json": "3f6caee0ed3e89f1e24459a3c0200b4229e234c9aa2ceb4f9ed3a02d555e5e12",
+    "recruiting-fresh.json": "4f052061f42af090dd2cf5465ddc87c959d7d03b824c197f57fe5e88dba2faf8",
+    "predictions-mail-gpt-6-luna-fresh-held-out-v1.json": "1d6f3f8033db00f30982277f9a092c5b562dca354122bab3ebe181faa7d321ab"
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "version": 1,
+  "split": "dev",
+  "system": "openai/gpt-6-luna:phase0-gpt-v1",
+  "predictions": [
+    {
+      "id": "mail-confirmation",
+      "applicationId": "atlas-backend",
+      "events": [
+        "confirmation"
+      ]
+    },
+    {
+      "id": "mail-assessment",
+      "applicationId": "atlas-data",
+      "events": [
+        "assessment"
+      ]
+    },
+    {
+      "id": "mail-newsletter",
+      "applicationId": null,
+      "events": []
+    },
+    {
+      "id": "mail-quoted",
+      "applicationId": "atlas-backend",
+      "events": []
+    }
+  ]
+}
