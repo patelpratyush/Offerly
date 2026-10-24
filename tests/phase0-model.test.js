@@ -47,7 +47,7 @@ test("any prior upgraded held-out artifact blocks cross-prompt reuse", () => {
 test("original prompt hashes remain frozen and clarified prompts have distinct provenance", async () => {
   const baseline = JSON.parse(
     await readFile(
-      new URL("../docs/phase0/model-report.json", import.meta.url),
+      new URL("../reference/phase0/model-report.json", import.meta.url),
       "utf8",
     ),
   );

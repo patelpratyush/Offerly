@@ -26,7 +26,7 @@
     "mail": "d1887c9abd7fe92eda01cd8a3c7e26a0f8e4d06ba21ff33848106c68b395d73a",
     "fit": "1857906b6a21fff9b7a487ad90c7673b73a5963b108f25054da36e51f4e670d2"
   },
-  "devReport": "docs/phase0/model-reasoning-dev.json",
+  "devReport": "reference/phase0/model-reasoning-dev.json",
   "frozenAt": "2026-10-23T22:54:31.880Z",
   "rationale": "Selection uses raw dev correctness/latency only; reviewed source-veto updates are separately hashed before fresh evaluation. No fresh labels read."
 }

@@ -19,11 +19,11 @@ const FRESH_SHA =
 const sha = (value) => createHash("sha256").update(value).digest("hex");
 const file = (path) => new URL(`../${path}`, import.meta.url);
 const names = (mode) => ({
-  report: `docs/phase0/model-reasoning-${mode}.json`,
+  report: `reference/phase0/model-reasoning-${mode}.json`,
   raw: `eval/phase0/predictions-mail-reasoning-${mode}-raw.json`,
   guarded: `eval/phase0/predictions-mail-reasoning-${mode}-guarded.json`,
 });
-const decisionFile = "docs/phase0/model-reasoning-decision.json";
+const decisionFile = "reference/phase0/model-reasoning-decision.json";
 const optionsFor = (think) => ({
   think,
   numPredict: think ? 1024 : 512,

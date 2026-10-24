@@ -2,7 +2,7 @@ import { readFileSync } from "node:fs";
 import { createHash } from "node:crypto";
 import { evaluate } from "./phase0-evaluate.js";
 
-const reportPath = "docs/phase0/model-reasoning-fresh.json";
+const reportPath = "reference/phase0/model-reasoning-fresh.json";
 const fixturePath = "eval/phase0/recruiting-fresh.json";
 const report = JSON.parse(readFileSync(reportPath, "utf8"));
 const fixtureBytes = readFileSync(fixturePath);

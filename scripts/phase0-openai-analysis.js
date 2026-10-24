@@ -79,7 +79,7 @@ async function run() {
     inputs.map((filename) => readJson(new URL(filename, root))),
   );
   const analysis = analyzeHeldOut({ oldGold, oldPredictions, freshGold, freshPredictions });
-  const output = new URL("docs/phase0/model-analysis-gpt-6-luna-v1.json", root);
+  const output = new URL("reference/phase0/model-analysis-gpt-6-luna-v1.json", root);
   try {
     await lstat(output);
     throw new Error("GPT analysis artifact already exists; overwrite prohibited");
@@ -104,7 +104,7 @@ async function run() {
       guarded: analysis.guarded,
       freshRaw: analysis.freshRaw,
       guardVetoes: analysis.guardVetoes,
-      output: "docs/phase0/model-analysis-gpt-6-luna-v1.json",
+      output: "reference/phase0/model-analysis-gpt-6-luna-v1.json",
     }),
   );
 }

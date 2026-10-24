@@ -6,9 +6,9 @@ The PRD and build plan define scope; this file records implementation evidence a
 
 This section supersedes older historical checkpoint descriptions below. The private manual tracker, hosted Supabase/Vercel deployment, private scanned Blob uploads, hosted scheduler, and recovery-code password reset are implemented. Recent CI fixes are on main.
 
-Phase 0 has verified six public-board probes, real seven-day Gmail retrieval (612 messages), reusable local Keychain authorization, and a bounded historical recruiting import: 20 messages yielded one structured unresolved review candidate and 19 abstentions; replay created zero new candidates. No mailbox content or evidence was persisted or sent to AI. Eighteen fictional labeled cases and strict evaluation/provenance tooling exist. Current source access and Google dependencies are reviewed in [access decision](docs/phase0/access-decision.md); this is not public-catalog permission or hosted OAuth approval.
+Phase 0 has verified six public-board probes, real seven-day Gmail retrieval (612 messages), reusable local Keychain authorization, and a bounded historical recruiting import: 20 messages yielded one structured unresolved review candidate and 19 abstentions; replay created zero new candidates. No mailbox content or evidence was persisted or sent to AI. Eighteen fictional labeled cases and strict evaluation/provenance tooling exist. Current source access and Google dependencies are reviewed in [access decision](reference/phase0/access-decision.md); this is not public-catalog permission or hosted OAuth approval.
 
-Phase 0 feasibility evidence is recorded, with a no-go on production AI matching. Fresh synthetic run returned 19/24 valid model outputs; raw link precision was 13/18 and event recall 14/18. A source-evidence guard raised valid-only link precision to 13/13 while reducing coverage to 13/19. These tiny, developer-authored synthetic results do not meet PRD quality gates. GPT API is a possible next synthetic-only comparison if free credits are verified; additional AI spend remains capped at $0 and real mail must not go to external AI without separate opt-in. Hosted OAuth/storage, two-hour incremental sync, workspace application import, representative release accuracy, and public discovery remain later release work. See [Phase 0 evidence](docs/phase0/README.md), [production blockers](docs/phase0/production-readiness.md), [import proof](docs/phase0/import-proof-report.json), and [evaluation](docs/phase0/evaluation.md).
+Phase 0 feasibility evidence is recorded, with a no-go on production AI matching. Fresh synthetic run returned 19/24 valid model outputs; raw link precision was 13/18 and event recall 14/18. A source-evidence guard raised valid-only link precision to 13/13 while reducing coverage to 13/19. These tiny, developer-authored synthetic results do not meet PRD quality gates. GPT API is a possible next synthetic-only comparison if free credits are verified; additional AI spend remains capped at $0 and real mail must not go to external AI without separate opt-in. Hosted OAuth/storage, two-hour incremental sync, workspace application import, representative release accuracy, and public discovery remain later release work. See [Phase 0 evidence](reference/phase0/README.md), [production blockers](reference/phase0/production-readiness.md), [import proof](reference/phase0/import-proof-report.json), and [evaluation](reference/phase0/evaluation.md).
 
 The sections below retain prior implementation history and do not override this checkpoint.
 
@@ -48,13 +48,13 @@ No external credentials, model provider, source permission decisions, or labeled
 
 ## Recommended next implementation slice
 
-Steps 1 and the scoped step 2 foundation are implemented. Follow step 3 in `docs/DELIVERY_STEPS.md`: configure Gmail OAuth and consented fixtures before provider ingestion. Deployment readiness remains a separate step.
+Steps 1 and the scoped step 2 foundation are implemented. Follow step 3 in `reference/DELIVERY_STEPS.md`: configure Gmail OAuth and consented fixtures before provider ingestion. Deployment readiness remains a separate step.
 
 For Gmail: provision a Gmail OAuth client and consented test mailbox; decide retained-content window and provider processing policy. Implement durable jobs and a review-only ingestion path before enabling automatic changes. Evaluate ambiguous same-company roles, duplicate replay, out-of-order events, disconnect/delete during import, and untrusted email content using synthetic/consented fixtures. Keep the manual workspace available during provider failures.
 
 ## UI refinement
 
-Simplify, Teal, and Huntr informed stage visibility, tracker controls, and connected application details. Offerly retains its own forest-green identity. Guided import/review dialogs and tabbed details support desktop and mobile. Reference links and concrete design choices are in `docs/DESIGN_REFERENCES.md`.
+Simplify, Teal, and Huntr informed stage visibility, tracker controls, and connected application details. Offerly retains its own forest-green identity. Guided import/review dialogs and tabbed details support desktop and mobile. Reference links and concrete design choices are in `reference/DESIGN_REFERENCES.md`.
 
 ## Verification for this increment
 
@@ -62,7 +62,7 @@ Simplify, Teal, and Huntr informed stage visibility, tracker controls, and conne
 - 6 desktop/mobile browser workflows cover manual tracking, guided imports, filters, duplicate decisions, assessments, and activity views.
 - Automated WCAG 2 A/AA checks on the populated application table pass on desktop and mobile. This is a focused check, not a full accessibility certification.
 - TypeScript checking and production build pass.
-- Synthetic-data previews: `docs/screenshots/applications.png`, `docs/screenshots/today-mobile.png`, and `docs/screenshots/application-activity.png`.
+- Synthetic-data previews: `reference/screenshots/applications.png`, `reference/screenshots/today-mobile.png`, and `reference/screenshots/application-activity.png`.
 
 ## Security hardening increment
 
@@ -76,13 +76,13 @@ Paused at the user's request after verification completed: 24 API/security tests
 
 ### Recovery tooling increment — 2026-10-20
 
-Added `npm run db:backup` and `npm run db:restore`: consistent online SQLite snapshots, integrity/schema/foreign-key checks, private staging and atomic publication to fresh paths, no overwrite of existing databases or symlinks, and session revocation on restoration. `docs/BACKUP_RESTORE.md` documents restoration, post-snapshot account deletion/password reconciliation, and deployment responsibilities. No live user database was backed up or restored during implementation.
+Added `npm run db:backup` and `npm run db:restore`: consistent online SQLite snapshots, integrity/schema/foreign-key checks, private staging and atomic publication to fresh paths, no overwrite of existing databases or symlinks, and session revocation on restoration. `reference/BACKUP_RESTORE.md` documents restoration, post-snapshot account deletion/password reconciliation, and deployment responsibilities. No live user database was backed up or restored during implementation.
 
 Verification: all 27 API/security/recovery tests passed, along with backend lint, TypeScript checking, production build, and dependency audit (zero known vulnerabilities). Final destination-symlink tightening passed lint and all 3 focused recovery tests. Browser tests were not rerun for this backend CLI-only increment; the previous checkpoint's 8 browser tests passed. Encrypted storage, scheduled/off-host backups and a real deployment restoration drill remain pending.
 
 ### Staged build: tracker expansion — 2026-10-20
 
-Added `docs/DELIVERY_STEPS.md` as the staged execution roadmap. This slice delivers:
+Added `reference/DELIVERY_STEPS.md` as the staged execution roadmap. This slice delivers:
 
 - Private saved views with filters, sorting, archived visibility and table/board layout; create/update/remove persist across reloads.
 - Table/board selection and atomic bulk priority, stage, response-owner and archive/restore edits. Selection clears when filters change; maximum 100 records. Ownership/version validation and bounded seven-day operation receipts protect against partial edits and duplicate retry history.
@@ -114,7 +114,7 @@ Closed the remaining manual-tracker gaps:
 
 Step 1 is complete for the manual pilot. Step 2 (durable recruiting review/jobs) is next. Gmail, discovery, recommendations, generated documents, extension support and public launch remain outside this completed slice. The public-production prerequisites in `SECURITY.md` still apply.
 
-Final verification: `npm run check` passed (52 backend/API/security/recovery tests, ESLint, strict TypeScript, production build and dependency audit with zero known vulnerabilities). `npm run test:e2e` passed all 24 desktop/mobile scenarios in one clean run. Populated contact and application editors passed focused WCAG 2 A/AA checks; desktop/mobile screenshots were inspected. These checks do not constitute full accessibility certification or a zero-risk security guarantee. Synthetic previews: `docs/screenshots/contact-editor-mobile.png` and `docs/screenshots/listing-history-desktop.png`. Changes remain local; no deployment performed.
+Final verification: `npm run check` passed (52 backend/API/security/recovery tests, ESLint, strict TypeScript, production build and dependency audit with zero known vulnerabilities). `npm run test:e2e` passed all 24 desktop/mobile scenarios in one clean run. Populated contact and application editors passed focused WCAG 2 A/AA checks; desktop/mobile screenshots were inspected. These checks do not constitute full accessibility certification or a zero-risk security guarantee. Synthetic previews: `reference/screenshots/contact-editor-mobile.png` and `reference/screenshots/listing-history-desktop.png`. Changes remain local; no deployment performed.
 
 ### Step 2 — recruiting review foundation
 
@@ -126,4 +126,4 @@ Added date-only in-app reminders on application follow-ups, rounds, assessments 
 
 Scope: user-proposed stage/response-owner changes only, manual evidence only, no extraction confidence claims, no Gmail connection, no automatic status changes, no outgoing notifications. Gmail event extraction, provider-specific disconnect behavior and precision evaluation remain step 3/M2 work. Public deployment prerequisites remain unchanged.
 
-Verification: all 62 backend/API/security/recovery tests and all 26 desktop/mobile browser scenarios passed. Final mobile form refinement and stronger cross-account scheduler failure test passed the 10 focused backend tests and both review/reminder browser scenarios again. ESLint, strict TypeScript, production build and dependency audit passed (zero known dependency vulnerabilities). Focused WCAG 2 A/AA review-page checks passed; screenshots were inspected and saved under `docs/screenshots/recruiting-{desktop,mobile}.png`. These are scoped checks, not production certification. Verification completed before committing Step 2. No deployment was performed.
+Verification: all 62 backend/API/security/recovery tests and all 26 desktop/mobile browser scenarios passed. Final mobile form refinement and stronger cross-account scheduler failure test passed the 10 focused backend tests and both review/reminder browser scenarios again. ESLint, strict TypeScript, production build and dependency audit passed (zero known dependency vulnerabilities). Focused WCAG 2 A/AA review-page checks passed; screenshots were inspected and saved under `reference/screenshots/recruiting-{desktop,mobile}.png`. These are scoped checks, not production certification. Verification completed before committing Step 2. No deployment was performed.

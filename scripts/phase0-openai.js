@@ -308,7 +308,7 @@ async function artifactAbsent(path) {
 export async function run({ apiKey = process.env.OPENAI_API_KEY, fetcher = fetch } = {}) {
   if (typeof apiKey !== "string" || !apiKey.trim()) throw new Error("OPENAI_API_KEY is required");
   const root = new URL("../", import.meta.url);
-  const reportPath = new URL("docs/phase0/model-report-gpt-6-luna-v1.json", root);
+  const reportPath = new URL("reference/phase0/model-report-gpt-6-luna-v1.json", root);
   const groups = [
     {
       name: "dev",

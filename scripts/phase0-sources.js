@@ -46,7 +46,7 @@ const report = {
   description_probe: descriptionProbe,
 };
 await writeFile(
-  new URL("../docs/phase0/source-probe.json", import.meta.url),
+  new URL("../reference/phase0/source-probe.json", import.meta.url),
   JSON.stringify(report, null, 2) + "\n",
 );
 console.log(

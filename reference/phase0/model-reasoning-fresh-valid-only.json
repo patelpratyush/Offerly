@@ -1,7 +1,7 @@
 {
   "version": 1,
   "provenance": "Secondary valid-only slice; incomplete run; not launch-grade",
-  "sourceReport": "docs/phase0/model-reasoning-fresh.json",
+  "sourceReport": "reference/phase0/model-reasoning-fresh.json",
   "fixture": "eval/phase0/recruiting-fresh.json",
   "fixtureSha256": "4f052061f42af090dd2cf5465ddc87c959d7d03b824c197f57fe5e88dba2faf8",
   "completeRun": false,

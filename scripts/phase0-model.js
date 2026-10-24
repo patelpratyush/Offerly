@@ -404,12 +404,12 @@ export async function run(mode = "baseline") {
   const plan = evaluationPlan(mode);
   if (plan.model === UPGRADE_MODEL && plan.split === "held-out")
     assertFreshHeldOut([
-      ...(await readdir(new URL("../docs/phase0/", import.meta.url))),
+      ...(await readdir(new URL("../reference/phase0/", import.meta.url))),
       ...(await readdir(new URL("../eval/phase0/", import.meta.url))),
     ]);
   // Historical evidence is immutable: refuse any run whose output already exists.
   for (const output of [
-    new URL(`../docs/phase0/${plan.reportFile}`, import.meta.url),
+    new URL(`../reference/phase0/${plan.reportFile}`, import.meta.url),
     ...(plan.pipelineFile
       ? [new URL(`../eval/phase0/${plan.pipelineFile}`, import.meta.url)]
       : []),
@@ -598,7 +598,7 @@ export async function run(mode = "baseline") {
   }
   report.finishedAt = new Date().toISOString();
   await writeFile(
-    new URL(`../docs/phase0/${plan.reportFile}`, import.meta.url),
+    new URL(`../reference/phase0/${plan.reportFile}`, import.meta.url),
     JSON.stringify(report, null, 2) + "\n",
     { flag: "wx" },
   );
