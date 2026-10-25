@@ -48,8 +48,9 @@ React + TypeScript with Vite; Express API; Node's built-in SQLite. The schema se
 
 ## Repository map
 
-- `src/`, `api/`, `server/`: browser UI, serverless entry points, API, persistence, and integrations.
-- `tests/`: API, security, integration, and browser tests. `tests/browser/` holds Playwright scenarios.
+- `src/`: `pages/` for screens, `components/workspace/` and `components/landing/` for UI, `styles/` for CSS; `main.tsx` starts the app.
+- `api/`, `server/`: serverless entry points, API, persistence, and integrations.
+- `tests/server/`, `tests/phase0/`: backend and Phase 0 tests. `tests/browser/` holds Playwright scenarios; `tests/helpers/` and `tests/support/` hold shared utilities.
 - `scripts/`: maintenance and Phase 0 validation CLIs.
 - `eval/phase0/`: synthetic fixtures and model predictions; no live mailbox content.
 - `reference/`: operational guides, design notes, and Phase 0 evidence. See [Phase 0 index](reference/phase0/README.md).

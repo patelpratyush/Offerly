@@ -30,4 +30,4 @@ The command does not migrate older schema versions. Keep the corresponding app v
 
 ## Automated evidence
 
-`node --test tests/backup.test.js` checks backup from an open WAL database, snapshot isolation from later writes, restored file bytes, session revocation, restrictive permissions, refusal of existing paths/symlinks/sidecars, and failure on missing, malformed or unrelated databases. These synthetic local checks do not establish recovery time, backup retention compliance or deployment readiness.
+`node --test tests/server/backup.test.js` checks backup from an open WAL database, snapshot isolation from later writes, restored file bytes, session revocation, restrictive permissions, refusal of existing paths/symlinks/sidecars, and failure on missing, malformed or unrelated databases. These synthetic local checks do not establish recovery time, backup retention compliance or deployment readiness.
