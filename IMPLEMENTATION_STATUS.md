@@ -6,15 +6,17 @@ The PRD and build plan define scope; this file records implementation evidence a
 
 This section supersedes older historical checkpoint descriptions below. The private manual tracker, hosted Supabase/Vercel deployment, private scanned Blob uploads, hosted scheduler, and recovery-code password reset are implemented. Recent CI fixes are on main.
 
-Phase 0 has verified six public-board probes, real seven-day Gmail retrieval (612 messages), reusable local Keychain authorization, and a bounded historical recruiting import: 20 messages yielded one structured unresolved review candidate and 19 abstentions; replay created zero new candidates. No mailbox content or evidence was persisted or sent to AI. Eighteen fictional labeled cases and strict evaluation/provenance tooling exist. Current source access and Google dependencies are reviewed in [access decision](reference/phase0/access-decision.md); this is not public-catalog permission or hosted OAuth approval.
+Current verification inventory: `npm test` passes 181 tests; browser suite contains 34 desktop/mobile scenarios. Historical test counts below describe their original checkpoints.
 
-Phase 0 feasibility evidence is recorded, with a no-go on production AI matching. Fresh synthetic run returned 19/24 valid model outputs; raw link precision was 13/18 and event recall 14/18. A source-evidence guard raised valid-only link precision to 13/13 while reducing coverage to 13/19. These tiny, developer-authored synthetic results do not meet PRD quality gates. GPT API is a possible next synthetic-only comparison if free credits are verified; additional AI spend remains capped at $0 and real mail must not go to external AI without separate opt-in. Hosted OAuth/storage, two-hour incremental sync, workspace application import, representative release accuracy, and public discovery remain later release work. See [Phase 0 evidence](reference/phase0/README.md), [production blockers](reference/phase0/production-readiness.md), [import proof](reference/phase0/import-proof-report.json), and [evaluation](reference/phase0/evaluation.md).
+Phase 0 feasibility spike includes six public-board probes, local Gmail authorization prototype, bounded recruiting import proof, synthetic fixtures, and GPT comparisons. The seven-day scan claim (612 messages) has no committed artifact and remains unverified from repository evidence. Two reviewers labeled and owner adjudicated the 24-case synthetic fresh-mail set; metrics and frozen GPT scoring are in [evaluation](reference/phase0/evaluation.md). On October 25, one owner-authorized live smoke test sent 20 recent Gmail message bodies to GPT-6 Luna (20 calls, $0.0008671 actual token cost). It returned aggregate counts only: 3 confirmations, 1 interview; no per-message predictions or content were retained, so this is not an accuracy evaluation. The 12 recruiting plus 6 fit authored cases are separate. Representative consented labels, blind evaluation, and measured stage-mapping precision remain open. See [access decision](reference/phase0/access-decision.md).
+
+GPT-6 Luna synthetic comparison used 42 calls for $0.0020071; separate live smoke test used 20 calls for $0.0008671. Independent human labels cover 24 synthetic cases; link precision was 17/18 (94.4%) against adjudicated labels, below PRD target, with wide intervals. Stage-mapping evaluator now exists, but representative consented examples, independent labels, blind evaluation, and measured status precision remain open. Hosted OAuth and durable sync belong to later integration. Keep production AI and automatic status changes disabled. See [Phase 0 evidence](reference/phase0/README.md), [production blockers](reference/phase0/production-readiness.md), [import proof](reference/phase0/import-proof-report.json), and [evaluation](reference/phase0/evaluation.md).
 
 The sections below retain prior implementation history and do not override this checkpoint.
 
-## M0 — Integration validation: pending
+## M0 — Integration validation: feasibility spike recorded
 
-No external credentials, model provider, source permission decisions, or labeled mailbox data were provided. Gmail consent/import, source connectors, source conditions, extraction evaluation, and production stack/budget decisions remain open. Local stack: React/TypeScript, Express, SQLite; no external AI processing.
+Prototype probes, synthetic GPT comparison, and one aggregate-only live GPT smoke test are recorded. M0 does not establish representative extraction accuracy, measured stage mapping, source redistribution permission, or hosted Gmail readiness. Synthetic independent reviewer agreement is recorded; representative real-mail agreement remains open. See current checkpoint and Phase 0 exit checklist.
 
 ## M1 — Manual tracker: step 1 implemented
 
@@ -59,7 +61,7 @@ Simplify, Teal, and Huntr informed stage visibility, tracker controls, and conne
 ## Verification for this increment
 
 - 11 API regression tests cover ownership, optimistic concurrency, CSV date interpretation/atomicity/replay, historical child links, assessment completion, and duplicate review/undo.
-- 6 desktop/mobile browser workflows cover manual tracking, guided imports, filters, duplicate decisions, assessments, and activity views.
+- 34 desktop/mobile browser scenarios cover manual tracking, guided imports, filters, duplicate decisions, assessments, and activity views.
 - Automated WCAG 2 A/AA checks on the populated application table pass on desktop and mobile. This is a focused check, not a full accessibility certification.
 - TypeScript checking and production build pass.
 - Synthetic-data previews: `reference/screenshots/applications.png`, `reference/screenshots/today-mobile.png`, and `reference/screenshots/application-activity.png`.

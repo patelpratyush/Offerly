@@ -7,6 +7,7 @@ import {
   readRecruitingProof,
   RECRUITING_QUERY,
 } from "../server/integrations/recruiting-import-proof.js";
+import { proofMetadata, runImportProof } from "../scripts/phase0-import-proof.js";
 const part = (text, mimeType = "text/plain") => ({
   mimeType,
   body: { data: Buffer.from(text).toString("base64url") },
@@ -180,4 +181,76 @@ test("bounded proof reads at most twenty fixed-query messages and emits no priva
     }),
     /message_limit_exceeded/,
   );
+});
+
+test("import proof detects importer that creates candidate again on duplicate delivery", async () => {
+  const faultyImporter = () => {
+    let candidates = 0;
+    return {
+      import() {
+        candidates++;
+        return true;
+      },
+      snapshot: () => ({
+        scanned: candidates,
+        candidates,
+        candidateEvents: candidates,
+        unresolvedReviewItems: candidates,
+        abstentions: 0,
+        replayDuplicates: 0,
+      }),
+      fingerprint: () => String(candidates),
+      clear() {},
+    };
+  };
+  await assert.rejects(
+    runImportProof({
+      read: async ({ onMessage }) => {
+        await onMessage(message("We have received your application."));
+        return { selectedMessages: 1, selectionLimit: 20 };
+      },
+      createProof: faultyImporter,
+      metadata: async () => ({ generatedAt: "2026-10-24T00:00:00.000Z" }),
+    }),
+    /replay_created_duplicate/,
+  );
+});
+
+test("aggregate import report has verifiable metadata and contains no message PII", async () => {
+  const report = await runImportProof({
+    read: async ({ onMessage }) => {
+      await onMessage({
+        ...message("We have received your application. secret-body"),
+        payload: {
+          ...message("We have received your application.").payload,
+          headers: [
+            { name: "Subject", value: "secret-subject" },
+            { name: "From", value: "private@example.test" },
+          ],
+        },
+      });
+      return { selectedMessages: 1, selectionLimit: 20, fullMailboxScanned: false };
+    },
+    metadata: async () => ({
+      generatedAt: "2026-10-24T00:00:00.000Z",
+      gitCommit: "a".repeat(40),
+      rulesVersion: "candidate-rules-v1",
+      proofSourcesSha256: "b".repeat(64),
+    }),
+  });
+  const output = JSON.stringify(report);
+  assert.match(report.generatedAt, /^2026-/);
+  assert.equal(report.gitCommit.length, 40);
+  assert.equal(report.rulesVersion, "candidate-rules-v1");
+  assert.match(report.proofSourcesSha256, /^[a-f0-9]{64}$/);
+  for (const privateValue of ["abc", "secret-body", "secret-subject", "private@example.test"])
+    assert.equal(output.includes(privateValue), false);
+});
+
+test("import proof metadata records time, commit when available, rule version and source digest", async () => {
+  const metadata = await proofMetadata();
+  assert.ok(Number.isFinite(Date.parse(metadata.generatedAt)));
+  assert.ok(metadata.gitCommit === null || /^[a-f0-9]{40,64}$/i.test(metadata.gitCommit));
+  assert.equal(metadata.rulesVersion, "candidate-rules-v1");
+  assert.match(metadata.proofSourcesSha256, /^[a-f0-9]{64}$/);
 });

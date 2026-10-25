@@ -93,13 +93,20 @@ if (mode === "desktop") {
     if (fd !== undefined) closeSync(fd);
   }
 } else if (mode === "web") {
-  const expectedOrigin = "https://offerly-nine-delta.vercel.app";
+  const configuredOrigin = process.env.APP_ORIGIN || "";
+  let validAppOrigin = false;
+  try {
+    const parsed = new URL(configuredOrigin);
+    validAppOrigin = parsed.protocol === "https:" && parsed.origin === configuredOrigin;
+  } catch {
+    // Invalid or absent origin remains a failed readiness check.
+  }
   const key = process.env.GMAIL_TOKEN_ENCRYPTION_KEY || "";
   Object.assign(checks, {
-    canonicalProductionOrigin: process.env.APP_ORIGIN === expectedOrigin,
+    canonicalProductionOrigin: validAppOrigin,
     callbackMatchesOrigin:
       process.env.GOOGLE_REDIRECT_URI ===
-      `${expectedOrigin}/api/connections/gmail/callback`,
+      `${configuredOrigin}/api/connections/gmail/callback`,
     clientIdFormat: validClientId(process.env.GOOGLE_CLIENT_ID),
     clientSecretPresent: cleanValue(process.env.GOOGLE_CLIENT_SECRET),
     encryptionKey32Bytes:

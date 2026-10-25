@@ -7,18 +7,18 @@ This deployment uses Supabase PostgreSQL and Vercel Functions. Existing Offerly 
 1. Create a Supabase project near the Vercel function region. Save database credentials in a password manager.
 2. Apply the files in `supabase/migrations/` in filename order through a trusted migration connection. Apply only unapplied migrations to an existing installation. The first migration creates a new private `offerly` schema; never add this schema to the Data API exposed schemas. It deliberately fails if the schema already exists. Inspect existing state instead of dropping it.
 3. Apply `supabase/runtime-role.sql` as the migration owner. This creates a dedicated runtime role with only table access. Set its password using an interactive trusted database client (`\password offerly_app` in psql); never commit the password to SQL or paste it into chat.
-4. Your project is `xgaobvlmnuhxkcqubvee`, with transaction pooler host `aws-0-us-east-2.pooler.supabase.com:6543`. Copy the transaction pooler connection string from Supabase Connect. Replace its username with `offerly_app.PROJECT_REF` and use the runtime role password, URL-encoded. Do not include `sslmode` or other SSL query parameters; the adapter enforces verified TLS and includes Supabase’s public CA certificate from its official download source. Named prepared statements are not used. Keep the migration/admin credentials out of Vercel.
+4. Copy transaction pooler connection string from your Supabase project's Connect panel. Use runtime role username `offerly_app.<PROJECT_REF>` and URL-encoded runtime role password. Keep project reference, pooler hostname, and credentials in deployment configuration or a password manager; do not commit them. Do not include `sslmode` or other SSL query parameters; adapter enforces verified TLS and includes Supabase’s public CA certificate from its official download source. Named prepared statements are not used. Keep migration/admin credentials out of Vercel.
 
 RLS is enabled on every app table. The server role has explicit access through RLS policies; browser roles have no schema access or policies. Per-user authorization is enforced by Offerly API ownership predicates, not Supabase JWTs. The server role must therefore remain secret.
 
-The ignored local `.env` contains this project’s connection template. Replace its password placeholder with the URL-encoded **offerly_app role password** after creating that role. This differs from the project’s postgres/admin password. `DATABASE_ADMIN_URL`, when present, is for local migrations only; never copy it to Vercel. Vercel does not read your local `.env`; set its production variables separately.
+The ignored local `.env` may contain a connection template. Replace its password placeholder with URL-encoded **offerly_app role password** after creating that role. This differs from project postgres/admin password. `DATABASE_ADMIN_URL`, when present, is for local migrations only; never copy it to Vercel. Vercel does not read your local `.env`; set its production variables separately.
 
 ## Configure Vercel
 
 Use Node.js 24, the Vite framework preset, `npm run build`, and output directory `dist`. The committed `vercel.json` routes `/api/*` to the Node function. Set these **server-side Production environment variables**:
 
 - `DATABASE_URL`: dedicated runtime role's transaction pooler URL.
-- `APP_ORIGIN`: `https://offerly-nine-delta.vercel.app` (exact origin, no trailing slash).
+- `APP_ORIGIN`: production HTTPS origin (exact origin, no trailing slash; read from deployment configuration).
 - `REGISTRATION_TOKEN`: random secret, at least 32 characters. Share only with invited testers. Unset disables registration.
 - `CRON_SECRET`: separate random secret, at least 32 characters.
 - `BLOB_STORE_ID`: ID of the linked private Vercel Blob store.

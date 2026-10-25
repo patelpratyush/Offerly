@@ -1,7 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { evaluate } from "../scripts/phase0-evaluate.js";
+import { evaluate, wilson95, validateExtendedFixtures } from "../scripts/phase0-evaluate.js";
 const gold = JSON.parse(
   readFileSync(new URL("../eval/phase0/recruiting.json", import.meta.url)),
 );
@@ -30,6 +30,7 @@ test("evaluation counts false positives, abstentions and zero denominators", () 
     numerator: 1,
     denominator: 2,
     value: 0.5,
+    wilson95: { lower: 0.09453120573423074, upper: 0.9054687942657693 },
   });
   assert.equal(result.applicationLinkRecall.denominator, 3);
   assert.equal(result.eventPrecision.value, 0.5);
@@ -39,6 +40,21 @@ test("evaluation counts false positives, abstentions and zero denominators", () 
   const none = evaluate(gold, dev());
   assert.equal(none.eventPrecision.value, null);
   assert.equal(none.eventRecall.value, 0);
+});
+test("Wilson 95 percent intervals use bounded proportions and null zero denominators", () => {
+  const interval = wilson95(1, 2);
+  assert.ok(Math.abs(interval.lower - 0.09453120573423074) < 1e-12);
+  assert.ok(Math.abs(interval.upper - 0.9054687942657693) < 1e-12);
+  assert.deepEqual(wilson95(0, 0), null);
+  assert.deepEqual(wilson95(0, 10), { lower: 0, upper: 0.2775327998628892 });
+});
+test("extended synthetic fixtures validate added event taxonomy and multiple applications", () => {
+  const extended = JSON.parse(readFileSync(new URL("../eval/phase0/recruiting-extended.json", import.meta.url)));
+  assert.deepEqual(validateExtendedFixtures(extended), { valid: true, examples: 9, eventTypes: 12 });
+  assert.equal(extended.examples.find((item) => item.id === "extended-multi-app-message").input.applications.length, 2);
+  const invalid = structuredClone(extended);
+  invalid.examples[0].expected.events = ["unknown-event"];
+  assert.throws(() => validateExtendedFixtures(invalid));
 });
 test("evaluation rejects missing IDs, duplicate IDs and held-out leakage", () => {
   const input = dev();

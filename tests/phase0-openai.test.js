@@ -5,6 +5,7 @@ import {
   estimatedRunCostUsd,
   requestStructuredOutput,
   parseStructuredOutput,
+  reportPromptMetadata,
 } from "../scripts/phase0-openai.js";
 import { readFile } from "node:fs/promises";
 import { analyzeHeldOut } from "../scripts/phase0-openai-analysis.js";
@@ -63,6 +64,11 @@ test("Responses API call pins host, model, schema, storage, tools, and timeout",
   const body = JSON.parse(call.options.body);
   assert.equal(body.model, "gpt-6-luna");
   assert.equal(body.store, false);
+  const reportMetadata = reportPromptMetadata();
+  assert.equal(
+    reportMetadata.promptSha256.mail,
+    (await import("node:crypto")).createHash("sha256").update(body.instructions).digest("hex"),
+  );
   assert.deepEqual(body.tools, []);
   assert.equal(body.max_output_tokens, 384);
   assert.equal(body.text.format.type, "json_schema");
@@ -181,27 +187,17 @@ test("frozen GPT held-out analysis reproduces raw and source-guarded outcomes", 
     ].map((path) => readFile(new URL(path, import.meta.url), "utf8").then(JSON.parse)),
   );
   const analysis = analyzeHeldOut({ oldGold, oldPredictions, freshGold, freshPredictions });
-  assert.deepEqual(analysis.raw.applicationLinkPrecision, {
-    numerator: 22,
-    denominator: 23,
-    value: 22 / 23,
-  });
-  assert.deepEqual(analysis.guarded.applicationLinkPrecision, {
-    numerator: 22,
-    denominator: 22,
-    value: 1,
-  });
-  assert.deepEqual(analysis.guarded.applicationLinkCoverage, {
-    numerator: 22,
-    denominator: 32,
-    value: 22 / 32,
-  });
+  assert.equal(analysis.raw.applicationLinkPrecision.numerator, 22);
+  assert.equal(analysis.raw.applicationLinkPrecision.denominator, 23);
+  assert.equal(analysis.raw.applicationLinkPrecision.value, 22 / 23);
+  assert.ok(analysis.raw.applicationLinkPrecision.wilson95.lower < 22 / 23);
+  assert.equal(analysis.guarded.applicationLinkPrecision.value, 1);
+  assert.ok(analysis.guarded.applicationLinkPrecision.wilson95.lower < 1);
+  assert.equal(analysis.guarded.applicationLinkCoverage.value, 22 / 32);
   assert.deepEqual(analysis.guardVetoes, [
     { id: "fresh-23", reason: "no_source_evidence" },
   ]);
-  assert.deepEqual(analysis.raw.eventRecall, {
-    numerator: 24,
-    denominator: 25,
-    value: 24 / 25,
-  });
+  assert.equal(analysis.raw.eventRecall.numerator, 24);
+  assert.equal(analysis.raw.eventRecall.denominator, 25);
+  assert.equal(analysis.raw.eventRecall.value, 24 / 25);
 });

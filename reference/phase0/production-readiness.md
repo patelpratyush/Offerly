@@ -7,15 +7,25 @@ included here.
 
 ## Current decision
 
-Phase 0 feasibility work is complete; proceed with Phase 1 manual-first tracking.
-Production acceptance remains closed. GPT-6 Luna's one synthetic run returned
-valid output for 42/42 calls. Across 32 repository-held-out mail cases, pooled
-raw link precision was 22/23 (95.7%), guarded precision 22/22 (100%) at 22/32
-(68.8%) coverage, and event recall 24/25 (96%). Fresh-set raw link precision
-was 17/18 (94.4%). Held-out fit score coverage was 0/4. These cases are not
-representative or independently human-labeled, and automatic-status precision
-was not established. See [evaluation](evaluation.md). No model-driven status
-changes or production model calls are enabled.
+Phase 0 feasibility spike is recorded; open exit items remain. Phase 1 manual-first
+tracking can proceed. Production acceptance remains closed. GPT-6 Luna's one synthetic
+run returned valid output for 42/42 calls. Original 32 repository-held-out mail cases
+had author-label raw link precision 22/23 (95.7%), guarded precision 22/22 at 22/32
+(68.8%) coverage, and event recall 24/25 (96%). Separate 24-case fresh set now has
+independent synthetic labels: adjudicated link precision 17/18 (94.4%; Wilson CI
+74.2–99.0%), event recall 20/23 (87.0%; CI 67.9–95.5%), and link agreement 24/24.
+Cases remain prompt-visible and unrepresentative. Held-out fit score coverage was 0/4.
+Automatic-status precision remains unmeasured. See [evaluation](evaluation.md).
+No model-driven status changes or production model calls are enabled.
+
+## Open Phase 0 exit items
+
+- [x] Independent labels and adjudication for 24 synthetic fresh-mail cases — agreement and GPT scores recorded in [evaluation](evaluation.md); not representative or prompt-blind.
+- [ ] Representative consented examples — **owner action:** collect consented, minimized examples.
+- [ ] Stage-mapping and status-precision evaluation — protocol in [proposal](stage-mapping-evaluation.md); no result measured; keep automatic updates disabled.
+- [x] Synthetic cross-instance replay guard — code and fault-injection test pass; provider-backed cursor recovery remains open.
+- [x] Cursor/pagination design proposal — see [proposal](import-design.md); Gmail History API implementation and integration validation are Phase 2.
+- [ ] Hosted OAuth — Phase 2; **owner action:** verified domain, Google restricted-scope review, and accurate privacy disclosures.
 
 ## Required before a production Gmail connection
 
@@ -47,10 +57,12 @@ That is suitable for short private tests with reconnects, not unattended sync.
 
 ## Required for a quality pass
 
-Current labeled cases are synthetic, authored by developers, and not
-independently human-validated. Build a blinded annotation set; collect
-independent labels from multiple reviewers; resolve disagreements; then evaluate
-on representative consented examples without prompt tuning on that holdout.
+Current original gold fixtures are synthetic and developer-authored. Two
+reviewers independently labeled 24 additional synthetic fresh-mail cases, with
+two disagreements adjudicated by owner. Cases were still visible during prompt
+development, so this is not a blind model holdout. Build a new hidden set after
+freezing model and prompt; collect independent labels; resolve disagreements;
+then evaluate on representative consented examples without tuning on that holdout.
 Keep the PRD thresholds: at least 95% application-link precision, 98% precision
 for any status applied automatically, and 85% supported-event recall. Report
 sample sizes, uncertainty, coverage, failures, and event-specific recall. If
@@ -58,6 +70,13 @@ results miss any gate, keep automatic status updates disabled.
 
 Real-mail labels require minimized evidence and reviewer consent. Do not send
 personal Gmail to a model as a shortcut to annotation.
+
+## Owner decisions
+
+- Choose and disclose retention window for Gmail-derived evidence before hosted sync.
+- Set hosted inference budget and approve data handling before hosted model calls.
+- Resolve access and redistribution terms for each job source before public collection.
+- Complete verified-domain, Google restricted-scope, privacy, and any required security assessment before public Gmail OAuth.
 
 ## Scope boundary
 

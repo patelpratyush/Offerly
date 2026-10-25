@@ -51,8 +51,9 @@ boards outside production until their actual use conditions are resolved.
 
 The owner chose local Desktop OAuth, added their account as a test user, approved
 read access including personal messages, and subsequently selected a seven-day
-proof. Recorded result: 612 messages across seven pages, zero skipped messages or
-retries. The dedicated read-only grant was retained in macOS login Keychain and
+proof. The run was reported as 612 messages across seven pages, with zero skips or
+retries, but no result artifact is committed; this result is unverified from repo
+evidence. The dedicated read-only grant was retained in macOS login Keychain and
 reused by a separate process. Message bodies stayed in process memory; no email
 text was sent to external AI. This establishes local authorization and retrieval,
 not extraction accuracy, production import, or ongoing synchronization.

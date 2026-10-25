@@ -19,7 +19,7 @@ This is the execution sequence for the existing PRD and build plan, not a replac
 - Use review-only recruiting updates until held-out evaluation demonstrates the PRD precision targets.
 - External sending, form submission, mailbox access and production deployment are not implicitly enabled by this roadmap.
 - Manual tracking remains usable without provider credentials or AI services.
-- Phase 0 has completed bounded public-board probes and an owner-consented local Gmail prototype. Email contents/evidence are memory-only; no external AI processing, production Gmail sync, or production discovery service is enabled. Synthetic model evaluation is separate from private mailbox processing.
+- Phase 0 has completed bounded public-board probes and an owner-consented local Gmail prototype. One separate owner-authorized, 20-message GPT smoke test retained aggregate counts only; it did not measure accuracy. Production Gmail sync, production AI, and discovery services are not enabled.
 
 Current detailed evidence and remaining gaps live in `IMPLEMENTATION_STATUS.md`.
 
@@ -31,6 +31,6 @@ Reminders are explicitly configured, date-only, in-app reminders. They use the w
 
 Next: step 3 needs hosted Web OAuth, a production callback, encrypted per-user refresh credentials, retention/provider-processing decisions, durable import and two-hour incremental sync. Local Desktop OAuth and a consented historical prototype already work. The existing manual workspace remains usable without these dependencies.
 
-## Phase 0 validation checkpoint — October 23, 2026
+## Phase 0 validation checkpoint — October 25, 2026
 
-Real source probes, bounded Gmail candidate-import/replay evidence, source access research, synthetic labels and local-model results live in [Phase 0 validation](phase0/README.md). Feasibility evidence is recorded; local extraction/matching failed release-quality gates. GPT API remains unevaluated pending verified free credits. Hosted Gmail and public discovery are later-phase gates; they must not be presented as already enabled by local prototype evidence. No inference output is applied to production records.
+Real source probes, bounded Gmail candidate-import/replay evidence, source access research, synthetic labels, one synthetic GPT comparison, and local-model results live in [Phase 0 validation](phase0/README.md). Feasibility evidence is recorded; extraction/matching has not passed release-quality gates. Hosted Gmail and public discovery remain later-phase gates; local prototype evidence does not enable them. No inference output is applied to production records.

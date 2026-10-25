@@ -46,6 +46,18 @@ React + TypeScript with Vite; Express API; Node's built-in SQLite. The schema se
 
 `src/main.tsx` contains workspace views; `server/app.js` contains authenticated routes and validation; `server/store.js` owns persistence and transactional record/event writes. Integration workers are intentionally not simulated.
 
+## Repository map
+
+- `src/`, `api/`, `server/`: browser UI, serverless entry points, API, persistence, and integrations.
+- `tests/`: API, security, integration, and browser tests. `tests/browser/` holds Playwright scenarios.
+- `scripts/`: maintenance and Phase 0 validation CLIs.
+- `eval/phase0/`: synthetic fixtures and model predictions; no live mailbox content.
+- `reference/`: operational guides, design notes, and Phase 0 evidence. See [Phase 0 index](reference/phase0/README.md).
+- `docs/phase0/`: reviewer packet and reviewer instructions only. Keep completed files containing email text outside Git.
+- `supabase/`, `deploy/`: database migrations and deployment examples.
+
+The product overview and requirements remain at repository root: [build plan](Job_Search_App_Build_Plan.md), [PRD](Job_Search_Workspace_PRD.md), and [implementation status](IMPLEMENTATION_STATUS.md).
+
 ## Scope and remaining work
 
 This is a manual job-search workspace. Hosted sign-up remains invitation-only. Gmail/OAuth, email extraction, job discovery, alerts, AI preparation, calendar, and browser extensions are not connected. No outgoing messages or applications are sent.

@@ -11,8 +11,8 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 const script = new URL("../scripts/phase0-gmail-readiness.js", import.meta.url);
-function run(extra = {}) {
-  const result = spawnSync(process.execPath, [script.pathname], {
+function run(extra = {}, mode = "desktop") {
+  const result = spawnSync(process.execPath, [script.pathname, mode], {
     encoding: "utf8",
     env: { PATH: process.env.PATH, ...extra },
   });
@@ -79,4 +79,18 @@ test("readiness fails closed for browser-exposed credentials and oversized malfo
   assert.ok(!exposed.output.includes(secret));
   writeFileSync(file, "{".repeat(65537));
   assert.equal(run({ GOOGLE_OAUTH_CLIENT_FILE: file }).status, 2);
+});
+test("web OAuth readiness uses configured APP_ORIGIN and contains no deployment host", () => {
+  const origin = "https://offerly.example";
+  const valid = run({
+    APP_ORIGIN: origin,
+    GOOGLE_REDIRECT_URI: `${origin}/api/connections/gmail/callback`,
+    GOOGLE_CLIENT_ID: "123456-local.apps.googleusercontent.com",
+    GOOGLE_CLIENT_SECRET: "private-test-client-secret",
+    GMAIL_TOKEN_ENCRYPTION_KEY: Buffer.alloc(32, 7).toString("base64"),
+  }, "web");
+  assert.equal(valid.status, 0);
+  assert.equal(valid.data.checks.canonicalProductionOrigin, true);
+  assert.ok(!valid.output.includes("offerly-nine-delta"));
+  assert.equal(run({ APP_ORIGIN: "https://offerly.example/path" }, "web").status, 2);
 });
