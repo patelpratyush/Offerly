@@ -50,13 +50,13 @@ Prototype probes, synthetic GPT comparison, and one aggregate-only live GPT smok
 
 ## Recommended next implementation slice
 
-Steps 1 and the scoped step 2 foundation are implemented. Follow step 3 in `reference/DELIVERY_STEPS.md`: configure Gmail OAuth and consented fixtures before provider ingestion. Deployment readiness remains a separate step.
+Steps 1 and the scoped step 2 foundation are implemented. Follow step 3 in `reference/roadmap/DELIVERY_STEPS.md`: configure Gmail OAuth and consented fixtures before provider ingestion. Deployment readiness remains a separate step.
 
 For Gmail: provision a Gmail OAuth client and consented test mailbox; decide retained-content window and provider processing policy. Implement durable jobs and a review-only ingestion path before enabling automatic changes. Evaluate ambiguous same-company roles, duplicate replay, out-of-order events, disconnect/delete during import, and untrusted email content using synthetic/consented fixtures. Keep the manual workspace available during provider failures.
 
 ## UI refinement
 
-Simplify, Teal, and Huntr informed stage visibility, tracker controls, and connected application details. Offerly retains its own forest-green identity. Guided import/review dialogs and tabbed details support desktop and mobile. Reference links and concrete design choices are in `reference/DESIGN_REFERENCES.md`.
+Simplify, Teal, and Huntr informed stage visibility, tracker controls, and connected application details. Offerly retains its own forest-green identity. Guided import/review dialogs and tabbed details support desktop and mobile. Reference links and concrete design choices are in `reference/design/DESIGN_REFERENCES.md`.
 
 ## Verification for this increment
 
@@ -78,13 +78,13 @@ Paused at the user's request after verification completed: 24 API/security tests
 
 ### Recovery tooling increment — 2026-10-20
 
-Added `npm run db:backup` and `npm run db:restore`: consistent online SQLite snapshots, integrity/schema/foreign-key checks, private staging and atomic publication to fresh paths, no overwrite of existing databases or symlinks, and session revocation on restoration. `reference/BACKUP_RESTORE.md` documents restoration, post-snapshot account deletion/password reconciliation, and deployment responsibilities. No live user database was backed up or restored during implementation.
+Added `npm run db:backup` and `npm run db:restore`: consistent online SQLite snapshots, integrity/schema/foreign-key checks, private staging and atomic publication to fresh paths, no overwrite of existing databases or symlinks, and session revocation on restoration. `reference/operations/BACKUP_RESTORE.md` documents restoration, post-snapshot account deletion/password reconciliation, and deployment responsibilities. No live user database was backed up or restored during implementation.
 
 Verification: all 27 API/security/recovery tests passed, along with backend lint, TypeScript checking, production build, and dependency audit (zero known vulnerabilities). Final destination-symlink tightening passed lint and all 3 focused recovery tests. Browser tests were not rerun for this backend CLI-only increment; the previous checkpoint's 8 browser tests passed. Encrypted storage, scheduled/off-host backups and a real deployment restoration drill remain pending.
 
 ### Staged build: tracker expansion — 2026-10-20
 
-Added `reference/DELIVERY_STEPS.md` as the staged execution roadmap. This slice delivers:
+Added `reference/roadmap/DELIVERY_STEPS.md` as the staged execution roadmap. This slice delivers:
 
 - Private saved views with filters, sorting, archived visibility and table/board layout; create/update/remove persist across reloads.
 - Table/board selection and atomic bulk priority, stage, response-owner and archive/restore edits. Selection clears when filters change; maximum 100 records. Ownership/version validation and bounded seven-day operation receipts protect against partial edits and duplicate retry history.

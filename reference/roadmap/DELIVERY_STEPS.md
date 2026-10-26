@@ -33,4 +33,4 @@ Next: step 3 needs hosted Web OAuth, a production callback, encrypted per-user r
 
 ## Phase 0 validation checkpoint — October 25, 2026
 
-Real source probes, bounded Gmail candidate-import/replay evidence, source access research, synthetic labels, one synthetic GPT comparison, and local-model results live in [Phase 0 validation](phase0/README.md). Feasibility evidence is recorded; extraction/matching has not passed release-quality gates. Hosted Gmail and public discovery remain later-phase gates; local prototype evidence does not enable them. No inference output is applied to production records.
+Real source probes, bounded Gmail candidate-import/replay evidence, source access research, synthetic labels, one synthetic GPT comparison, and local-model results live in [Phase 0 validation](../phase0/README.md). Feasibility evidence is recorded; extraction/matching has not passed release-quality gates. Hosted Gmail and public discovery remain later-phase gates; local prototype evidence does not enable them. No inference output is applied to production records.

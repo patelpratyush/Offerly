@@ -109,7 +109,7 @@ any autonomous application updates. This design is not implemented.
 
 See [Gmail synchronization](https://developers.google.com/workspace/gmail/api/guides/sync),
 [history.list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list),
-[Supabase scheduler](../SUPABASE_VERCEL.md), and
+[Supabase scheduler](../operations/SUPABASE_VERCEL.md), and
 [Vercel Cron limits](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
 
 ## Hosted and public release gates
