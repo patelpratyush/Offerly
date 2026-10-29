@@ -6,7 +6,9 @@ export default defineConfig({
   use: { baseURL: "http://127.0.0.1:4173", headless: true },
   webServer: {
     command: "node tests/support/serve.js",
-    url: "http://127.0.0.1:4173",
+    // Wait for the API behind Vite too; homepage readiness alone can race
+    // mobile tests against backend startup after desktop project shuts down.
+    url: "http://127.0.0.1:4173/api/auth/config",
     reuseExistingServer: false,
   },
   projects: [
