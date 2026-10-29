@@ -53,6 +53,43 @@ const goldSchema = z
       .min(1),
   })
   .strict();
+const extendedEvents = [
+  "confirmation", "assessment", "interview", "rejection", "offer",
+  "review-update", "assessment-deadline", "availability-request",
+  "scheduled-interview", "reschedule", "cancellation", "recruiter-request",
+];
+const extendedGoldSchema = z.object({
+  version: z.literal(1),
+  provenance: z.literal("synthetic; authored labels; not independently human validated"),
+  examples: z.array(z.object({
+    id,
+    split: z.enum(["dev", "held-out"]),
+    family: id,
+    input: z.object({
+      subject: z.string(), body: z.string(), receivedAt: z.iso.datetime(),
+      applications: z.array(z.object({ id, company: z.string(), title: z.string(), requisition: z.string() }).strict()).min(1),
+    }).strict(),
+    expected: z.object({
+      applicationId: id.nullable(),
+      events: z.array(z.enum(extendedEvents)),
+      rationale: z.string(),
+    }).strict(),
+  }).strict()).min(1),
+}).strict();
+
+export function validateExtendedFixtures(input) {
+  const gold = extendedGoldSchema.parse(input);
+  const ids = new Set();
+  for (const item of gold.examples) {
+    if (ids.has(item.id)) throw new Error("Duplicate extended fixture ID");
+    ids.add(item.id);
+    if (new Set(item.expected.events).size !== item.expected.events.length)
+      throw new Error("Duplicate extended fixture event");
+    if (item.expected.applicationId && !item.input.applications.some((app) => app.id === item.expected.applicationId))
+      throw new Error("Unknown extended fixture application");
+  }
+  return { valid: true, examples: gold.examples.length, eventTypes: extendedEvents.length };
+}
 const predictionsSchema = z
   .object({
     version: z.literal(1),
@@ -65,10 +102,26 @@ const predictionsSchema = z
     ),
   })
   .strict();
+export function wilson95(numerator, denominator) {
+  if (!denominator) return null;
+  const z = 1.959963984540054;
+  const p = numerator / denominator;
+  const z2 = z * z;
+  const scale = 1 + z2 / denominator;
+  const center = (p + z2 / (2 * denominator)) / scale;
+  const margin =
+    (z * Math.sqrt((p * (1 - p) + z2 / (4 * denominator)) / denominator)) /
+    scale;
+  return {
+    lower: Math.max(0, center - margin),
+    upper: Math.min(1, center + margin),
+  };
+}
 const fraction = (numerator, denominator) => ({
   numerator,
   denominator,
   value: denominator ? numerator / denominator : null,
+  wilson95: wilson95(numerator, denominator),
 });
 export function evaluate(goldInput, predictionsInput) {
   const gold = goldSchema.parse(goldInput);

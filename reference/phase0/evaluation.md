@@ -1,6 +1,39 @@
 # Phase 0 evaluation assets
 
-Status: local baseline and one GPT-6 Luna comparison complete. Fixtures remain developer-authored and fictional. Independent pilot review and representative real-mail evaluation **not performed**; these results are not launch-quality evidence.
+Status: local baseline and one GPT-6 Luna comparison complete. Two reviewers have independently labeled and adjudicated the 24-case synthetic fresh-mail set. Representative real-mail evaluation remains **not performed**; results are not launch-quality evidence.
+
+## Independent synthetic reviewer results (2026-10-25)
+
+Two reviewers completed all 24 synthetic cases. Application-link agreement was **24/24 (100%, κ=1.00)**. Event agreement: confirmation **22/24 (91.67%, κ=0.780)**; assessment **24/24 (100%, κ=1.00)**; interview **23/24 (95.83%, κ=0.882)**; rejection and offer **24/24 (100%, κ=1.00)**. Disagreements in `fresh-19` and `fresh-21` were adjudicated by the owner as `confirmation`; `fresh-19` has no interview event in final labels.
+
+Frozen GPT-6 Luna fresh-set predictions scored against final labels:
+
+| Metric | Result | Wilson 95% interval |
+| --- | ---: | ---: |
+| Application-link precision | 17/18 (94.44%) | 74.24–99.01% |
+| Application-link recall | 17/17 (100%) | 81.57–100% |
+| Application-link coverage | 18/24 (75.00%) | 55.10–88.00% |
+| Event precision | 20/20 (100%) | 83.89–100% |
+| Event recall | 20/23 (86.96%) | 67.87–95.46% |
+
+Link precision point estimate misses PRD 95% target. Event recall point estimate exceeds PRD 85% target, but interval is wide. Neither result establishes target performance: examples are synthetic, prompt authors saw fixture sets before prompt writing, and this does not measure status-change precision (PRD 98%), end-to-end stage mapping, or representative mail accuracy. Keep automatic stage changes disabled.
+
+Adjudicated labels are stored in [adjudicated-fresh-email-labels.csv](adjudicated-fresh-email-labels.csv); reviewer originals remain outside repository. SHA-256: `be953e32b1ba5e5a2bae97fd563f48b012144d8ccb87a575d22deb6afa6f753b`. Frozen prediction SHA-256: `1d6f3f8033db00f30982277f9a092c5b562dca354122bab3ebe181faa7d321ab`. Fresh fixture SHA-256: `4f052061f42af090dd2cf5465ddc87c959d7d03b824c197f57fe5e88dba2faf8`.
+
+## Known gaps vs PRD
+
+- Current five-event evaluation taxonomy (`confirmation`, `assessment`, `interview`, `rejection`, `offer`) does not cover roughly twelve PRD MAIL 02 event types, including review update, assessment deadline, availability request, scheduled interview, reschedule, cancellation, and recruiter request. Extended synthetic fixtures document these cases separately; no model was run on them.
+- No multi-application message is represented in original evaluation fixtures. The current prediction schema allows only one `applicationId` per message.
+- No stage-mapping evaluation or status-precision measurement exists. Event extraction metrics do not prove safe tracker changes.
+- Held-out and fresh sets were visible before GPT prompt was written. Reported results are not blind.
+- Fixtures are synthetic and developer-authored. Separate independent labels now exist for 24 fresh cases; representative consented examples remain open.
+- The historical GPT run did not record prompt SHA-256. Runner now records prompt hashes on future runs; historical report remains unchanged.
+- Extended event/multi-application fixtures have schema validation only; no model was run against them.
+
+These are open coverage and evaluation gaps, not completed PRD coverage.
+
+See [extended synthetic fixtures](extended-fixtures.md) for added taxonomy and multi-application examples. They are schema-validated only and have not been sent to any model.
+See [stage-mapping evaluation proposal](stage-mapping-evaluation.md) for a preregistered-style plan; no stage evaluation result exists yet.
 
 ## Assets and split discipline
 
@@ -253,14 +286,17 @@ The runner applied a $0.10 preflight cap, `max_output_tokens: 384`, no tools,
 `store: false`, a fixed endpoint, one request per case, and immutable artifacts.
 API key stays in ignored local `.env`; the command is `npm run phase0:openai`.
 
-Across the original 8 held-out mail cases plus 24 fresh cases (32 total), raw
+Against original author labels, across original 8 held-out mail cases plus 24 fresh cases (32 total), raw
 application-link precision was **22/23 (95.7%)**, link recall **22/22 (100%)**,
 and event recall **24/25 (96%)**. The existing deterministic source-evidence
 guard vetoed the unsupported link on `fresh-23`, producing **22/22 (100%)**
 guarded precision at **22/32 (68.8%)** coverage. On the fresh 24-case set alone,
-raw precision was **17/18 (94.4%)**. Original held-out mail event recall was
-4/5 (80%); fresh-set event recall was 20/20 (100%). Small-sample denominators
-make these point estimates unstable.
+author-label raw precision was **17/18 (94.4%)**. Original held-out mail event
+recall was 4/5 (80%); fresh-set author-label event recall was 20/20 (100%). A
+later independent annotation/adjudication of the same 24 fresh cases changed
+gold event count and yielded event recall **20/23 (87.0%)**; see [independent
+review results above](#independent-synthetic-reviewer-results-2026-10-25). Small
+sample denominators make point estimates unstable.
 
 Held-out job-fit outputs got eligibility, explicit compensation, and recency
 correct on 4/4 cases, but returned null score on **4/4**, so score coverage was
@@ -272,9 +308,10 @@ extraction prototype only. It is not connected to app runtime. Do not enable
 automatic application or stage changes. The fresh-set raw link precision missed
 the 95% target, and a deterministic guard cannot prove correctness on new mail.
 The 98% automatic-status precision gate and end-to-end stage mapping, chronology,
-replay, and correction gates remain untested. The fixture set is public to the
-developer and not independent human evaluation; production acceptance remains
-closed. Phase 1 manual tracking can proceed.
+replay, and correction gates remain untested. Original fixtures are developer-
+visible and author-labeled. Separate fresh set now has independent human labels,
+but remains prompt-visible and synthetic; production acceptance remains closed.
+Phase 1 manual tracking can proceed.
 
 OpenAI lists API data as excluded from model training by default; abuse-monitoring
 logs may retain prompts and responses for up to 30 days. Real Gmail requires

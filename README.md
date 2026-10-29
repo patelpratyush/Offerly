@@ -47,15 +47,28 @@ React + TypeScript with Vite; Express API; Node's built-in SQLite. The schema se
 
 `src/main.tsx` contains workspace views; `server/app.js` contains authenticated routes and validation; `server/store.js` owns persistence and transactional record/event writes. Integration workers are intentionally not simulated.
 
+## Repository map
+
+- `src/`: `pages/` for screens, `components/workspace/` and `components/landing/` for UI, `styles/` for CSS; `main.tsx` starts the app.
+- `api/`, `server/`: serverless entry points, API, persistence, and integrations.
+- `tests/server/`, `tests/phase0/`: backend and Phase 0 tests. `tests/browser/` holds Playwright scenarios; `tests/helpers/` and `tests/support/` hold shared utilities.
+- `scripts/`: maintenance and Phase 0 validation CLIs.
+- `eval/phase0/`: synthetic fixtures and model predictions; no live mailbox content.
+- `reference/`: `operations/` for runbooks, `roadmap/` for delivery stages, `design/` for UI references, `phase0/` for validation evidence, and `screenshots/` for UI captures. See [reference index](reference/README.md).
+- `docs/phase0/`: reviewer packet and reviewer instructions only. Keep completed files containing email text outside Git.
+- `supabase/`, `deploy/`: database migrations and deployment examples.
+
+The product overview and requirements remain at repository root: [build plan](Job_Search_App_Build_Plan.md), [PRD](Job_Search_Workspace_PRD.md), and [implementation status](IMPLEMENTATION_STATUS.md).
+
 ## Scope and remaining work
 
 This is a manual job-search workspace. Hosted sign-up remains invitation-only. Gmail/OAuth, email extraction, job discovery, alerts, AI preparation, calendar, and browser extensions are not connected. No outgoing messages or applications are sent.
 
 CSV previews expire after one hour. Successful commits retain compact replay receipts for seven days; committing that preview again returns its original result; uploading the file again creates a fresh preview with duplicate candidates. Choosing Keep explicitly creates a separate application. Duplicate review preserves both records and their relationships; merge and undo are bounded and version checked.
 
-UI references and design decisions: [design notes](reference/DESIGN_REFERENCES.md).
+UI references and design decisions: [design notes](reference/design/DESIGN_REFERENCES.md).
 
-Document validation checks PDF signatures and DOCX ZIP/XML structure and expansion limits. Hosted uploads require private Blob storage and a fresh isolated ClamAV scanner; they fail closed on scanner errors and accept files up to 2 MiB. Read [SECURITY.md](SECURITY.md) and [deployment setup](reference/SUPABASE_VERCEL.md) for controls and operational requirements. No zero-risk or public-production-readiness claim is made. SQLite remains a single-instance architecture; the PRD's 100-user load targets are unverified.
+Document validation checks PDF signatures and DOCX ZIP/XML structure and expansion limits. Hosted uploads require private Blob storage and a fresh isolated ClamAV scanner; they fail closed on scanner errors and accept files up to 2 MiB. Read [SECURITY.md](SECURITY.md) and [deployment setup](reference/operations/SUPABASE_VERCEL.md) for controls and operational requirements. No zero-risk or public-production-readiness claim is made. SQLite remains a single-instance architecture; the PRD's 100-user load targets are unverified.
 
 ## Production build
 
@@ -64,7 +77,7 @@ npm run build
 APP_ORIGIN=https://offerly.example.com TRUST_PROXY_LOOPBACK=true npm start
 ```
 
-This serves the built frontend and API on loopback port 3001 behind your HTTPS proxy. An exact HTTPS `APP_ORIGIN` is mandatory. `TRUST_PROXY_LOOPBACK=true` is appropriate only for a same-host proxy that overwrites forwarding headers. See [proxy example](deploy/nginx.conf.example) and [.env.example](.env.example). Local registration works without external services; hosted registration remains invitation-only. Hosted service setup is documented in [Vercel and Supabase deployment](reference/SUPABASE_VERCEL.md).
+This serves the built frontend and API on loopback port 3001 behind your HTTPS proxy. An exact HTTPS `APP_ORIGIN` is mandatory. `TRUST_PROXY_LOOPBACK=true` is appropriate only for a same-host proxy that overwrites forwarding headers. See [proxy example](deploy/nginx.conf.example) and [.env.example](.env.example). Local registration works without external services; hosted registration remains invitation-only. Hosted service setup is documented in [Vercel and Supabase deployment](reference/operations/SUPABASE_VERCEL.md).
 
 ## Security verification
 
@@ -77,11 +90,11 @@ CI runs lint, API/security regressions, frontend type/build checks, dependency a
 
 ## Database recovery
 
-Verified online snapshots and restoration to a new database path are available through `npm run db:backup` and `npm run db:restore`. See [the recovery runbook](reference/BACKUP_RESTORE.md) for commands, prerequisites and limitations.
+Verified online snapshots and restoration to a new database path are available through `npm run db:backup` and `npm run db:restore`. See [the recovery runbook](reference/operations/BACKUP_RESTORE.md) for commands, prerequisites and limitations.
 
 ## Staged implementation
 
-[Delivery steps](reference/DELIVERY_STEPS.md) tracks the full build sequence. Applications now support saved views, atomic bulk edits, explicit compensation and reversible duplicate merging. See [implementation status](IMPLEMENTATION_STATUS.md) for remaining PRD work and verification evidence.
+[Delivery steps](reference/roadmap/DELIVERY_STEPS.md) tracks the full build sequence. Applications now support saved views, atomic bulk edits, explicit compensation and reversible duplicate merging. See [implementation status](IMPLEMENTATION_STATUS.md) for remaining PRD work and verification evidence.
 
 Browser tests use isolated ports `4173` (web) and `3002` (API), plus a temporary database. They do not reuse the development server or `DATABASE_PATH`. Leave these ports free when running `npm run test:e2e`; the normal development app stays on `5173`/`3001`.
 

@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "provenance": "synthetic; authored labels; not independently human validated",
+  "examples": [
+    { "id": "stage-confirmation", "beforeStage": "Preparing", "expectedStage": "Submitted", "safeToAutoApply": true, "manualLock": false, "applicationLinkCorrect": true, "chronologyValid": true },
+    { "id": "stage-review", "beforeStage": "Submitted", "expectedStage": "Under review", "safeToAutoApply": true, "manualLock": false, "applicationLinkCorrect": true, "chronologyValid": true },
+    { "id": "stage-assessment", "beforeStage": "Under review", "expectedStage": "Assessment", "safeToAutoApply": true, "manualLock": false, "applicationLinkCorrect": true, "chronologyValid": true },
+    { "id": "stage-interview", "beforeStage": "Assessment", "expectedStage": "Interviewing", "safeToAutoApply": true, "manualLock": false, "applicationLinkCorrect": true, "chronologyValid": true },
+    { "id": "stage-rejection", "beforeStage": "Interviewing", "expectedStage": "Rejected", "safeToAutoApply": true, "manualLock": false, "applicationLinkCorrect": true, "chronologyValid": true },
+    { "id": "stage-offer-lock", "beforeStage": "Interviewing", "expectedStage": "Offer", "safeToAutoApply": false, "manualLock": true, "applicationLinkCorrect": true, "chronologyValid": true },
+    { "id": "stage-availability", "beforeStage": "Submitted", "expectedStage": null, "safeToAutoApply": false, "manualLock": false, "applicationLinkCorrect": true, "chronologyValid": true },
+    { "id": "stage-stale-rejection", "beforeStage": "Interviewing", "expectedStage": null, "safeToAutoApply": false, "manualLock": false, "applicationLinkCorrect": true, "chronologyValid": false }
+  ]
+}

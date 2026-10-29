@@ -1,5 +1,6 @@
 // Local Phase 0 feasibility proof only. Never persist or print these records.
 import { z } from "zod";
+import { createHash } from "node:crypto";
 import { setTimeout as delay } from "node:timers/promises";
 import { boundedJson } from "./gmail-local.js";
 
@@ -137,6 +138,7 @@ export function extractCandidate(message) {
 export function createImportProof() {
   const seen = new Set(),
     records = new Map();
+  const outcomeHash = createHash("sha256");
   const counts = {
     scanned: 0,
     candidates: 0,
@@ -156,6 +158,7 @@ export function createImportProof() {
       const candidate = extractCandidate(message);
       seen.add(message.id);
       counts.scanned++;
+      outcomeHash.update(JSON.stringify({ id: message.id, candidate })).update("\0");
       if (!candidate) {
         counts.abstentions++;
         return false;
@@ -167,11 +170,54 @@ export function createImportProof() {
       return true;
     },
     snapshot: () => ({ ...counts }),
+    fingerprint: () => outcomeHash.copy().digest("hex"),
     clear() {
       seen.clear();
       records.clear();
     },
   };
+}
+
+// Compare two isolated passes over the same fetched messages. Also exercise
+// duplicate delivery inside each pass; aggregate snapshots never expose IDs.
+export function verifyImportReplay(messages, createProof = createImportProof) {
+  const first = createProof();
+  const second = createProof();
+  try {
+    for (const message of messages) {
+      first.import(message);
+      const before = first.snapshot();
+      const fingerprintBefore = first.fingerprint();
+      const importedAgain = first.import(message);
+      const after = first.snapshot();
+      if (
+        importedAgain !== false ||
+        after.candidates !== before.candidates ||
+        after.candidateEvents !== before.candidateEvents ||
+        after.abstentions !== before.abstentions ||
+        first.fingerprint() !== fingerprintBefore
+      )
+        throw new Error("replay_created_duplicate");
+      second.import(message);
+    }
+    const a = first.snapshot();
+    const b = second.snapshot();
+    if (
+      a.candidates !== b.candidates ||
+      a.candidateEvents !== b.candidateEvents ||
+      a.abstentions !== b.abstentions ||
+      first.fingerprint() !== second.fingerprint()
+    )
+      throw new Error("cross_run_replay_mismatch");
+    return {
+      counts: a,
+      replayCreatesZeroNewCandidates: a.replayDuplicates === a.scanned,
+      crossRunReplayMatches: true,
+    };
+  } finally {
+    first.clear();
+    second.clear();
+  }
 }
 
 export async function readRecruitingProof({

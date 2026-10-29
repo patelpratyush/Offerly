@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "system": "synthetic-demo-only",
+  "predictions": [
+    { "id": "stage-confirmation", "proposedStage": "Submitted", "automatic": true, "applicationMatched": true, "chronologyValid": true },
+    { "id": "stage-review", "proposedStage": "Under review", "automatic": true, "applicationMatched": true, "chronologyValid": true },
+    { "id": "stage-assessment", "proposedStage": "Assessment", "automatic": true, "applicationMatched": true, "chronologyValid": true },
+    { "id": "stage-interview", "proposedStage": "Interviewing", "automatic": true, "applicationMatched": true, "chronologyValid": true },
+    { "id": "stage-rejection", "proposedStage": "Rejected", "automatic": true, "applicationMatched": true, "chronologyValid": false },
+    { "id": "stage-offer-lock", "proposedStage": "Offer", "automatic": true, "applicationMatched": true, "chronologyValid": true },
+    { "id": "stage-availability", "proposedStage": "Interviewing", "automatic": true, "applicationMatched": true, "chronologyValid": true },
+    { "id": "stage-stale-rejection", "proposedStage": null, "automatic": false, "applicationMatched": false, "chronologyValid": true }
+  ]
+}

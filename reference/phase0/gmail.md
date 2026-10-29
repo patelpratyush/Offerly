@@ -1,11 +1,13 @@
 # Phase 0 Gmail validation
 
-Updated October 22, 2026. A consented seven-day scan completed: 612 messages,
-seven pages, zero skips or retries. Reusable offline authorization was stored in
+Updated October 22, 2026. A seven-day scan result was reported as 612 messages,
+seven pages, zero skips or retries, but no result artifact is committed; this
+claim is therefore unverified from repository evidence. Reusable offline authorization was stored in
 macOS login Keychain and reused by a separate process without browser approval.
 An all-history scan hit a Google `rateLimitExceeded` error near 100 messages; a
-later all-history attempt was stopped at owner request after 389 messages. This does
-not validate recruiting extraction, matching, ongoing sync, or hosted OAuth.
+later all-history attempt was stopped at owner request after 389 messages. The
+rate-limit failure and retry/resync behavior remain open for Phase 2 design. This
+does not validate recruiting extraction, matching, ongoing sync, or hosted OAuth.
 
 ## Authorization and data boundaries
 
@@ -107,7 +109,7 @@ any autonomous application updates. This design is not implemented.
 
 See [Gmail synchronization](https://developers.google.com/workspace/gmail/api/guides/sync),
 [history.list](https://developers.google.com/workspace/gmail/api/reference/rest/v1/users.history/list),
-[Supabase scheduler](../SUPABASE_VERCEL.md), and
+[Supabase scheduler](../operations/SUPABASE_VERCEL.md), and
 [Vercel Cron limits](https://vercel.com/docs/cron-jobs/manage-cron-jobs).
 
 ## Hosted and public release gates
