@@ -1,3 +1,4 @@
+import { navigate, openMenu } from "./navigation.js";
 import { test, expect } from "@playwright/test";
 
 test("saved recovery code restores access", async ({ page }) => {
@@ -9,7 +10,7 @@ test("saved recovery code restores access", async ({ page }) => {
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(password);
   await page.getByRole("button", { name: "Create workspace" }).click();
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await navigate(page, "Settings");
   await page
     .getByLabel("Current password for recovery codes", { exact: true })
     .fill(password);
@@ -22,6 +23,7 @@ test("saved recovery code restores access", async ({ page }) => {
     .getByRole("button", { name: "I saved these codes — dismiss" })
     .click();
   await expect(page.locator("pre")).toHaveCount(0);
+  await openMenu(page);
   await page
     .getByRole("button", { name: "Sign out", exact: true })
     .last()
@@ -44,6 +46,7 @@ test("saved recovery code restores access", async ({ page }) => {
   await page.getByLabel("Email address").fill(email);
   await page.getByLabel("Password", { exact: true }).fill(replacement);
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await openMenu(page);
   await expect(
     page.getByRole("button", { name: "Settings", exact: true }),
   ).toBeVisible();

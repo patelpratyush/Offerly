@@ -22,6 +22,7 @@ import {
   ChevronRight,
   Clock,
   Archive,
+  Menu,
 } from "lucide-react";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
@@ -44,6 +45,8 @@ import { RecruitingReview } from "./RecruitingReview";
 import { Reminders } from "./Reminders";
 import { Timeline } from "./Timeline";
 import { Landing } from "./Landing";
+import { useDialogViewport } from "./useDialogViewport";
+const APPLICATION_PAGE_SIZE = 25;
 type Item = { id: string; version: number; [key: string]: any };
 type Workspace = {
   user: { name: string; email: string; timezone: string; stages: string[] };
@@ -129,17 +132,26 @@ const emptyApp = {
   archived: false,
 };
 function useDialogFocus(active: boolean) {
+  const wasActive = useRef(false);
+  const returnFocus = useRef<HTMLElement | null>(null);
+  // Capture before React makes the triggering surface inert during commit.
+  if (active && !wasActive.current)
+    returnFocus.current = document.activeElement as HTMLElement;
+  wasActive.current = active;
   useEffect(() => {
     if (!active) return;
-    const previous = document.activeElement as HTMLElement;
+    const previous = returnFocus.current;
     const dialogs = document.querySelectorAll<HTMLElement>("[role=dialog]");
     const dialog = dialogs[dialogs.length - 1];
     if (!dialog) return;
     const focusable = () =>
       Array.from(
         dialog.querySelectorAll<HTMLElement>(
-          'button:not(:disabled),a[href],input,select,textarea,[tabindex="0"]',
+          'button:not(:disabled),a[href],input:not(:disabled),select:not(:disabled),textarea:not(:disabled),summary,[tabindex="0"]',
         ),
+      ).filter(
+        (element) =>
+          element.getClientRects().length > 0 && !element.closest("[inert]"),
       );
     focusable()[0]?.focus();
     const trap = (e: KeyboardEvent) => {
@@ -158,7 +170,10 @@ function useDialogFocus(active: boolean) {
     dialog.addEventListener("keydown", trap);
     return () => {
       dialog.removeEventListener("keydown", trap);
-      previous?.focus();
+      requestAnimationFrame(() => {
+        if (previous?.isConnected && !previous.closest("[inert]"))
+          previous.focus();
+      });
     };
   }, [active]);
 }
@@ -182,6 +197,7 @@ function App() {
   const [w, setW] = useState<Workspace | null>(null),
     [loading, setLoading] = useState(true),
     [page, setPage] = useState("Today"),
+    [navigationOpen, setNavigationOpen] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [modal, setModal] = useState<{ kind: string; data: any } | null>(null),
@@ -192,6 +208,8 @@ function App() {
     [priority, setPriority] = useState("Any priority"),
     [owner, setOwner] = useState("Any owner"),
     [board, setBoard] = useState(false),
+    [applicationPage, setApplicationPage] = useState(0),
+    [boardLimits, setBoardLimits] = useState<Record<string, number>>({}),
     [archived, setArchived] = useState(false),
     [detailTab, setDetailTab] = useState("Overview"),
     [companyFilter, setCompanyFilter] = useState(""),
@@ -209,6 +227,13 @@ function App() {
   const activeOperations = useRef(0);
   useEffect(() => {
     if (!loading && !w && entry !== "home") {
+      // A late route effect must not interrupt typing/autofill already in progress.
+      if (
+        document.activeElement?.matches(
+          "input,select,textarea,[contenteditable=true]",
+        )
+      )
+        return;
       document.querySelector<HTMLElement>(".auth-form h1")?.focus();
     }
   }, [entry, loading, w]);
@@ -253,6 +278,38 @@ function App() {
     page,
     w?.user.email,
   ]);
+  useDialogViewport(!!detail || !!modal);
+  useEffect(() => {
+    setApplicationPage(0);
+    setBoardLimits({});
+  }, [
+    query,
+    stage,
+    priority,
+    owner,
+    companyFilter,
+    sourceFilter,
+    arrangement,
+    dateFrom,
+    dateTo,
+    includeUnknownDates,
+    archived,
+    sort,
+    board,
+    page,
+    w?.user.email,
+  ]);
+  useEffect(() => {
+    if (!detail && !modal) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = previous;
+    };
+  }, [!!detail, !!modal]);
+  useEffect(() => {
+    setNavigationOpen(false);
+  }, [page]);
   useDialogFocus(!!detail && !modal);
   useEffect(() => {
     if (!detail || modal) return;
@@ -424,6 +481,28 @@ function App() {
           : (b.appliedDate || "").localeCompare(a.appliedDate || "") ||
             a.company.localeCompare(b.company),
     );
+  const pageCount = Math.max(
+    1,
+    Math.ceil(visible.length / APPLICATION_PAGE_SIZE),
+  );
+  const currentApplicationPage = Math.min(applicationPage, pageCount - 1);
+  const pageOffset = currentApplicationPage * APPLICATION_PAGE_SIZE;
+  const tableApplications = visible.slice(
+    pageOffset,
+    pageOffset + APPLICATION_PAGE_SIZE,
+  );
+  const stageApplications = new Map<string, Item[]>();
+  for (const application of visible) {
+    const column = stageApplications.get(application.stage) || [];
+    column.push(application);
+    stageApplications.set(application.stage, column);
+  }
+  const changeApplicationPage = (index: number) => {
+    setApplicationPage(index);
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>(".application-results")?.focus(),
+    );
+  };
   const filters = {
     query,
     stage,
@@ -455,6 +534,31 @@ function App() {
     setSort(v.sort);
     setSelected({});
   };
+  const resetFilters = () =>
+    applyView({
+      ...filters,
+      query: "",
+      stage: "All stages",
+      priority: "Any priority",
+      owner: "Any owner",
+      companyFilter: "",
+      sourceFilter: "",
+      arrangement: "",
+      dateFrom: "",
+      dateTo: "",
+      includeUnknownDates: false,
+    });
+  const filterCount = [
+    query,
+    stage !== "All stages",
+    priority !== "Any priority",
+    owner !== "Any owner",
+    companyFilter,
+    sourceFilter,
+    arrangement,
+    dateFrom,
+    dateTo,
+  ].filter(Boolean).length;
   const selectApplication = (a: Item, checked: boolean) =>
     setSelected((previous) => {
       const next = { ...previous };
@@ -463,16 +567,19 @@ function App() {
       return next;
     });
   const selectionBox = (a: Item) => (
-    <input
-      type="checkbox"
-      aria-label={`Select ${a.company} · ${a.title}`}
-      checked={Object.hasOwn(selected, a.id)}
-      disabled={
-        busy ||
-        (!Object.hasOwn(selected, a.id) && Object.keys(selected).length >= 100)
-      }
-      onChange={(e) => selectApplication(a, e.target.checked)}
-    />
+    <label className="selection-target">
+      <input
+        type="checkbox"
+        aria-label={`Select ${a.company} · ${a.title}`}
+        checked={Object.hasOwn(selected, a.id)}
+        disabled={
+          busy ||
+          (!Object.hasOwn(selected, a.id) &&
+            Object.keys(selected).length >= 100)
+        }
+        onChange={(e) => selectApplication(a, e.target.checked)}
+      />
+    </label>
   );
   const today = new Intl.DateTimeFormat("en-CA", {
     timeZone: w.user.timezone,
@@ -486,9 +593,48 @@ function App() {
   const tasks = w.tasks
     .filter((t) => !t.done)
     .sort((a, b) => (a.due || "9999").localeCompare(b.due || "9999"));
+  const applicationsById = new Map(w.applications.map((a) => [a.id, a]));
   const appName = (id: string) => {
-    const a = w.applications.find((a) => a.id === id);
+    const a = applicationsById.get(id);
     return a ? `${a.company} · ${a.title}` : "Personal task";
+  };
+  const nextActions = new Map<string, { title: string; date: string }>();
+  const actionItems = [
+    ...tasks.map((t) => ({
+      applicationId: t.applicationId,
+      title: t.title,
+      date: t.due,
+    })),
+    ...assessmentDeadlines.map((a) => ({
+      applicationId: a.applicationId,
+      title: a.title,
+      date: a.due,
+    })),
+    ...w.rounds
+      .filter(
+        (r) =>
+          ["Scheduled", "Rescheduled"].includes(r.status) && r.date >= today,
+      )
+      .map((r) => ({
+        applicationId: r.applicationId,
+        title: r.title,
+        date: r.date,
+      })),
+  ];
+  for (const action of actionItems) {
+    if (!action.applicationId) continue;
+    const current = nextActions.get(action.applicationId);
+    if (
+      !current ||
+      (action.date || "9999").localeCompare(current.date || "9999") < 0
+    )
+      nextActions.set(action.applicationId, action);
+  }
+  const nextAction = (id: string) => {
+    const due = nextActions.get(id);
+    return due
+      ? `${due.title} · ${due.date || "No date"}`
+      : "No task or deadline set";
   };
   const nav = [
     ["Today", Sun],
@@ -503,9 +649,9 @@ function App() {
     apps.map((a) => (
       <div key={a.id} className="selectable-card">
         {page === "Applications" && (
-          <label className="card-selection">
-            {selectionBox(a)} Select application
-          </label>
+          <div className="card-selection">
+            {selectionBox(a)} <span>Select application</span>
+          </div>
         )}
         <button className="job-card" onClick={() => showDetail(a)}>
           <div className="card-top">
@@ -536,6 +682,10 @@ function App() {
                   ? "No reply needed"
                   : "Response owner unclear"}
           </div>
+          <div className="next-action">
+            <small>Next action</small>
+            <span>{nextAction(a.id)}</span>
+          </div>
           <div className="card-foot">
             <span>{a.location || "Location unknown"}</span>
             <ArrowUpRight size={16} />
@@ -544,8 +694,21 @@ function App() {
       </div>
     ));
   return (
-    <div className="shell" aria-busy={busy}>
-      <aside className="sidebar">
+    <div
+      className="shell"
+      aria-busy={busy}
+      onClickCapture={(event) => {
+        // Safari does not focus pointer-clicked buttons. Capture a reliable dialog opener.
+        if (event.target instanceof Element)
+          event.target
+            .closest<HTMLElement>("button")
+            ?.focus({ preventScroll: true });
+      }}
+    >
+      <a className="skip-link" href="#workspace-content">
+        Skip to workspace
+      </a>
+      <aside className="sidebar" inert={!!detail || !!modal}>
         <a
           className="brand"
           href="#"
@@ -559,15 +722,35 @@ function App() {
           </span>
           offerly<span className="brand-dot">.</span>
         </a>
-        <div className="workspace-label">YOUR WORKSPACE</div>
-        <nav>
+        <button
+          className="mobile-menu secondary"
+          aria-expanded={navigationOpen}
+          aria-controls="workspace-navigation"
+          onClick={() => setNavigationOpen(!navigationOpen)}
+        >
+          {navigationOpen ? <X size={18} /> : <Menu size={18} />}{" "}
+          {navigationOpen ? "Close menu" : page}
+        </button>
+        <div className="workspace-label">PERSONAL WORKSPACE</div>
+        <nav
+          id="workspace-navigation"
+          aria-label="Workspace"
+          className={navigationOpen ? "is-open" : ""}
+        >
           {nav.map(([name, Icon]) => (
             <button
               key={name}
+              aria-current={page === name ? "page" : undefined}
               className={page === name ? "active" : ""}
               onClick={() => {
                 setPage(name);
+                setNavigationOpen(false);
                 setQuery("");
+                requestAnimationFrame(() =>
+                  document
+                    .querySelector<HTMLElement>("#workspace-content h1")
+                    ?.focus(),
+                );
               }}
             >
               <Icon size={19} />
@@ -579,19 +762,13 @@ function App() {
           ))}
         </nav>
         <div className="sidebar-note">
-          <span className="tiny-label">ONE STEP AT A TIME</span>
-          <p>
-            Your next chapter
-            <br />
-            starts here.
-          </p>
+          <span className="tiny-label">YOUR SEARCH, YOUR RECORD</span>
+          <p>Keep the next step clear.</p>
           <span>
-            Keep the details here.
-            <br />
-            Keep your focus ahead.
+            Applications, conversations and the details that connect them.
           </span>
         </div>
-        <div className="account">
+        <div className={"account" + (navigationOpen ? " is-open" : "")}>
           <span className="avatar">{w.user.name.charAt(0).toUpperCase()}</span>
           <div>
             <strong>{w.user.name}</strong>
@@ -610,7 +787,7 @@ function App() {
           </button>
         </div>
       </aside>
-      <main>
+      <main id="workspace-content" tabIndex={-1} inert={!!detail || !!modal}>
         <header className="topbar">
           <span>
             Workspace <ChevronRight size={13} /> <b>{page}</b>
@@ -641,7 +818,7 @@ function App() {
           )}
           <div className="page-heading">
             <div>
-              <div className="eyebrow">
+              <div className="eyebrow" hidden={page !== "Today"}>
                 {page === "Today"
                   ? new Intl.DateTimeFormat("en-US", {
                       weekday: "long",
@@ -649,9 +826,9 @@ function App() {
                       day: "numeric",
                       timeZone: w.user.timezone,
                     }).format(new Date())
-                  : "A LITTLE STRUCTURE. A LOT MORE CLARITY."}
+                  : "YOUR WORKSPACE"}
               </div>
-              <h1>
+              <h1 tabIndex={-1}>
                 {page === "Today"
                   ? `Make your next move, ${w.user.name.split(" ")[0]}.`
                   : page}
@@ -660,17 +837,20 @@ function App() {
                 {
                   (
                     {
-                      Today: "Your job search, with a clear path forward.",
+                      Today:
+                        "Tasks, deadlines and interviews that need your attention.",
                       Applications:
-                        "Every opportunity. Every step. All in one place.",
+                        "Track each role, who replies next, and what needs doing.",
                       Connections:
-                        "Build relationships that open the right doors.",
+                        "Recruiters, referrals and the applications you share.",
                       Documents:
-                        "The right version, ready for the right opportunity.",
+                        "Keep original files, versions and submission records distinct.",
                       Reviews:
                         "Evidence first. Every update stays in your control.",
-                      Insights: "A clearer picture of your progress.",
-                      Settings: "Make this workspace work for you.",
+                      Insights:
+                        "A snapshot of where your applications stand today.",
+                      Settings:
+                        "Workspace preferences, account security and your data.",
                     } as any
                   )[page]
                 }
@@ -709,7 +889,7 @@ function App() {
                     active.filter(
                       (a) => !["Rejected", "Withdrawn"].includes(a.stage),
                     ).length,
-                    "Opportunities in motion",
+                    "Excludes rejected and withdrawn",
                   ],
                   [
                     "Interviews",
@@ -718,21 +898,22 @@ function App() {
                         r.status,
                       ),
                     ).length,
-                    "Your next conversations",
+                    "Invited, scheduled or rescheduled",
                   ],
                   [
-                    "Offers",
+                    "Offer stage",
                     active.filter((a) => a.stage === "Offer").length,
-                    "Something to celebrate",
+                    "Outcome recorded separately",
                   ],
-                  ["Open tasks", tasks.length, "Small steps, real progress"],
+                  [
+                    "Open tasks",
+                    tasks.length,
+                    `${tasks.filter((t) => t.due && t.due < today).length} overdue`,
+                  ],
                 ].map(([label, value, sub]) => (
                   <div className="stat" key={label}>
                     <span>{label}</span>
-                    <strong>
-                      {value}
-                      <ArrowUpRight size={21} />
-                    </strong>
+                    <strong>{value}</strong>
                     <small>{sub}</small>
                   </div>
                 ))}
@@ -765,7 +946,13 @@ function App() {
                           <Check size={14} />
                         </button>
                         <div>
-                          <strong>{t.title}</strong>
+                          <button
+                            className="task-title"
+                            onClick={() => setModal({ kind: "task", data: t })}
+                          >
+                            {t.title}
+                            <span className="sr-only"> · Edit task</span>
+                          </button>
                           <small>{appName(t.applicationId)}</small>
                         </div>
                         <span
@@ -783,7 +970,7 @@ function App() {
                     ))
                   ) : (
                     <Empty
-                      title="A little room to breathe."
+                      title="No open tasks."
                       text="Add a follow-up, a deadline, or one small next step."
                       action="Add your first task"
                       onClick={() => newRecord("task")}
@@ -849,6 +1036,50 @@ function App() {
                   </button>
                 </section>
               </div>
+              <section className="panel space-top interviews-panel">
+                <div className="section-head">
+                  <h2>Upcoming conversations</h2>
+                  <Clock size={18} />
+                </div>
+                {w.rounds.filter(
+                  (r) =>
+                    ["Scheduled", "Rescheduled"].includes(r.status) &&
+                    r.date >= today,
+                ).length ? (
+                  w.rounds
+                    .filter(
+                      (r) =>
+                        ["Scheduled", "Rescheduled"].includes(r.status) &&
+                        r.date >= today,
+                    )
+                    .sort((a, b) => a.date.localeCompare(b.date))
+                    .map((r) => (
+                      <div className="task" key={r.id}>
+                        <span className="company-icon">
+                          <Users size={18} />
+                        </span>
+                        <div>
+                          <button
+                            className="task-title"
+                            onClick={() => setModal({ kind: "round", data: r })}
+                          >
+                            {r.title}
+                            <span className="sr-only"> · Edit interview</span>
+                          </button>
+                          <small>{appName(r.applicationId)}</small>
+                        </div>
+                        <span>
+                          {r.date} {r.time} · {r.timezone}
+                        </span>
+                      </div>
+                    ))
+                ) : (
+                  <p className="muted panel-copy">
+                    No upcoming interviews scheduled. Add rounds from an
+                    application.
+                  </p>
+                )}
+              </section>
               <section className="panel review-shortcut">
                 <div>
                   <h2>Updates to review</h2>
@@ -877,7 +1108,7 @@ function App() {
                 }}
               />
               <div className="section-head space-top">
-                <h2>Opportunities in motion</h2>
+                <h2>Recent applications</h2>
                 <button
                   className="text-button"
                   onClick={() => setPage("Applications")}
@@ -892,51 +1123,13 @@ function App() {
               ) : (
                 <section className="panel">
                   <Empty
-                    title="Your next chapter is a blank page."
+                    title="Add your first application."
                     text="Add your first application or bring over your spreadsheet."
                     action="Add an application"
                     onClick={() => newRecord("application")}
                   />
                 </section>
               )}
-              <section className="panel space-top">
-                <div className="section-head">
-                  <h2>Upcoming conversations</h2>
-                  <Clock size={18} />
-                </div>
-                {w.rounds.filter(
-                  (r) =>
-                    ["Scheduled", "Rescheduled"].includes(r.status) &&
-                    r.date >= today,
-                ).length ? (
-                  w.rounds
-                    .filter(
-                      (r) =>
-                        ["Scheduled", "Rescheduled"].includes(r.status) &&
-                        r.date >= today,
-                    )
-                    .sort((a, b) => a.date.localeCompare(b.date))
-                    .map((r) => (
-                      <div className="task" key={r.id}>
-                        <span className="company-icon">
-                          <Users size={18} />
-                        </span>
-                        <div>
-                          <strong>{r.title}</strong>
-                          <small>{appName(r.applicationId)}</small>
-                        </div>
-                        <span>
-                          {r.date} {r.time} · {r.timezone}
-                        </span>
-                      </div>
-                    ))
-                ) : (
-                  <p className="muted panel-copy">
-                    No upcoming interviews scheduled. Add rounds from an
-                    application.
-                  </p>
-                )}
-              </section>
             </>
           )}
           {page === "Reviews" && (
@@ -1029,6 +1222,26 @@ function App() {
                       <LayoutGrid size={18} />
                     </button>
                   </div>
+                </div>
+                <div
+                  className="filter-status"
+                  role="status"
+                  aria-label="Application results"
+                  aria-live="polite"
+                >
+                  <span>
+                    {visible.length}{" "}
+                    {visible.length === 1 ? "application" : "applications"}
+                    {filterCount
+                      ? ` · ${filterCount} active ${filterCount === 1 ? "filter" : "filters"}`
+                      : " · All results"}
+                    {archived ? " · Archived" : ""}
+                  </span>
+                  {filterCount > 0 && (
+                    <button className="text-button" onClick={resetFilters}>
+                      Clear filters
+                    </button>
+                  )}
                 </div>
                 <TrackerActions
                   views={w.savedViews || []}
@@ -1158,21 +1371,7 @@ function App() {
                       />
                       Include unknown dates in date range
                     </label>
-                    <button
-                      className="text-button"
-                      onClick={() => {
-                        setCompanyFilter("");
-                        setSourceFilter("");
-                        setArrangement("");
-                        setDateFrom("");
-                        setDateTo("");
-                        setIncludeUnknownDates(false);
-                        setStage("All stages");
-                        setPriority("Any priority");
-                        setOwner("Any owner");
-                        setQuery("");
-                      }}
-                    >
+                    <button className="text-button" onClick={resetFilters}>
                       Reset filters
                     </button>
                   </div>
@@ -1188,7 +1387,7 @@ function App() {
                     <label>
                       <input
                         type="checkbox"
-                        aria-label="Select first 100 visible applications"
+                        aria-label="Select matching applications (up to 100)"
                         disabled={busy || !visible.length}
                         checked={
                           visible.length > 0 &&
@@ -1208,7 +1407,7 @@ function App() {
                           )
                         }
                       />{" "}
-                      Select visible (up to 100)
+                      Select matching (up to 100)
                     </label>
                     <label>
                       <input
@@ -1243,95 +1442,226 @@ function App() {
                 {!visible.length ? (
                   <section className="panel">
                     <Empty
-                      title="Make room for possibility."
-                      text="Add an application or adjust your filters to see your opportunities."
-                      action="Add application"
-                      onClick={() => newRecord("application")}
+                      title={
+                        filterCount
+                          ? "No applications match these filters."
+                          : archived
+                            ? "No archived applications."
+                            : "No applications yet."
+                      }
+                      text={
+                        filterCount
+                          ? "Try a different search or clear filters to see all applications."
+                          : "Add a role manually or use Import CSV to bring over your spreadsheet."
+                      }
+                      action={filterCount ? "Clear filters" : "Add application"}
+                      onClick={() =>
+                        filterCount ? resetFilters() : newRecord("application")
+                      }
                     />
                   </section>
                 ) : board ? (
-                  <div className="board">
-                    {w.user.stages.map((s) => (
-                      <section className="board-column" key={s}>
-                        <h3>
-                          <span className="stage-dot" />
-                          {s}{" "}
-                          <span>
-                            {visible.filter((a) => a.stage === s).length}
-                          </span>
-                        </h3>
-                        {cards(visible.filter((a) => a.stage === s))}
-                      </section>
-                    ))}
+                  <div
+                    className="board"
+                    tabIndex={0}
+                    role="region"
+                    aria-label="Application board, scroll to see more stages"
+                  >
+                    {w.user.stages
+                      .filter((s) => stage === "All stages" || stage === s)
+                      .map((s) => {
+                        const column = stageApplications.get(s) || [];
+                        const limit = boardLimits[s] || APPLICATION_PAGE_SIZE;
+                        return (
+                          <section className="board-column" key={s}>
+                            <h3>
+                              <span className="stage-dot" />
+                              {s} <span>{column.length}</span>
+                            </h3>
+                            {cards(column.slice(0, limit))}
+                            {!column.length && (
+                              <p className="board-empty">No applications</p>
+                            )}
+                            {column.length > limit && (
+                              <div className="board-more">
+                                <span>
+                                  {limit} of {column.length} shown
+                                </span>
+                                <button
+                                  className="secondary"
+                                  aria-label={`Show more ${s} applications`}
+                                  onClick={(event) => {
+                                    const columnElement =
+                                      event.currentTarget.closest(
+                                        ".board-column",
+                                      );
+                                    setBoardLimits((previous) => ({
+                                      ...previous,
+                                      [s]: limit + APPLICATION_PAGE_SIZE,
+                                    }));
+                                    // Keep keyboard position when the final Show more button disappears.
+                                    requestAnimationFrame(() =>
+                                      columnElement
+                                        ?.querySelectorAll<HTMLElement>(
+                                          ".job-card",
+                                        )
+                                        [limit]?.focus(),
+                                    );
+                                  }}
+                                >
+                                  Show{" "}
+                                  {Math.min(
+                                    APPLICATION_PAGE_SIZE,
+                                    column.length - limit,
+                                  )}{" "}
+                                  more
+                                </button>
+                              </div>
+                            )}
+                          </section>
+                        );
+                      })}
                   </div>
                 ) : (
-                  <div className="table-wrap">
-                    <table>
-                      <thead>
-                        <tr>
-                          <th scope="col">Select</th>
-                          <th>Company & role</th>
-                          <th>Stage</th>
-                          <th>Location</th>
-                          <th>Next response</th>
-                          <th>Priority</th>
-                          <th>Applied</th>
-                          <th />
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {visible.map((a) => (
-                          <tr key={a.id}>
-                            <td>{selectionBox(a)}</td>
-                            <td>
-                              <button
-                                className="table-role"
-                                onClick={() => showDetail(a)}
-                              >
-                                <span className="company-icon">
-                                  {a.company.slice(0, 2).toUpperCase()}
-                                </span>
-                                <span>
-                                  <strong>{a.title}</strong>
-                                  <small>{a.company}</small>
-                                </span>
-                              </button>
-                            </td>
-                            <td>
-                              <span
-                                className={
-                                  "badge " +
-                                  a.stage.toLowerCase().replaceAll(" ", "-")
-                                }
-                              >
-                                {a.stage}
-                              </span>
-                            </td>
-                            <td>{a.location || "Unknown"}</td>
-                            <td>{a.owner}</td>
-                            <td>
-                              <span
-                                className={
-                                  "priority " + a.priority.toLowerCase()
-                                }
-                              >
-                                ●
-                              </span>{" "}
-                              {a.priority}
-                            </td>
-                            <td>{a.appliedDate || "Unknown"}</td>
-                            <td>
-                              <button
-                                aria-label={"Open " + a.title}
-                                onClick={() => showDetail(a)}
-                              >
-                                <ArrowUpRight size={17} />
-                              </button>
-                            </td>
+                  <div
+                    className="application-results"
+                    tabIndex={-1}
+                    role="region"
+                    aria-label="Application results"
+                  >
+                    <div
+                      className="table-wrap"
+                      tabIndex={0}
+                      role="region"
+                      aria-label="Applications table, scroll for more columns"
+                    >
+                      <table className="application-table" role="table">
+                        <caption className="sr-only">
+                          Applications, current stages and next actions. Open a
+                          role to edit its stage without dragging.
+                        </caption>
+                        <thead>
+                          <tr>
+                            <th scope="col">Select</th>
+                            <th>Company & role</th>
+                            <th>Stage</th>
+                            <th>Location</th>
+                            <th>Next response / action</th>
+                            <th>Priority</th>
+                            <th>Applied</th>
+                            <th />
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                        </thead>
+                        <tbody>
+                          {tableApplications.map((a) => (
+                            <tr key={a.id}>
+                              <td data-label="Select">{selectionBox(a)}</td>
+                              <td className="role-cell">
+                                <button
+                                  className="table-role"
+                                  onClick={() => showDetail(a)}
+                                >
+                                  <span className="company-icon">
+                                    {a.company.slice(0, 2).toUpperCase()}
+                                  </span>
+                                  <span>
+                                    <strong>{a.title}</strong>
+                                    <small>{a.company}</small>
+                                  </span>
+                                </button>
+                              </td>
+                              <td data-label="Stage">
+                                <span
+                                  className={
+                                    "badge " +
+                                    a.stage.toLowerCase().replaceAll(" ", "-")
+                                  }
+                                >
+                                  {a.stage}
+                                </span>
+                              </td>
+                              <td data-label="Location">
+                                {a.location || "Unknown"}
+                              </td>
+                              <td data-label="Next response / action">
+                                <strong className="response-owner">
+                                  {a.owner === "Employer"
+                                    ? "Waiting for employer"
+                                    : a.owner === "You"
+                                      ? "Your reply is next"
+                                      : a.owner === "Nobody"
+                                        ? "No reply needed"
+                                        : "Response owner unclear"}
+                                </strong>
+                                <small className="table-next-action">
+                                  {nextAction(a.id)}
+                                </small>
+                              </td>
+                              <td data-label="Priority">
+                                <span
+                                  className={
+                                    "priority " + a.priority.toLowerCase()
+                                  }
+                                >
+                                  ●
+                                </span>{" "}
+                                {a.priority}
+                              </td>
+                              <td data-label="Applied">
+                                {a.appliedDate || "Unknown"}
+                              </td>
+                              <td className="open-cell">
+                                <button
+                                  aria-label={"Open " + a.title}
+                                  onClick={() => showDetail(a)}
+                                >
+                                  <span className="mobile-open-label">
+                                    Open details
+                                  </span>
+                                  <ArrowUpRight size={17} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                    {pageCount > 1 && (
+                      <div
+                        className="pagination"
+                        role="group"
+                        aria-label="Application pages"
+                      >
+                        <span role="status" aria-label="Application page">
+                          {pageOffset + 1}–
+                          {Math.min(
+                            pageOffset + APPLICATION_PAGE_SIZE,
+                            visible.length,
+                          )}{" "}
+                          of {visible.length} applications
+                        </span>
+                        <div>
+                          <button
+                            className="secondary"
+                            disabled={currentApplicationPage === 0}
+                            onClick={() =>
+                              changeApplicationPage(currentApplicationPage - 1)
+                            }
+                          >
+                            Previous page
+                          </button>
+                          <button
+                            className="secondary"
+                            disabled={currentApplicationPage + 1 === pageCount}
+                            onClick={() =>
+                              changeApplicationPage(currentApplicationPage + 1)
+                            }
+                          >
+                            Next page
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1391,10 +1721,21 @@ function App() {
                     </button>
                   ))}
               </div>
+              {!!w.contacts.length &&
+                !w.contacts.some((c) =>
+                  `${c.name} ${c.company} ${c.email} ${c.agency} ${c.hiringCompany || ""} ${c.role} ${c.phone || ""} ${(c.additionalEmails || []).map((e: any) => e.email).join(" ")}`
+                    .toLowerCase()
+                    .includes(query.toLowerCase()),
+                ) && (
+                  <p className="panel panel-copy" role="status">
+                    No connections match “{query}”. Try a name, email or
+                    company.
+                  </p>
+                )}
               {!w.contacts.length && (
                 <section className="panel">
                   <Empty
-                    title="Your people, in one place."
+                    title="No connections yet."
                     text="Keep recruiter details and relationships close to the opportunity."
                     action="Add connection"
                     onClick={() => newRecord("contact")}
@@ -1462,7 +1803,7 @@ function App() {
               {!w.documents.length && (
                 <section className="panel">
                   <Empty
-                    title="A home for your best work."
+                    title="No documents uploaded."
                     text="Upload resumes and cover letters. Keep the exact version used for each application."
                     action="Upload document"
                     onClick={() => newRecord("document")}
@@ -1518,7 +1859,7 @@ function App() {
             />
           )}
           <footer>
-            Built for your next chapter.<span>Offerly · Manual workspace</span>
+            Your job search, on record.<span>Offerly · Manual workspace</span>
           </footer>
         </div>
       </main>
@@ -1526,6 +1867,7 @@ function App() {
         <div className="overlay" onClick={() => setDetail(null)}>
           <section
             className="drawer"
+            inert={!!modal}
             role="dialog"
             aria-modal="true"
             aria-label="Application details"
@@ -1547,6 +1889,10 @@ function App() {
             <h1>{detail.title}</h1>
             <p className="muted">
               {detail.company} · {detail.location || "Location unknown"}
+            </p>
+            <p className="detail-next-action">
+              <strong>Next action</strong>
+              <span>{nextAction(detail.id)}</span>
             </p>
             <div className="detail-actions">
               <button
@@ -1922,19 +2268,19 @@ function Auth({
           offerly.
         </a>
         <div>
-          <span className="tiny-label">LESS CHAOS. MORE POSSIBILITY.</span>
+          <span className="tiny-label">KEEP YOUR SEARCH IN ORDER.</span>
           <h1>
             Your next chapter
             <br />
             starts here.
           </h1>
           <p>
-            One calm place for your applications, your people,
+            Track applications, prepare for interviews,
             <br />
-            and your next move.
+            and keep your next action in view.
           </p>
         </div>
-        <span>A little structure. A lot more clarity.</span>
+        <span>Applications · Tasks · Interviews · Documents</span>
       </section>
       <section className="auth-form">
         <span className="eyebrow">YOUR PERSONAL JOB SEARCH WORKSPACE</span>
@@ -2129,6 +2475,7 @@ function Editor({
   useDialogFocus(true);
   const [data, setData] = useState({ ...modal.data }),
     [file, setFile] = useState<File>();
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const change = (key: string, v: any) =>
     setData((d: any) => ({ ...d, [key]: v }));
   useEffect(() => {
@@ -2162,7 +2509,15 @@ function Editor({
     type = "text",
   ) => (
     <label key={key}>
-      {label}
+      <span>
+        {label}
+        {["title", "company", "name", "timezone"].includes(key) && (
+          <span className="required-mark" aria-hidden="true">
+            {" "}
+            *
+          </span>
+        )}
+      </span>
       {options ? (
         <select
           aria-label={label}
@@ -2182,10 +2537,32 @@ function Editor({
       ) : (
         <input
           type={type}
+          aria-label={label}
+          aria-invalid={!!fieldErrors[key] || undefined}
+          aria-describedby={fieldErrors[key] ? `error-${key}` : undefined}
+          onInvalid={(event) => {
+            const input = event.currentTarget;
+            setFieldErrors((previous) => ({
+              ...previous,
+              [key]: input.validity.valueMissing
+                ? `${label} is required.`
+                : type === "url"
+                  ? "Enter a full URL, starting with https:// or http://."
+                  : `Check ${label.toLowerCase()}.`,
+            }));
+          }}
+          onInput={() =>
+            setFieldErrors((previous) => ({ ...previous, [key]: "" }))
+          }
           value={data[key] || ""}
           required={["title", "company", "name", "timezone"].includes(key)}
           onChange={(e) => change(key, e.target.value)}
         />
+      )}
+      {fieldErrors[key] && (
+        <small className="field-error" id={`error-${key}`}>
+          {fieldErrors[key]}
+        </small>
       )}
     </label>
   );
@@ -2216,84 +2593,121 @@ function Editor({
             onSave(data, file);
           }}
         >
+          <p className="form-guidance">
+            {modal.kind === "application"
+              ? "Fields marked * are required. Leave unknown dates and details blank."
+              : "Complete required fields and add the details you know. Leave unknown dates blank."}
+          </p>
           <div className="form-fields">
             {modal.kind === "application" && (
               <>
-                {field("company", "Company")}
-                {field("title", "Role title")}
-                {field("stage", "Stage", w.user.stages)}
-                {field("priority", "Priority", ["Low", "Medium", "High"])}
-                {field("owner", "Next response", [
-                  "Unclear",
-                  "You",
-                  "Employer",
-                  "Nobody",
-                ])}
-                {field("appliedDate", "Applied date", undefined, "date")}
-                {field("location", "Location")}
-                {field("source", "Source")}
-                {field("workArrangement", "Work arrangement", [
-                  "Unknown",
-                  "Remote",
-                  "Hybrid",
-                  "On-site",
-                ])}
-                {field("employmentType", "Employment type", [
-                  "Unknown",
-                  "Full-time",
-                  "Part-time",
-                  "Contract",
-                  "Internship",
-                  "Temporary",
-                ])}
-                <fieldset className="compensation-fields">
-                  <legend>Compensation</legend>
-                  <p>
-                    Use advertised amounts. Leave missing details unknown; base
-                    pay and total compensation are different.
-                  </p>
-                  <div className="filter-grid">
-                    {field("compensationMin", "Compensation minimum")}
-                    {field("compensationMax", "Compensation maximum")}
-                    {field("compensationCurrency", "Currency code (e.g. USD)")}
-                    {field("compensationPeriod", "Pay period", [
-                      "Unknown",
-                      "Hour",
-                      "Day",
-                      "Week",
-                      "Month",
-                      "Year",
+                <fieldset className="form-section wide">
+                  <legend>Role & tracking</legend>
+                  <div className="form-fields">
+                    {field("company", "Company")}
+                    {field("title", "Role title")}
+                    {field("stage", "Stage", w.user.stages)}
+                    {field("priority", "Priority", ["Low", "Medium", "High"])}
+                    {field("owner", "Next response", [
+                      "Unclear",
+                      "You",
+                      "Employer",
+                      "Nobody",
                     ])}
-                    {field("compensationBasis", "Pay basis", [
+                    {field("appliedDate", "Applied date", undefined, "date")}
+                    {field("location", "Location")}
+                    {field("source", "Source")}
+                    {field("workArrangement", "Work arrangement", [
                       "Unknown",
-                      "Base",
-                      "Total",
+                      "Remote",
+                      "Hybrid",
+                      "On-site",
+                    ])}
+                    {field("employmentType", "Employment type", [
+                      "Unknown",
+                      "Full-time",
+                      "Part-time",
+                      "Contract",
+                      "Internship",
+                      "Temporary",
                     ])}
                   </div>
                 </fieldset>
-                <OfferFields data={data} change={change} />
-                {field("requisition", "Requisition ID")}
-                {field("url", "Job URL", undefined, "url")}
                 {field("notes", "Notes")}
-                {field("description", "Saved job description")}
-                {field(
-                  "descriptionCapturedDate",
-                  "Listing captured date",
-                  undefined,
-                  "date",
-                )}
-                {field(
-                  "descriptionSourceUrl",
-                  "Listing source URL",
-                  undefined,
-                  "url",
-                )}
-                <p className="muted wide">
-                  Paste the listing text and record when and where it was
-                  captured. Leave unknown dates blank. Saving changed listing
-                  text or capture details preserves a new immutable snapshot; no
-                  website is fetched automatically.
-                </p>
+                <details
+                  className="form-disclosure wide"
+                  open={!!modal.data.id || undefined}
+                >
+                  <summary>
+                    Compensation & offer{" "}
+                    <span>Advertised pay and confirmed outcomes</span>
+                  </summary>
+                  <div className="form-fields">
+                    <fieldset className="compensation-fields">
+                      <legend>Compensation</legend>
+                      <p>
+                        Use advertised amounts. Leave missing details unknown;
+                        base pay and total compensation are different.
+                      </p>
+                      <div className="filter-grid">
+                        {field("compensationMin", "Compensation minimum")}
+                        {field("compensationMax", "Compensation maximum")}
+                        {field(
+                          "compensationCurrency",
+                          "Currency code (e.g. USD)",
+                        )}
+                        {field("compensationPeriod", "Pay period", [
+                          "Unknown",
+                          "Hour",
+                          "Day",
+                          "Week",
+                          "Month",
+                          "Year",
+                        ])}
+                        {field("compensationBasis", "Pay basis", [
+                          "Unknown",
+                          "Base",
+                          "Total",
+                        ])}
+                      </div>
+                    </fieldset>
+                    <OfferFields data={data} change={change} />
+                  </div>
+                </details>
+                <details
+                  className="form-disclosure wide"
+                  open={!!modal.data.id || undefined}
+                >
+                  <summary>
+                    Listing & source{" "}
+                    <span>
+                      Original URL, saved description and capture history
+                    </span>
+                  </summary>
+                  <div className="form-fields">
+                    {field("requisition", "Requisition ID")}
+                    {field("url", "Job URL", undefined, "url")}
+                    {field("description", "Saved job description")}
+                    {field(
+                      "descriptionCapturedDate",
+                      "Listing captured date",
+                      undefined,
+                      "date",
+                    )}
+                    {field(
+                      "descriptionSourceUrl",
+                      "Listing source URL",
+                      undefined,
+                      "url",
+                    )}
+                    <p className="muted wide">
+                      Paste the listing text and record when and where it was
+                      captured. Leave unknown dates blank. Saving changed
+                      listing text or capture details preserves a new immutable
+                      snapshot; no website is fetched automatically.
+                    </p>
+                  </div>
+                </details>
               </>
             )}
             {modal.kind === "contact" && (

@@ -1,0 +1,27 @@
+# Runtime secrets and local user data must never be uploaded.
+.env
+.env.*
+data
+**/*.sqlite
+**/*.sqlite-*
+**/*.sqlite.backup
+**/*.pem
+**/*.key
+
+# Local tooling, test artifacts and design research are not deployment inputs.
+.git
+.vercel
+node_modules
+dist
+.cmem-projects
+.windsurf
+.github
+test-results
+playwright-report
+coverage
+reference
+docs
+eval
+tests
+scripts
+deploy

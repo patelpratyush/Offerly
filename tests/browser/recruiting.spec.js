@@ -1,3 +1,4 @@
+import { navigate } from "./navigation.js";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -35,10 +36,7 @@ test("reviewed evidence, protected fields, undo and reminder lifecycle work on e
   });
   expect(changed.ok()).toBeTruthy();
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Reviews", exact: true })
-    .click();
+  await navigate(page, "Reviews");
   await page.getByLabel("Source identifier").fill("review-source-1");
   await page
     .getByLabel("Evidence time (ISO timestamp with UTC offset)")
@@ -96,10 +94,7 @@ test("reviewed evidence, protected fields, undo and reminder lifecycle work on e
     fullPage: true,
     animations: "disabled",
   });
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Today", exact: true })
-    .click();
+  await navigate(page, "Today");
   const reminders = page.getByRole("region", { name: "In-app reminders" });
   await reminders.getByText("Add reminder", { exact: true }).click();
   await reminders

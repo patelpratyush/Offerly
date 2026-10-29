@@ -1,3 +1,4 @@
+import { navigate } from "./navigation.js";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -27,11 +28,13 @@ test("offer decisions persist independently of stage and listing revisions prese
   await editor
     .getByLabel("Stage", { exact: true })
     .selectOption("Interviewing");
+  await editor.getByText("Compensation & offer", { exact: false }).click();
   await editor
     .getByLabel("Offer outcome", { exact: true })
     .selectOption("Accepted");
   await editor.getByLabel("Offer received date").fill("2026-10-18");
   await editor.getByLabel("Offer decision date").fill("2026-10-19");
+  await editor.getByText("Listing & source", { exact: false }).click();
   await editor
     .getByLabel("Saved job description")
     .fill("Original listing: build accessible tools.");
@@ -51,10 +54,7 @@ test("offer decisions persist independently of stage and listing revisions prese
   ).toEqual([]);
   await editor.getByRole("button", { name: "Save application" }).click();
   await expect(editor).toBeHidden();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await page.getByRole("button", { name: "Open Evidence Engineer" }).click();
   const detail = page.getByRole("dialog", { name: "Application details" });
   const history = detail.getByRole("region", { name: "Listing history" });
@@ -82,10 +82,7 @@ test("offer decisions persist independently of stage and listing revisions prese
   await editor.getByRole("button", { name: "Save application" }).click();
   await expect(editor).toBeHidden();
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await page.getByRole("button", { name: "Open Evidence Engineer" }).click();
   await expect(history.locator("article")).toHaveCount(2);
   await history

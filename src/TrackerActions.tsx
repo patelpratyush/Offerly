@@ -70,72 +70,85 @@ export function TrackerActions({
             ))}
           </select>
         </label>
-        <form
-          onSubmit={(e) => {
-            e.preventDefault();
-            void run(async () => {
-              const view = await api("/records/saved_view", "POST", {
-                name,
-                filters,
-              });
-              await refresh();
-              setViewId(view.id);
-              notify("View saved");
-            });
-          }}
-        >
-          <label>
-            View name
-            <input
-              aria-label="View name"
-              value={name}
-              maxLength={60}
-              required
-              onChange={(e) => setName(e.target.value)}
-              placeholder="My next moves"
-            />
-          </label>
-          <button disabled={busy || !name.trim()} type="submit">
-            Save new view
-          </button>
-        </form>
-        {currentView && (
-          <>
-            <button
-              disabled={busy || !name.trim()}
-              onClick={() =>
-                run(async () => {
-                  await api("/records/saved_view/" + currentView.id, "PUT", {
-                    ...currentView,
+        <details className="save-view-disclosure">
+          <summary>Save or manage views</summary>
+          <div className="view-editor">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                void run(async () => {
+                  const view = await api("/records/saved_view", "POST", {
                     name,
                     filters,
                   });
                   await refresh();
-                  notify("View updated");
-                })
-              }
+                  setViewId(view.id);
+                  notify("View saved");
+                });
+              }}
             >
-              Update view
-            </button>
-            <button
-              disabled={busy}
-              onClick={() =>
-                run(async () => {
-                  await api("/records/saved_view/" + currentView.id, "PUT", {
-                    ...currentView,
-                    archived: true,
-                  });
-                  await refresh();
-                  setViewId("");
-                  setName("");
-                  notify("Saved view removed");
-                })
-              }
-            >
-              Remove view
-            </button>
-          </>
-        )}
+              <label>
+                View name
+                <input
+                  aria-label="View name"
+                  value={name}
+                  maxLength={60}
+                  required
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="My next moves"
+                />
+              </label>
+              <button disabled={busy || !name.trim()} type="submit">
+                Save new view
+              </button>
+            </form>
+            {currentView && (
+              <>
+                <button
+                  disabled={busy || !name.trim()}
+                  onClick={() =>
+                    run(async () => {
+                      await api(
+                        "/records/saved_view/" + currentView.id,
+                        "PUT",
+                        {
+                          ...currentView,
+                          name,
+                          filters,
+                        },
+                      );
+                      await refresh();
+                      notify("View updated");
+                    })
+                  }
+                >
+                  Update view
+                </button>
+                <button
+                  disabled={busy}
+                  onClick={() =>
+                    run(async () => {
+                      await api(
+                        "/records/saved_view/" + currentView.id,
+                        "PUT",
+                        {
+                          ...currentView,
+                          archived: true,
+                        },
+                      );
+                      await refresh();
+                      setViewId("");
+                      setName("");
+                      notify("Saved view removed");
+                    })
+                  }
+                >
+                  Remove view
+                </button>
+              </>
+            )}
+          </div>
+        </details>
       </div>
       {count > 0 && (
         <section className="bulk-controls" aria-label="Bulk application editor">

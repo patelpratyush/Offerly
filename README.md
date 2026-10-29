@@ -19,7 +19,7 @@ Open http://127.0.0.1:5173 and create an account. No API keys or external servic
 
 - Asynchronous scrypt authentication, persistent throttling, expiring/idle-limited HttpOnly sessions, CSRF/origin protection, account-scoped queries, and password change with session revocation. Password-confirmed recovery codes provide self-service password reset without an email provider.
 - Today dashboard with open tasks and explicitly scheduled interview rounds.
-- Applications: create/edit, board/table, shared company/source/date/work-arrangement filters, sorting, and stage/priority/response-owner filters, archive/restore, custom stage ordering, saved views, bounded atomic bulk edits, explicit compensation fields, unified application/child-record timeline with note revisions and historical link evidence, version conflict detection.
+- Applications: create/edit, paginated table and progressively loaded board, shared company/source/date/work-arrangement filters, sorting, and stage/priority/response-owner filters, archive/restore, custom stage ordering, saved views, bounded atomic bulk edits, explicit compensation fields, unified application/child-record timeline with note revisions and historical link evidence, version conflict detection.
 - Contacts with multiple emails, explicit confirmation, field-level source/evidence, agency/hiring company, relationship, phone/LinkedIn and last interaction; many-to-many application links. Tasks and named interview rounds with independent status/date/timezone.
 - Offer outcomes and decision dates independent of stage. Listing capture dates/source URLs and immutable description history; unknown legacy capture dates remain unknown.
 - Assessments with date-only deadlines, explicit completion and results; outstanding assessments appear on Today.
@@ -34,11 +34,12 @@ Open http://127.0.0.1:5173 and create an account. No API keys or external servic
 ```sh
 npm test
 npm run build
-npx playwright install chromium
+npx playwright install chromium webkit firefox
 npm run test:e2e
+npm run test:devices
 ```
 
-API tests use isolated in-memory databases. Browser tests create clearly named `test-*` accounts in the active local database and exercise desktop/mobile flows. Use a separate `DATABASE_PATH` when you want disposable end-to-end test data.
+API tests use isolated in-memory databases. Browser suites create synthetic `test-*` accounts in disposable databases on dedicated ports 4173/3002, separate from the development app. The device suite covers Chromium/Android, WebKit/iPhone/iPad, Firefox, 320px touch and ultrawide profiles, including landscape, keyboard/panning simulation and larger application lists. Profiles emulate devices; physical keyboards, native zoom and screen readers still need hardware testing. See [device verification](reference/redesign/DEVICES.md).
 
 ## Architecture
 

@@ -809,7 +809,7 @@ td {
 }
 .settings-grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 25px;
 }
 .settings-panel {
@@ -892,7 +892,6 @@ footer {
   display: flex;
   justify-content: flex-end;
   z-index: 10;
-  backdrop-filter: blur(3px);
 }
 .drawer {
   width: 620px;
@@ -1318,7 +1317,7 @@ legend {
     margin-bottom: 15px;
   }
   .settings-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: minmax(0, 1fr);
   }
   .section-head {
     gap: 9px;

@@ -1,3 +1,4 @@
+import { navigate, openMenu } from "./navigation.js";
 import { test, expect } from "@playwright/test";
 test("manual workspace persists application, round, task and document", async ({
   page,
@@ -26,6 +27,7 @@ test("manual workspace persists application, round, task and document", async ({
   await modal
     .getByLabel("Notes", { exact: true })
     .fill("Met recruiter at the career fair.");
+  await modal.getByText("Compensation & offer", { exact: false }).click();
   await modal.getByLabel("Compensation minimum").fill("90000");
   await modal.getByLabel("Compensation maximum").fill("120000.50");
   await modal.getByLabel("Currency code (e.g. USD)").fill("USD");
@@ -54,7 +56,9 @@ test("manual workspace persists application, round, task and document", async ({
   await round.getByLabel("Date", { exact: true }).fill("2027-01-15");
   await round.getByLabel("Time", { exact: true }).fill("10:30");
   await round.getByRole("button", { name: "Save round" }).click();
-  await expect(detail.getByText("Technical conversation")).toBeVisible();
+  await expect(
+    detail.getByRole("button", { name: /Technical conversation/ }),
+  ).toBeVisible();
   await detail
     .locator("section")
     .filter({ has: page.getByRole("heading", { name: "Tasks", exact: true }) })
@@ -69,16 +73,13 @@ test("manual workspace persists application, round, task and document", async ({
   await detail.getByRole("button", { name: "Close details" }).click();
   await page.reload();
   await expect(page.getByText("Prepare project walkthrough")).toBeVisible();
-  await page
-    .getByRole("button", { name: "Applications", exact: false })
-    .first()
-    .click();
+  await navigate(page, "Applications");
   await expect(page.getByRole("table")).toContainText("Backend Engineer");
   await page.getByRole("button", { name: "Board view" }).click();
   await expect(
     page.getByRole("button", { name: /Interviewing.*Backend Engineer.*Acme/ }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Documents", exact: true }).click();
+  await navigate(page, "Documents");
   await page
     .getByRole("button", { name: "Upload document", exact: true })
     .first()
@@ -93,7 +94,7 @@ test("manual workspace persists application, round, task and document", async ({
   await doc.getByLabel("Acme · Backend Engineer").check();
   await doc.getByRole("button", { name: "Save document" }).click();
   await expect(page.getByRole("heading", { name: "Resume v1" })).toBeVisible();
-  await page.getByRole("button", { name: "Today", exact: true }).click();
+  await navigate(page, "Today");
   await page.screenshot({
     path: `test-results/workspace-${test.info().project.name}.png`,
     fullPage: true,
@@ -120,10 +121,7 @@ test("password change signs out all sessions and new password restores access", 
   await expect(
     page.getByRole("heading", { name: "Make your next move, Security." }),
   ).toBeVisible();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Settings", exact: true })
-    .click();
+  await navigate(page, "Settings");
   await page
     .getByLabel("Current password", { exact: true })
     .fill("original-test-password");
@@ -147,6 +145,7 @@ test("password change signs out all sessions and new password restores access", 
     .getByLabel("Password", { exact: true })
     .fill("replacement-test-password");
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await openMenu(page);
   await expect(
     page
       .getByRole("navigation")

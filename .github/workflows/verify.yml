@@ -41,7 +41,10 @@ jobs:
           TEST_DATABASE_URL: postgresql://postgres:local-test-password@127.0.0.1:5432/offerly_test
       - run: npm run build
       - run: npm audit --audit-level=moderate
-      - run: npx playwright install --with-deps chromium
+      - run: npx playwright install --with-deps chromium webkit firefox
       - run: npm run test:e2e
+        env:
+          CI: 'true'
+      - run: npm run test:devices
         env:
           CI: 'true'

@@ -1,5 +1,7 @@
 # Offerly workspace design references
 
+Current review: [October 28 audit and reference matrix](redesign/AUDIT.md), [design system](redesign/DESIGN_SYSTEM.md), [screenshots](redesign/SCREENSHOTS.md), and [verification](redesign/VALIDATION.md). Notes below retain the original October 19 rationale.
+
 Reviewed October 19, 2026. Public product pages and help documentation were used as references; no private competitor account was accessed and no competitor assets were copied into Offerly.
 
 - [Simplify job tracker](https://simplify.jobs/job-application-tracker): public tracker illustration makes application stages visible next to roles. Offerly uses prominent current-stage counts and selectable stage shortcuts. Counts describe current state, not historical funnel conversion.

@@ -35,6 +35,48 @@ const labels: Record<string, string> = {
   description: "Job description",
   archived: "Archived",
 };
+// The preview API retains its error contract. Present schema issues as field guidance.
+function rowErrorMessages(error: string, dateFormat: string): string[] {
+  try {
+    const issues = JSON.parse(error);
+    if (!Array.isArray(issues)) return [error];
+    const dateExample =
+      dateFormat === "MDY"
+        ? "MM/DD/YYYY"
+        : dateFormat === "DMY"
+          ? "DD/MM/YYYY"
+          : "YYYY-MM-DD";
+    return [
+      ...new Set<string>(
+        issues.map((issue: any) => {
+          const key = String(issue.path?.[0] || "");
+          const label = labels[key] || "Row";
+          if (/date$/i.test(key))
+            return `${label}: enter a valid date using ${dateExample}, or leave it blank if unknown.`;
+          if (issue.code === "invalid_type") return `${label}: enter a value.`;
+          if (issue.code === "invalid_value")
+            return `${label}: use a supported value. Check the column mapping.`;
+          if (issue.code === "invalid_format") {
+            if (issue.format === "url")
+              return `${label}: enter a full URL, starting with https:// or http://.`;
+            if (key === "compensationCurrency")
+              return `${label}: use a three-letter code, such as USD.`;
+            if (["compensationMin", "compensationMax"].includes(key))
+              return `${label}: enter an amount such as 90000 or 90000.50.`;
+            return `${label}: check this value and the column mapping.`;
+          }
+          if (issue.code === "too_small")
+            return `${label}: enter a value that meets the minimum length.`;
+          if (issue.code === "too_big")
+            return `${label}: shorten this value or check its allowed range.`;
+          return `${label}: ${typeof issue.message === "string" ? issue.message : "check this value."}`;
+        }),
+      ),
+    ];
+  } catch {
+    return [error];
+  }
+}
 export function ImportDialog({
   request,
   onClose,
@@ -229,7 +271,17 @@ export function ImportDialog({
                         {row.error ? (
                           <>
                             <strong>Cannot import this row</strong>
-                            <small>{row.error}</small>
+                            <ul className="row-errors">
+                              {rowErrorMessages(row.error, format).map(
+                                (message) => (
+                                  <li key={message}>{message}</li>
+                                ),
+                              )}
+                            </ul>
+                            <small>
+                              Fix this row in your CSV, then choose Change file.
+                              Valid rows can still be imported.
+                            </small>
                           </>
                         ) : (
                           <>

@@ -1,3 +1,4 @@
+import { navigate } from "./navigation.js";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 async function account(page) {
@@ -27,17 +28,14 @@ test("guided CSV mapping, duplicate decisions, archive undo and shared filters",
   page,
 }) => {
   await account(page);
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await page.getByRole("button", { name: "Import CSV" }).click();
   const dialog = page.getByRole("dialog", { name: "Import applications" });
   await dialog.getByLabel("Choose CSV").setInputFiles({
     name: "my-search.csv",
     mimeType: "text/csv",
     buffer: Buffer.from(
-      "Employer,Position,Submitted,Channel,Arrangement,ID\nAcme,Backend Engineer,03/04/2026,Referral,Remote,A1\nAcme,Backend Engineer,03/04/2026,Referral,Remote,A1\nAcme,Data Engineer,06/04/2026,Careers,Hybrid,A2\nBeta,Designer,,Careers,On-site,B1",
+      "Employer,Position,Submitted,Channel,Arrangement,ID\nAcme,Backend Engineer,03/04/2026,Referral,Remote,A1\nAcme,Backend Engineer,03/04/2026,Referral,Remote,A1\nAcme,Data Engineer,06/04/2026,Careers,Hybrid,A2\nBeta,Designer,,Careers,On-site,B1\n,Incomplete role,,Careers,On-site,B2",
     ),
   });
   await dialog
@@ -53,6 +51,11 @@ test("guided CSV mapping, duplicate decisions, archive undo and shared filters",
   await expect(
     dialog.getByText("Acme · Saved · 2026-04-03").first(),
   ).toBeVisible();
+  await expect(
+    dialog.getByText("Company: enter a value.", { exact: true }),
+  ).toBeVisible();
+  await expect(dialog).not.toContainText('"invalid_type"');
+  await expect(dialog.getByLabel("Decision for row 6")).toHaveCount(0);
   await expect(dialog.getByLabel("Decision for row 3")).toHaveValue("skip");
   await dialog.getByLabel("Decision for row 3").selectOption("keep");
   await dialog.getByRole("button", { name: "Import 4 applications" }).click();
@@ -95,10 +98,7 @@ test("guided CSV mapping, duplicate decisions, archive undo and shared filters",
   await expect(page.locator(".board .job-card")).toHaveCount(1);
   await expect(page.locator(".board .job-card")).toContainText("Data Engineer");
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await expect(page.getByRole("table").getByRole("row")).toHaveCount(5);
 });
 
@@ -164,10 +164,7 @@ test("assessment deadlines, activity timeline and polished responsive pipeline",
     fullPage: true,
     animations: "disabled",
   });
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await page.getByRole("button", { name: "Board view" }).click();
   await page.screenshot({
     path: `test-results/redesign-board-${test.info().project.name}.png`,
@@ -211,10 +208,7 @@ test("assessment deadlines, activity timeline and polished responsive pipeline",
     animations: "disabled",
   });
   await detail.getByRole("button", { name: "Close details" }).click();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Today", exact: true })
-    .click();
+  await navigate(page, "Today");
   await expect(page.getByText("No assessment deadlines.")).toBeVisible();
   expect(
     await page.evaluate(
@@ -241,20 +235,17 @@ test("saved views survive reload and bulk edits work in table and board", async 
     workArrangement: "On-site",
   });
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await page.getByText("More filters", { exact: false }).click();
   await page.getByLabel("Work arrangement filter").selectOption("Remote");
+  await page.getByText("Save or manage views", { exact: true }).click();
   await page.getByLabel("View name").fill("Remote roles");
   await page.getByRole("button", { name: "Save new view" }).click();
-  await expect(page.getByRole("status")).toContainText("View saved");
+  await expect(
+    page.getByRole("status").filter({ hasText: "View saved" }),
+  ).toContainText("View saved");
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await page
     .getByLabel("Saved view", { exact: true })
     .selectOption({ label: "Remote roles" });
@@ -267,8 +258,11 @@ test("saved views survive reload and bulk edits work in table and board", async 
     page.getByRole("region", { name: "Bulk application editor" }),
   ).toBeHidden();
   await page.getByRole("button", { name: "Board view" }).click();
+  await page.getByText("Save or manage views", { exact: true }).click();
   await page.getByRole("button", { name: "Update view", exact: true }).click();
-  await expect(page.getByRole("status")).toContainText("View updated");
+  await expect(
+    page.getByRole("status").filter({ hasText: "View updated" }),
+  ).toContainText("View updated");
   await page.getByLabel("Select Acme · Backend Engineer").check();
   await page.getByLabel("Bulk field").selectOption("archived");
   await page.getByRole("button", { name: "Apply to 1 selected" }).click();
@@ -287,7 +281,9 @@ test("saved views survive reload and bulk edits work in table and board", async 
     page.getByRole("button", { name: /Backend Engineer/ }),
   ).toBeVisible();
   await page.getByRole("button", { name: "Remove view" }).click();
-  await expect(page.getByRole("status")).toContainText("Saved view removed");
+  await expect(
+    page.getByRole("status").filter({ hasText: "Saved view removed" }),
+  ).toContainText("Saved view removed");
   expect(
     await page.evaluate(
       () => document.documentElement.scrollWidth <= window.innerWidth,
@@ -318,10 +314,7 @@ test("duplicate merge previews links and undo restores them", async ({
     applicationIds: [right.id],
   });
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await page.getByRole("button", { name: /Review duplicates/ }).click();
   const dialog = page.getByRole("dialog", { name: "Duplicate review" });
   await dialog
@@ -353,10 +346,7 @@ test("expired sessions discard private dialogs and filters before another accoun
     notes: "Private prior-account notes",
   });
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await page.getByLabel("Search applications").fill("PrivateCo");
   await page.getByRole("button", { name: "Open Private role" }).click();
   const detail = page.getByRole("dialog", { name: "Application details" });
@@ -381,10 +371,7 @@ test("expired sessions discard private dialogs and filters before another accoun
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByText("Private prior-account notes")).toHaveCount(0);
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   await expect(page.getByLabel("Search applications")).toHaveValue("");
 });
 
@@ -405,10 +392,7 @@ test("late timeline responses cannot replace the currently open application hist
     notes: "History for second role",
   });
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: /Applications/ })
-    .click();
+  await navigate(page, /Applications/);
   let release;
   const gate = new Promise((resolve) => {
     release = resolve;
@@ -451,18 +435,12 @@ test("signing out clears private state in other open tabs", async ({
   const second = await context.newPage();
   try {
     await second.goto("/#signup");
-    await second
-      .getByRole("navigation")
-      .getByRole("button", { name: /Applications/ })
-      .click();
+    await navigate(second, /Applications/);
     await second.getByRole("button", { name: "Open Private tab role" }).click();
     await expect(
       second.getByRole("dialog", { name: "Application details" }),
     ).toBeVisible();
-    await page
-      .getByRole("navigation")
-      .getByRole("button", { name: "Settings", exact: true })
-      .click();
+    await navigate(page, "Settings");
     await page
       .getByRole("main")
       .getByRole("button", { name: "Sign out", exact: true })

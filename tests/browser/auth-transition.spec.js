@@ -22,3 +22,28 @@ test("sign-in transition preserves email filled before hashchange renders", asyn
   ).toBeVisible();
   await expect(page.getByLabel("Email address")).toHaveValue(email);
 });
+
+test("auth navigation does not steal focus from a field already being edited", async ({
+  page,
+}) => {
+  await page.goto("/#signup");
+  await expect(
+    page.getByRole("button", { name: "Already have an account? Sign in" }),
+  ).toBeVisible();
+  await page.evaluate(() => {
+    const toggle = [...document.querySelectorAll("button")].find(
+      (button) => button.textContent === "Already have an account? Sign in",
+    );
+    toggle.click();
+    const email = document.querySelector('input[name="email"]');
+    email.focus();
+    email.value = "active-field@example.test";
+  });
+  await expect(
+    page.getByRole("heading", { name: "Welcome back." }),
+  ).toBeVisible();
+  await expect(page.getByLabel("Email address")).toBeFocused();
+  await expect(page.getByLabel("Email address")).toHaveValue(
+    "active-field@example.test",
+  );
+});

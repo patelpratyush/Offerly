@@ -1,3 +1,4 @@
+import { navigate } from "./navigation.js";
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
@@ -40,10 +41,7 @@ test("rich contacts retain sources, explicit confirmations and multiple applicat
     "Platform Engineer",
   );
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Connections", exact: true })
-    .click();
+  await navigate(page, "Connections");
   await page
     .getByRole("button", { name: "Add connection", exact: true })
     .first()
@@ -169,10 +167,7 @@ test("rich contacts retain sources, explicit confirmations and multiple applicat
   expect(saved.applicationIds.sort()).toEqual([first.id, second.id].sort());
   expect(saved.provenance.company.recordedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   await page.reload();
-  await page
-    .getByRole("navigation")
-    .getByRole("button", { name: "Connections", exact: true })
-    .click();
+  await navigate(page, "Connections");
   await page
     .getByRole("button", { name: /Alex Rivera.*alex@agency.example/ })
     .click();

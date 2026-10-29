@@ -164,6 +164,22 @@ export function RecruitingReview(props: Props) {
           {refreshError}
         </p>
       )}
+      <section aria-label="Proposed updates">
+        <h2>Proposed updates</h2>
+        {!reviews.length && (
+          <p className="muted">
+            Reviews appear after processing. No update applies automatically.
+          </p>
+        )}
+        {reviews.map((review) => (
+          <ReviewCard
+            key={review.id}
+            review={review}
+            evidence={evidence.find((item) => item.id === review.evidenceId)}
+            {...{ applications, stages, fieldLocks, request, onChanged }}
+          />
+        ))}
+      </section>
       <section
         className="panel"
         style={panelStyle}
@@ -393,22 +409,7 @@ export function RecruitingReview(props: Props) {
           </article>
         ))}
       </section>
-      <section aria-label="Proposed updates">
-        <h2>Proposed updates</h2>
-        {!reviews.length && (
-          <p className="muted">
-            Reviews appear after processing. No update applies automatically.
-          </p>
-        )}
-        {reviews.map((review) => (
-          <ReviewCard
-            key={review.id}
-            review={review}
-            evidence={evidence.find((item) => item.id === review.evidenceId)}
-            {...{ applications, stages, fieldLocks, request, onChanged }}
-          />
-        ))}
-      </section>
+
       <section
         className="panel"
         style={panelStyle}
