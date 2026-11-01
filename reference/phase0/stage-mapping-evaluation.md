@@ -35,6 +35,40 @@ The synthetic prediction fixture intentionally contains unsafe automatic changes
 
 For human annotation, copy `stage-mapping-label-template.csv` once per reviewer. Follow [review instructions](stage-mapping-review-instructions.md). Complete one case per row and preserve each reviewer original. The current real-mail packet has no candidate catalog or tracker snapshot: it can support event labels, but cannot provide stage-before, manual-lock, chronology-versus-tracker, or safe-to-auto-apply gold labels. Do not convert it into stage-mapping gold JSON or report stage-safety metrics. Only evaluate stage mapping when each case includes candidate identity, pre-email tracker state/history, and lock context. Keep completed files outside the repository because they contain email text.
 
+The agreement tool accepts the packet’s full 12-event taxonomy. With an empty candidate catalog, it compares human-readable `Employer — Role` labels after Unicode normalization, case folding, and whitespace collapse. This is reviewer-label agreement only; it does not verify Offerly application identity. Adjudicated model evaluation still requires candidate applications in each row.
+
+## Independent reviewer agreement (2026-10-30)
+
+Two reviewers independently labeled the same 10-case minimized email packet. These numbers measure agreement only; they do not measure label correctness, model performance, or stage safety. The packet had no candidate catalog or tracker snapshot, so human-readable application matches cannot be verified against Offerly records, and stage-before, chronology, manual-lock, and auto-update-safety labels are not valid ground truth.
+
+| Label | Exact agreement | Cohen’s κ | Interpretation |
+| --- | ---: | ---: | --- |
+| Human-readable application match | 4/10 (40%) | 0.375 | Reviewer agreement low; not verified application-link accuracy |
+| Event: confirmation | 10/10 (100%) | 1.000 | Agreement only |
+| Event: review update | 9/10 (90%) | 0.000 | One disagreement |
+| Event: cancellation | 9/10 (90%) | 0.000 | One disagreement |
+| Event: rejection | 10/10 (100%) | 1.000 | Agreement only |
+| Each other event class | 10/10 (100%) | Not defined | No positive examples; raw agreement is uninformative |
+| Provisional expected stage after | 9/10 (90%) | 0.828 | Email-only suggestion; not a validated transition |
+| Confidence | 5/10 (50%) | 0.020 | Reviewers calibrated confidence differently |
+
+Reviewers agreed on all `safe_to_auto_apply` labels, with every case marked unsafe, consistent with the missing tracker context. This is not a safety-precision result. On 2026-10-31, the owner adjudicated all six disagreement rows in the private sheet; both reviewer originals remain preserved. An exploratory GPT-6 Luna event run was scored against the resulting 10-case set; see results below. Do not claim application-link accuracy or stage safety from these labels. Private CSVs and per-case predictions remain under ignored `data/private-review/` and must not enter Git.
+
+## Exploratory GPT event score (2026-10-31)
+
+One 10-call GPT-6 Luna run used the 12-event taxonomy. Gold labels combined six owner-adjudicated rows and four rows where both reviewers agreed. Only event extraction was scored; the API received minimized subject/body text, without case IDs or labels. The run used `store:false` and no tools. The aggregate-only report is [committed here](private-mail-event-evaluation-2026-10-31.json); raw email content and per-case predictions remain local and ignored.
+
+| Metric | Result | Wilson 95% interval |
+| --- | ---: | ---: |
+| Event precision | 4/7 (57.1%) | 25.0–84.2% |
+| Event recall | 4/4 (100%) | 51.0–100% |
+| Exact event-set agreement | 7/10 (70%) | 39.7–89.2% |
+| Valid model-output coverage | 10/10 (100%) | 72.2–100% |
+
+The model made three false-positive event predictions: two confirmations and one review update. Confirmation precision was 2/4 (50%) with recall 2/2; rejection precision and recall were both 2/2. Other event classes had no gold positives and no predictions, so their precision/recall are undefined. Cost estimated from provider-reported token usage and [published GPT-6 Luna rates](https://developers.openai.com/api/docs/pricing) was **$0.0005778**, under the $1 cap.
+
+This is a post-hoc exploratory score, not a blind holdout: packet content was visible before prompt authoring. Ten cases are not representative, and only two event classes had gold positives. The point estimates do not establish PRD thresholds. Missing candidate catalog and tracker snapshot still prevent link-accuracy, status-transition, chronology, manual-lock, and stage-safety evaluation. Default API response storage was disabled, but [OpenAI abuse-monitoring logs may retain content for up to 30 days](https://developers.openai.com/api/docs/guides/your-data). Do not use this run to enable automated updates.
+
 ## Required data and procedure
 
 1. Freeze extraction model, prompt, event taxonomy, and mapping table before any reviewer sees holdout cases.

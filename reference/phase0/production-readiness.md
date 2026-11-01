@@ -1,6 +1,6 @@
 # Phase 0 production-readiness blockers
 
-Reviewed October 23, 2026. This note separates work we can complete in this
+Reviewed October 31, 2026. This note separates work we can complete in this
 repository from work requiring owner accounts, verified domains, independent
 review, or a nonzero provider balance. No credentials or message contents are
 included here.
@@ -15,14 +15,23 @@ had author-label raw link precision 22/23 (95.7%), guarded precision 22/22 at 22
 independent synthetic labels: adjudicated link precision 17/18 (94.4%; Wilson CI
 74.2–99.0%), event recall 20/23 (87.0%; CI 67.9–95.5%), and link agreement 24/24.
 Cases remain prompt-visible and unrepresentative. Held-out fit score coverage was 0/4.
-Automatic-status precision remains unmeasured. See [evaluation](evaluation.md).
+Automatic-status precision remains unmeasured. A separate private 10-case email
+packet received two independent reviews and owner adjudication: application-label
+agreement was 4/10 (40%, κ 0.375); provisional stage-after agreement was 9/10.
+One post-hoc GPT-6 Luna event run scored 4/7 precision (57.1%; Wilson CI
+25.0–84.2%), 4/4 recall (100%; CI 51.0–100%), and 7/10 exact event-set
+agreement. The prompt-visible packet had no candidate catalog or tracker
+snapshot, so it provides no application-link accuracy or stage-safety result.
+It is exploratory, not representative or blind. See [evaluation](evaluation.md)
+and [stage-mapping results](stage-mapping-evaluation.md).
 No model-driven status changes or production model calls are enabled.
 
 ## Open Phase 0 exit items
 
 - [x] Independent labels and adjudication for 24 synthetic fresh-mail cases — agreement and GPT scores recorded in [evaluation](evaluation.md); not representative or prompt-blind.
-- [ ] Representative consented examples — **owner action:** collect consented, minimized examples.
-- [ ] Stage-mapping and status-precision evaluation — protocol in [proposal](stage-mapping-evaluation.md); no result measured; keep automatic updates disabled.
+- [x] Independent review and owner adjudication for 10 private email cases — aggregate event score is recorded in [stage-mapping results](stage-mapping-evaluation.md); no candidate catalog or tracker snapshot, so no link-accuracy or stage-safety result.
+- [ ] Representative consented examples — **owner action:** collect minimized examples with candidate identity, pre-email tracker state, and manual-lock state; current private packet lacks that context.
+- [ ] Stage-mapping and status-precision evaluation — protocol in [proposal](stage-mapping-evaluation.md); private email labels cannot establish stage-before truth, chronology, manual-lock state, or safe-transition precision. Keep automatic updates disabled.
 - [x] Synthetic cross-instance replay guard — code and fault-injection test pass; provider-backed cursor recovery remains open.
 - [x] Cursor/pagination design proposal — see [proposal](import-design.md); Gmail History API implementation and integration validation are Phase 2.
 - [ ] Hosted OAuth — Phase 2; **owner action:** verified domain, Google restricted-scope review, and accurate privacy disclosures.
@@ -60,9 +69,12 @@ That is suitable for short private tests with reconnects, not unattended sync.
 Current original gold fixtures are synthetic and developer-authored. Two
 reviewers independently labeled 24 additional synthetic fresh-mail cases, with
 two disagreements adjudicated by owner. Cases were still visible during prompt
-development, so this is not a blind model holdout. Build a new hidden set after
-freezing model and prompt; collect independent labels; resolve disagreements;
-then evaluate on representative consented examples without tuning on that holdout.
+development, so this is not a blind model holdout. A separate 10-case private
+email packet has two reviews and owner adjudication, and received one post-hoc
+GPT event-scoring run. It lacks candidate and tracker context, is not blind or
+representative, and cannot establish stage-safety accuracy. Build a new hidden set after freezing
+model and prompt; collect independent labels; resolve disagreements; then
+evaluate on representative consented examples without tuning on that holdout.
 Keep the PRD thresholds: at least 95% application-link precision, 98% precision
 for any status applied automatically, and 85% supported-event recall. Report
 sample sizes, uncertainty, coverage, failures, and event-specific recall. If

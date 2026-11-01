@@ -52,13 +52,29 @@ const fitSchema = {
   required: ["score", "eligibility", "evidence", "compensation", "confirmedLast24Hours"],
   additionalProperties: false,
 };
-const schemas = { mail: mailSchema, fit: fitSchema };
+const extendedEvents = [
+  "confirmation", "review-update", "assessment", "assessment-deadline",
+  "availability-request", "interview", "scheduled-interview", "reschedule",
+  "cancellation", "recruiter-request", "rejection", "offer",
+];
+const extendedMailSchema = {
+  type: "object",
+  properties: {
+    events: { type: "array", items: { type: "string", enum: extendedEvents } },
+  },
+  required: ["events"],
+  additionalProperties: false,
+};
+const schemas = { mail: mailSchema, fit: fitSchema, extended_mail: extendedMailSchema };
 const validators = {
   mail: z
     .object({
       applicationId: z.string().min(1).nullable(),
       events: z.array(z.enum(["confirmation", "assessment", "interview", "rejection", "offer"])),
     })
+    .strict(),
+  extended_mail: z
+    .object({ events: z.array(z.enum(extendedEvents)) })
     .strict(),
   fit: z
     .object({
@@ -199,6 +215,8 @@ export function parseStructuredOutput(response, kind, applications = []) {
         !applications.some((application) => application.id === value.applicationId))
     )
       throw new Error("Invalid model link or duplicate event");
+  } else if (kind === "extended_mail" && new Set(value.events).size !== value.events.length) {
+    throw new Error("Invalid model link or duplicate event");
   }
   return value;
 }

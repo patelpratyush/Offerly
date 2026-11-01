@@ -1,0 +1,269 @@
+{
+  "version": 1,
+  "status": "completed",
+  "runDate": "2026-10-31",
+  "provider": "OpenAI Responses API",
+  "model": "gpt-6-luna",
+  "promptSha256": "6b5f54106b941571946b34ba40a14d6f86922f9800806c796a8f6cf91bd1065d",
+  "calls": 10,
+  "preflightEstimatedCostUsd": 0.0146132,
+  "tokenUsageCostEstimateUsd": 0.0005778,
+  "costLimitUsd": 1,
+  "usage": {
+    "inputTokens": 4993,
+    "outputTokens": 157
+  },
+  "labels": {
+    "ownerAdjudicatedCases": 6,
+    "reviewerConsensusCases": 4
+  },
+  "metrics": {
+    "exactEventSetAgreement": {
+      "numerator": 7,
+      "denominator": 10,
+      "value": 0.7,
+      "wilson95": {
+        "lower": 0.39677814746114537,
+        "upper": 0.8922087325936989
+      }
+    },
+    "eventPrecision": {
+      "numerator": 4,
+      "denominator": 7,
+      "value": 0.5714285714285714,
+      "wilson95": {
+        "lower": 0.2504583645276572,
+        "upper": 0.8417801447485302
+      }
+    },
+    "eventRecall": {
+      "numerator": 4,
+      "denominator": 4,
+      "value": 1,
+      "wilson95": {
+        "lower": 0.5101091635454027,
+        "upper": 1
+      }
+    },
+    "modelOutputCoverage": {
+      "numerator": 10,
+      "denominator": 10,
+      "value": 1,
+      "wilson95": {
+        "lower": 0.7224672001371107,
+        "upper": 0.9999999999999999
+      }
+    },
+    "perEvent": {
+      "confirmation": {
+        "precision": {
+          "numerator": 2,
+          "denominator": 4,
+          "value": 0.5,
+          "wilson95": {
+            "lower": 0.15003898915214947,
+            "upper": 0.8499610108478506
+          }
+        },
+        "recall": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1,
+          "wilson95": {
+            "lower": 0.34238022750665303,
+            "upper": 1
+          }
+        }
+      },
+      "review-update": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 1,
+          "value": 0,
+          "wilson95": {
+            "lower": 0,
+            "upper": 0.7934506856227626
+          }
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "assessment": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "assessment-deadline": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "availability-request": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "interview": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "scheduled-interview": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "reschedule": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "cancellation": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "recruiter-request": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      },
+      "rejection": {
+        "precision": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1,
+          "wilson95": {
+            "lower": 0.34238022750665303,
+            "upper": 1
+          }
+        },
+        "recall": {
+          "numerator": 2,
+          "denominator": 2,
+          "value": 1,
+          "wilson95": {
+            "lower": 0.34238022750665303,
+            "upper": 1
+          }
+        }
+      },
+      "offer": {
+        "precision": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        },
+        "recall": {
+          "numerator": 0,
+          "denominator": 0,
+          "value": null,
+          "wilson95": null
+        }
+      }
+    }
+  },
+  "redactions": {
+    "emails": 0,
+    "urls": 0,
+    "phones": 0,
+    "greetingNames": 0,
+    "namedPhrases": 1,
+    "signatures": 1,
+    "quotedHistory": 0
+  },
+  "truncatedMessages": 0,
+  "dataHandling": {
+    "requestFields": [
+      "subject",
+      "body"
+    ],
+    "responseStorage": false,
+    "tools": false,
+    "localReportContainsEmailContent": false,
+    "apiAbuseMonitoringRetention": "up to 30 days by default; legal or safety exceptions may apply"
+  },
+  "limitations": [
+    "Exploratory post-hoc score; this packet was visible before the prompt was written and is not a blind model holdout.",
+    "Ten private cases are not representative. Candidate catalog and tracker snapshot are absent, so application-link and stage-safety accuracy are unmeasured.",
+    "Only event extraction was scored. Failed calls count as empty-event predictions and lower recall/coverage.",
+    "OpenAI API abuse-monitoring retention may include request content for up to 30 days; store=false disables response storage, not abuse-monitoring logs."
+  ]
+}

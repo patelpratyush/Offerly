@@ -19,7 +19,7 @@ These are application stages. Interview-round states such as invited, scheduled,
 - `case_id`: keep supplied ID unchanged.
 - `subject`, `body`, `received_at`: supplied minimized email data; do not edit. Addresses, links, and phone numbers were removed.
 - `candidate_applications`: `[]` means no candidate catalog was supplied. Do not invent IDs.
-- `reviewer_application_id`: enter employer and role only if email identifies them clearly; otherwise `NONE`. This is a human-readable match, not a real Offerly application ID.
+- `reviewer_application_id`: enter employer and role only if email identifies them clearly; otherwise `NONE`. Format matches as `Employer — Role`. This is a human-readable match, not a real Offerly application ID.
 - `reviewer_events`: comma-separated event labels, or `NONE`: `confirmation`, `review-update`, `assessment`, `assessment-deadline`, `availability-request`, `interview`, `scheduled-interview`, `reschedule`, `cancellation`, `recruiter-request`, `rejection`, `offer`.
 - `application_stage_before`: use `NONE` because tracker state was not supplied. Do not guess from email.
 - `event_effective_at`: explicit event time with timezone when present; otherwise `NONE`.

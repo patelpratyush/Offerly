@@ -77,6 +77,32 @@ test("Responses API call pins host, model, schema, storage, tools, and timeout",
   assert.deepEqual(response.usage, { inputTokens: 100, outputTokens: 20 });
 });
 
+test("extended email classifier accepts only Phase 0's full event taxonomy", async () => {
+  let body;
+  const response = await requestStructuredOutput(
+    { kind: "extended_mail", input: { subject: "synthetic", body: "synthetic" }, instructions: "synthetic" },
+    {
+      apiKey: "test-secret",
+      fetcher: async (_url, options) => {
+        body = JSON.parse(options.body);
+        return new Response(JSON.stringify({
+          status: "completed",
+          output: [{ type: "message", content: [{ type: "output_text", text: '{"events":["scheduled-interview"]}' }] }],
+          usage: { input_tokens: 10, output_tokens: 3 },
+        }), { status: 200 });
+      },
+    },
+  );
+  assert.equal(body.store, false);
+  assert.deepEqual(body.tools, []);
+  assert.equal(body.text.format.name, "phase0_extended_mail");
+  assert.deepEqual(response.value.events, ["scheduled-interview"]);
+  assert.throws(
+    () => parseStructuredOutput({ status: "completed", output: [{ type: "message", content: [{ type: "output_text", text: '{"events":["unsupported"]}' }] }] }, "extended_mail"),
+    /Invalid option/,
+  );
+});
+
 test("missing keys and oversized requests stop before network access", async () => {
   let calls = 0;
   const fetcher = async () => {

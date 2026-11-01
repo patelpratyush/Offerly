@@ -14,8 +14,27 @@ const required = [
   "reviewer_events",
   "confidence",
 ];
-const allowedEvents = ["confirmation", "assessment", "interview", "rejection", "offer"];
+const allowedEvents = [
+  "confirmation", "review-update", "assessment", "assessment-deadline",
+  "availability-request", "interview", "scheduled-interview", "reschedule",
+  "cancellation", "recruiter-request", "rejection", "offer",
+];
 const confidences = new Set(["high", "medium", "low"]);
+const optionalAgreementFields = [
+  "application_stage_before",
+  "event_effective_at",
+  "expected_stage_after",
+  "safe_to_auto_apply",
+  "application_link_correct",
+  "chronology_valid",
+  "manual_lock",
+  "tracker_context_provided",
+  "confidence",
+];
+
+function normalizeApplicationLabel(value) {
+  return value.normalize("NFKC").trim().replace(/\s+/gu, " ").toLocaleLowerCase("en-US");
+}
 
 function readReviewer(path) {
   let rows;
@@ -36,7 +55,7 @@ function readReviewer(path) {
     if (!Array.isArray(candidates) || candidates.some((item) => !item || typeof item.id !== "string"))
       throw new Error("Invalid candidate applications");
     const app = row.reviewer_application_id;
-    if (app !== "NONE" && !candidates.some((item) => item.id === app))
+    if (app !== "NONE" && candidates.length && !candidates.some((item) => item.id === app))
       throw new Error("Reviewer application ID is not a candidate");
     const events = row.reviewer_events === "NONE" ? [] : row.reviewer_events.split(",").map((value) => value.trim());
     if (events.some((value) => !allowedEvents.includes(value)) || new Set(events).size !== events.length)
@@ -57,12 +76,20 @@ function metric(left, right) {
   return { agreement: observed, percentAgreement: Number((observed * 100).toFixed(2)), cohensKappa: expected === 1 ? null : (observed - expected) / (1 - expected) };
 }
 
+function samePacketRow(left, right) {
+  return left.subject === right.subject && left.body === right.body &&
+    left.received_at === right.received_at &&
+    JSON.stringify(left._candidates) === JSON.stringify(right._candidates);
+}
+
 export function compareReviewerRows(first, second) {
   if (first.size !== second.size || [...first.keys()].some((id) => !second.has(id)))
     throw new Error("Reviewer case_ids do not match");
   const ids = [...first.keys()];
-  const appA = ids.map((id) => first.get(id).reviewer_application_id);
-  const appB = ids.map((id) => second.get(id).reviewer_application_id);
+  if (ids.some((id) => !samePacketRow(first.get(id), second.get(id))))
+    throw new Error("Reviewer packet content does not match");
+  const appA = ids.map((id) => normalizeApplicationLabel(first.get(id).reviewer_application_id));
+  const appB = ids.map((id) => normalizeApplicationLabel(second.get(id).reviewer_application_id));
   const events = Object.fromEntries(allowedEvents.map((event) => {
     const a = ids.map((id) => first.get(id)._events.includes(event));
     const b = ids.map((id) => second.get(id)._events.includes(event));
@@ -73,10 +100,20 @@ export function compareReviewerRows(first, second) {
     event,
     ids.filter((id) => first.get(id)._events.includes(event) !== second.get(id)._events.includes(event)),
   ]));
+  const fieldAgreement = Object.fromEntries(optionalAgreementFields
+    .filter((field) => Object.hasOwn(first.get(ids[0]), field) && Object.hasOwn(second.get(ids[0]), field) &&
+      ids.every((id) => first.get(id)[field]?.trim() && second.get(id)[field]?.trim()))
+    .map((field) => {
+      const a = ids.map((id) => first.get(id)[field].trim().toLocaleLowerCase("en-US"));
+      const b = ids.map((id) => second.get(id)[field].trim().toLocaleLowerCase("en-US"));
+      return [field, metric(a, b)];
+    }));
   return {
     cases: ids.length,
+    applicationMatchBasis: "Exact reviewer label after Unicode normalization, case folding, and whitespace collapse; no candidate catalog supplied labels are human-readable.",
     applicationLink: metric(appA, appB),
     events,
+    fieldAgreement,
     linkDisagreeingCaseIds: linkDisagreements,
     eventDisagreements,
     disagreeingCaseIds: ids.filter((id) =>
@@ -91,6 +128,8 @@ export function compareFiles(firstPath, secondPath) {
 
 export function evaluateAdjudicatedFile(adjudicatedPath, predictions) {
   const rows = readReviewer(adjudicatedPath);
+  if ([...rows.values()].some((row) => row._candidates.length === 0 && row.reviewer_application_id !== "NONE"))
+    throw new Error("Adjudicated prediction evaluation requires candidate applications for human-readable matches");
   const examples = [...rows.values()].map((row, index) => ({
     id: row.case_id,
     split: "held-out",
