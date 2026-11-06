@@ -1,3 +1,5 @@
+import { initializeGmailSync } from "./gmail-sync.js";
+import { initializeGmail } from "./gmail-account.js";
 import { openDatabase } from "./database.js";
 import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
@@ -114,6 +116,27 @@ export async function createStore(path, options) {
           { status: 409 },
         );
       const recordedAt = new Date().toISOString();
+      if (kind === "application") {
+        const before = old ? JSON.parse(old.data) : {};
+        data = {
+          ...data,
+          ownerEffectiveAt:
+            actor === "recruiting_accept" || actor === "recruiting_undo"
+              ? data.ownerEffectiveAt || before.ownerEffectiveAt || recordedAt
+              : before.owner === data.owner
+                ? before.ownerEffectiveAt || recordedAt
+                : recordedAt,
+        };
+      }
+      if (["round", "assessment", "task"].includes(kind)) {
+        data = {
+          ...data,
+          recruitingEffectiveAt:
+            actor === "recruiting_event_accept" || actor === "recruiting_undo"
+              ? data.recruitingEffectiveAt
+              : recordedAt,
+        };
+      }
       if (kind === "document" && !old) {
         const root = data.documentId;
         const versions = root
@@ -245,5 +268,7 @@ export async function createStore(path, options) {
       return { ...data, id: key, version: (old?.version || 0) + 1 };
     });
   const store = { db, list, get, save, atomic };
+  await initializeGmail(store);
+  await initializeGmailSync(store);
   return store;
 }

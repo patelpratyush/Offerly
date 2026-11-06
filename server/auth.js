@@ -1,3 +1,5 @@
+import { disconnectGmail } from "./gmail-account.js";
+import { purgeGmailEvidence } from "./gmail-sync.js";
 import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "node:crypto";
 import { promisify } from "node:util";
 import { z } from "zod";
@@ -51,7 +53,7 @@ export function mountAuth(app, store, config, limit) {
     cookieName = config.production ? "__Host-offerly" : "session";
   const cookieOptions = {
     httpOnly: true,
-    sameSite: "strict",
+    sameSite: "lax", // OAuth returns through a top-level cross-site GET.
     secure: config.production,
     path: "/",
   };
@@ -371,6 +373,9 @@ export function mountAuth(app, store, config, limit) {
       if (req.body.confirm !== req.user.email)
         throw new HttpError(400, "Enter your email to confirm deletion");
       await reauthenticate(req, req.body.password);
+      await disconnectGmail(store, req.user.id, {
+        cleanup: (s, u) => purgeGmailEvidence(s, u, { all: true }),
+      });
       await atomic(async () => {
         const session = await db
           .prepare(

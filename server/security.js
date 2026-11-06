@@ -104,7 +104,10 @@ export function installSecurity(app, config, limit) {
         throw new HttpError(421, "Invalid host");
       if (/^\/api(?:\/|$)/i.test(req.path)) {
         await limit("api:" + req.ip, 600, 60000);
-        if (req.headers["sec-fetch-site"] === "cross-site")
+        if (
+          req.headers["sec-fetch-site"] === "cross-site" &&
+          !(req.method === "GET" && req.path === "/api/gmail/callback")
+        )
           throw new HttpError(403, "Cross-site requests are not allowed");
         if (!["GET", "HEAD", "OPTIONS"].includes(req.method)) {
           if (req.headers["x-offerly-request"] !== "1")

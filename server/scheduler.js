@@ -1,3 +1,4 @@
+import { processGmailSync } from "./gmail-sync.js";
 import { randomUUID } from "node:crypto";
 import { processRecruitingJobs } from "./recruiting.js";
 import { processReminders } from "./reminders.js";
@@ -10,6 +11,7 @@ export async function runScheduler(
     now = Date.now(),
     signedAt = 0,
     recruiting = processRecruitingJobs,
+    gmail = processGmailSync,
     reminders = processReminders,
     cleanup,
   } = {},
@@ -23,6 +25,7 @@ export async function runScheduler(
   if (!state) return { skipped: true, reason: "already_running_or_replayed" };
   const deadline = Date.now() + 35000;
   try {
+    const gmailResult = await gmail(store, { deadline: Date.now() + 10000 });
     const reviewResult = await recruiting(store, {
       cursor: state.recruiting_cursor,
       deadline: deadline - 17500,
@@ -41,6 +44,7 @@ export async function runScheduler(
       ? await cleanup(store, { deadline: deadline + 5000 })
       : undefined;
     const result = {
+      gmail: gmailResult,
       recruiting: reviewResult,
       reminders: reminderResult,
       ...(cleanupResult ? { cleanup: cleanupResult } : {}),

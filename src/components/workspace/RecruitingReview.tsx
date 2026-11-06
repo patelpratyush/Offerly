@@ -1,8 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 
+import { RecruitingAction } from "./RecruitingAction";
+
 type Item = { id: string; version: number; [key: string]: any };
 type Request = (path: string, method?: string, body?: any) => Promise<any>;
 type Props = {
+  rounds: Item[];
+  tasks: Item[];
+  assessments: Item[];
   applications: Item[];
   evidence: Item[];
   recruitingJobs: Item[];
@@ -70,6 +75,9 @@ function useOperation(request: Request, onChanged: () => Promise<any>) {
 export function RecruitingReview(props: Props) {
   const {
     applications,
+    rounds,
+    tasks,
+    assessments,
     evidence,
     recruitingJobs,
     reviews,
@@ -156,8 +164,9 @@ export function RecruitingReview(props: Props) {
         </button>
       </div>
       <p className="notice">
-        Manual evidence only. Paste an excerpt and propose updates yourself.
-        Gmail is not connected, and no AI extraction runs here.
+        Review Gmail proposals or paste evidence and propose updates yourself.
+        Every application update needs your decision. Production AI remains
+        disabled.
       </p>
       {refreshError && (
         <p role="alert" className="form-error">
@@ -175,6 +184,9 @@ export function RecruitingReview(props: Props) {
           <ReviewCard
             key={review.id}
             review={review}
+            rounds={rounds}
+            tasks={tasks}
+            assessments={assessments}
             evidence={evidence.find((item) => item.id === review.evidenceId)}
             {...{ applications, stages, fieldLocks, request, onChanged }}
           />
@@ -458,6 +470,9 @@ export function RecruitingReview(props: Props) {
 }
 
 function ReviewCard({
+  rounds,
+  tasks,
+  assessments,
   review,
   evidence,
   applications,
@@ -656,6 +671,55 @@ function ReviewCard({
             </button>
           </div>
         </div>
+      )}
+      {evidence?.eventType && (
+        <p>
+          Proposed event: {evidence.eventType}. Confirm details from source
+          evidence.
+        </p>
+      )}
+      {["accepted", "corrected"].includes(review.status) && (
+        <RecruitingAction
+          review={review}
+          rounds={rounds}
+          tasks={tasks}
+          assessments={assessments}
+          busy={operation.busy}
+          submit={(payload) =>
+            operation.run(`/recruiting/reviews/${review.id}/action`, payload)
+          }
+        />
+      )}
+      {evidence?.proposedContacts?.length > 0 && (
+        <section>
+          <h4>Proposed contacts</h4>
+          <p>
+            Unverified identities from message participants. Save only after
+            checking the source.
+          </p>
+          {evidence?.proposedContacts.map((contact: any, index: number) => (
+            <p key={index}>
+              {contact.name || "Unnamed contact"} · {contact.email} ·{" "}
+              {contact.source || "Gmail participant"}
+            </p>
+          ))}
+          {["accepted", "corrected"].includes(review.status) && (
+            <button
+              type="button"
+              disabled={operation.busy || !!review.contactsSaved}
+              onClick={() =>
+                void operation.run(
+                  `/recruiting/reviews/${review.id}/contacts`,
+                  { version: review.version },
+                )
+              }
+            >
+              {review.contactsSaved
+                ? "Contacts saved"
+                : "Save proposed contacts"}
+            </button>
+          )}
+        </section>
       )}
       {["accepted", "corrected", "rejected"].includes(review.status) && (
         <button

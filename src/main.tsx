@@ -42,6 +42,7 @@ import { SubmittedDocuments } from "./components/workspace/SubmittedDocuments";
 import { OfferFields } from "./components/workspace/OfferFields";
 import { ListingSnapshots } from "./components/workspace/ListingSnapshots";
 import { RecruitingReview } from "./components/workspace/RecruitingReview";
+import { GmailSettings } from "./components/workspace/GmailSettings";
 import { Reminders } from "./components/workspace/Reminders";
 import { Timeline } from "./components/workspace/Timeline";
 import { Landing } from "./pages/Landing";
@@ -328,6 +329,10 @@ function App() {
       return next;
     }
     account.current = next.user.email;
+    if (["#signin", "#signup"].includes(window.location.hash)) {
+      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      setEntry("home");
+    }
     setW(next);
     return next;
   };
@@ -677,7 +682,7 @@ function App() {
             {a.owner === "You"
               ? "Your reply is next"
               : a.owner === "Employer"
-                ? "Waiting for employer"
+                ? `Waiting for employer${a.ownerEffectiveAt ? ` · ${Math.max(0, Math.floor((Date.now() - Date.parse(a.ownerEffectiveAt)) / 86400000))} days` : ""}`
                 : a.owner === "Nobody"
                   ? "No reply needed"
                   : "Response owner unclear"}
@@ -1134,6 +1139,9 @@ function App() {
           )}
           {page === "Reviews" && (
             <RecruitingReview
+              rounds={w.rounds}
+              tasks={w.tasks}
+              assessments={w.assessments}
               applications={w.applications}
               evidence={w.evidence}
               recruitingJobs={w.recruitingJobs}
@@ -1586,7 +1594,7 @@ function App() {
                               <td data-label="Next response / action">
                                 <strong className="response-owner">
                                   {a.owner === "Employer"
-                                    ? "Waiting for employer"
+                                    ? `Waiting for employer${a.ownerEffectiveAt ? ` · ${Math.max(0, Math.floor((Date.now() - Date.parse(a.ownerEffectiveAt)) / 86400000))} days` : ""}`
                                     : a.owner === "You"
                                       ? "Your reply is next"
                                       : a.owner === "Nobody"
@@ -3036,13 +3044,8 @@ function SettingsPage({
             </button>
           </form>
           <RecoveryCodes run={run} busy={busy} />
-          <h2 className="space-top">Email connections</h2>
-          <span className="badge">Not connected</span>
-          <p>
-            Gmail import and automatic updates are planned for the next
-            milestone. Your manual workspace is ready now.
-          </p>
         </section>
+        <GmailSettings request={api} />
         <section className="panel settings-panel space-top">
           <h2>Your data belongs to you</h2>
           <p>

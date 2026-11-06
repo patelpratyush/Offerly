@@ -1,3 +1,4 @@
+import { processGmailSync } from "./gmail-sync.js";
 // Durable work runs in a separate process, outside interactive API requests.
 import { resolve } from "node:path";
 import { createStore } from "./store.js";
@@ -11,6 +12,7 @@ let stopping = false;
 let active = null;
 async function runTick() {
   for (const [kind, processWork] of [
+    ["gmail", processGmailSync],
     ["recruiting", processRecruitingJobs],
     ["reminders", processReminders],
   ]) {

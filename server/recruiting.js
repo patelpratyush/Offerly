@@ -1,3 +1,4 @@
+import { reconcileReminders } from "./reminders.js";
 import { mapAsync as _mapAsync } from "./async.js";
 import { z } from "zod";
 import { createHash } from "node:crypto";
@@ -304,6 +305,104 @@ export async function processRecruitingJobs(
   return { processed, nextCursor };
 }
 export function mountRecruiting(app, store, validate) {
+  app.post("/api/recruiting/reviews/:id/contacts", async (req, res) => {
+    const input = actionSchema.parse(req.body);
+    res.json(
+      await operation(
+        store,
+        req.user.id,
+        `contacts:${req.params.id}`,
+        input,
+        async () => {
+          const review = await record(
+            store,
+            req.user.id,
+            req.params.id,
+            "recruiting_review",
+          );
+          if (
+            review.version !== input.version ||
+            !["accepted", "corrected"].includes(review.status)
+          )
+            throw new HttpError(
+              409,
+              "Accept the application link before saving contacts",
+            );
+          if (review.contactsSaved)
+            throw new HttpError(409, "Contacts already saved");
+          await record(store, req.user.id, review.applicationId, "application");
+          const evidence = await record(
+            store,
+            req.user.id,
+            review.evidenceId,
+            "recruiting_evidence",
+          );
+          const proposals = z
+            .array(
+              z.object({
+                name: z.string().max(200),
+                email: z.email().max(254),
+              }),
+            )
+            .max(20)
+            .parse(evidence.proposedContacts || []);
+          const contacts = await store.list(req.user.id, "contact");
+          const saved = [];
+          for (const proposal of proposals) {
+            if (
+              /^(no[._-]?reply|do[._-]?not[._-]?reply|mailer-daemon)@/i.test(
+                proposal.email,
+              )
+            )
+              continue;
+            // An extracted address does not prove identity. Never merge unverified identities.
+            if (
+              contacts.some(
+                (c) => c.email?.toLowerCase() === proposal.email.toLowerCase(),
+              )
+            )
+              continue;
+            const source = {
+              source: "Other",
+              evidence: `Gmail participant; source ${evidence.sourceId}`,
+              confirmed: false,
+            };
+            const data = await validate(req.user, "contact", {
+              name: proposal.name || proposal.email,
+              email: proposal.email,
+              emailConfirmed: false,
+              applicationIds: [review.applicationId],
+              provenance: { name: source, email: source },
+            });
+            const contact = await save(
+              store,
+              req.user.id,
+              "contact",
+              data,
+              undefined,
+              "recruiting_contact_accept",
+            );
+            contacts.push(contact);
+            saved.push({ id: contact.id, version: contact.version });
+          }
+          return {
+            review: await save(
+              store,
+              req.user.id,
+              "recruiting_review",
+              {
+                ...dataOf(review),
+                contactsSaved: true,
+                savedContacts: saved,
+              },
+              review,
+              "recruiting_contact_accept",
+            ),
+          };
+        },
+      ),
+    );
+  });
   app.post("/api/recruiting/evidence", async (req, res) => {
     const input = evidenceSchema.parse(req.body);
     const result = await operation(
@@ -448,6 +547,8 @@ export function mountRecruiting(app, store, validate) {
           { ...dataOf(target), ...changes },
           dataOf(target),
         );
+        if (Object.hasOwn(changes, "owner"))
+          merged.ownerEffectiveAt = review.effectiveAt;
         const applied = await save(
           store,
           req.user.id,
@@ -565,6 +666,42 @@ export function mountRecruiting(app, store, validate) {
             );
             if (current.version !== review.appliedApplicationVersion)
               throw new HttpError(409, "Later application edits prevent undo");
+            if (review.actionSnapshot) {
+              const snapshot = review.actionSnapshot;
+              const action = await store.get(req.user.id, snapshot.after.id);
+              if (!action || action.version !== snapshot.after.version)
+                throw new HttpError(409, "Later event edits prevent undo");
+              if (snapshot.before)
+                await store.save(
+                  req.user.id,
+                  snapshot.kind,
+                  snapshot.before,
+                  action.id,
+                  action.version,
+                  "recruiting_undo",
+                );
+              else {
+                await store.db
+                  .prepare("DELETE FROM records WHERE user_id=? AND id=?")
+                  .run(req.user.id, action.id);
+                await reconcileReminders(
+                  store,
+                  req.user.id,
+                  snapshot.kind,
+                  snapshot.after,
+                  null,
+                  action.id,
+                );
+              }
+            }
+            for (const snapshot of review.savedContacts || []) {
+              const contact = await store.get(req.user.id, snapshot.id);
+              if (!contact || contact.version !== snapshot.version)
+                throw new HttpError(409, "Later contact edits prevent undo");
+              await store.db
+                .prepare("DELETE FROM records WHERE user_id=? AND id=?")
+                .run(req.user.id, snapshot.id);
+            }
             for (const snapshot of [
               ...review.lockSnapshots,
               ...review.clockSnapshots,
@@ -577,12 +714,15 @@ export function mountRecruiting(app, store, validate) {
               store,
               req.user.id,
               "application",
-              await validate(
-                req.user,
-                "application",
-                review.beforeApplication,
-                dataOf(current),
-              ),
+              {
+                ...(await validate(
+                  req.user,
+                  "application",
+                  review.beforeApplication,
+                  dataOf(current),
+                )),
+                ownerEffectiveAt: review.beforeApplication.ownerEffectiveAt,
+              },
               current,
               "recruiting_undo",
             );

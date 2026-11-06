@@ -502,10 +502,14 @@ test("a separate worker recovers durable queued work after restart without dupli
   const x = await setup(t, database);
   await x.evidence();
   for (let attempt = 0; attempt < 2; attempt++) {
-    const worker = fork(new URL("../../server/worker.js", import.meta.url), [], {
-      env: { ...process.env, DATABASE_PATH: database },
-      stdio: ["ignore", "ignore", "ignore", "ipc"],
-    });
+    const worker = fork(
+      new URL("../../server/worker.js", import.meta.url),
+      [],
+      {
+        env: { ...process.env, DATABASE_PATH: database },
+        stdio: ["ignore", "ignore", "ignore", "ipc"],
+      },
+    );
     try {
       await once(worker, "message");
       for (let i = 0; i < 50; i++) {
@@ -621,4 +625,90 @@ test("reminder failure isolation and mutation rollback preserve other accounts a
   x.store.save = original;
   await processReminders(x.store, { now: new Date("2099-01-02T12:00:00Z") });
   assert.equal((await x.store.list(x.user, "reminder"))[0].state, "due");
+});
+
+test("Gmail contacts require separate acceptance and undo removes unchanged proposals", async (t) => {
+  const x = await setup(t);
+  const evidence = await x.store.save(x.user, "recruiting_evidence", {
+    sourceType: "gmail",
+    sourceId: "gmail:test-message",
+    excerpt: "Please reply",
+    company: "Acme",
+    title: "Engineer",
+    changes: { owner: "You" },
+    effectiveAt: "2026-10-20T12:00:00Z",
+    proposedContacts: [
+      { name: "Recruiter", email: "person@example.com", verified: false },
+    ],
+  });
+  await x.store.save(x.user, "recruiting_job", {
+    evidenceId: evidence.id,
+    status: "queued",
+    attempts: 0,
+    availableAt: 0,
+    leaseUntil: 0,
+  });
+  await processRecruitingJobs(x.store);
+  let review = (await x.workspace()).reviews[0];
+  const contactRequest = () =>
+    x.request(
+      `/recruiting/reviews/${review.id}/contacts`,
+      "POST",
+      { operationId: randomUUID(), version: review.version },
+      x.cookie,
+    );
+  assert.equal((await contactRequest()).status, 409);
+  const accepted = await x.decide(review, x.app);
+  assert.equal(accepted.status, 200);
+  assert.equal((await x.workspace()).contacts.length, 0);
+  review = accepted.data.review;
+  const result = await contactRequest();
+  assert.equal(result.status, 200, JSON.stringify(result.data));
+  const contact = (await x.workspace()).contacts[0];
+  assert.equal(contact.emailConfirmed, false);
+  assert.deepEqual(contact.applicationIds, [x.app.id]);
+  assert.equal(contact.provenance.email.source, "Other");
+  review = result.data.review;
+  const undone = await x.request(
+    `/recruiting/reviews/${review.id}/undo`,
+    "POST",
+    { operationId: randomUUID(), version: review.version },
+    x.cookie,
+  );
+  assert.equal(undone.status, 200, JSON.stringify(undone.data));
+  assert.equal((await x.workspace()).contacts.length, 0);
+});
+
+test("accepted event actions require current target version and undo restores reminder source", async (t) => {
+  const x = await setup(t);
+  await x.evidence();
+  await processRecruitingJobs(x.store);
+  let review = (await x.workspace()).reviews[0];
+  const accepted = await x.decide(review, x.app);
+  assert.equal(accepted.status, 200);
+  review = accepted.data.review;
+  const response = await x.request(
+    `/recruiting/reviews/${review.id}/action`,
+    "POST",
+    {
+      operationId: randomUUID(),
+      version: review.version,
+      kind: "task",
+      data: { title: "Reply to recruiter", due: "2026-11-06", done: false },
+    },
+    x.cookie,
+  );
+  assert.equal(response.status, 200, JSON.stringify(response.data));
+  let workspace = await x.workspace();
+  assert.equal(workspace.tasks[0].applicationId, x.app.id);
+  review = workspace.reviews[0];
+  const undone = await x.request(
+    `/recruiting/reviews/${review.id}/undo`,
+    "POST",
+    { operationId: randomUUID(), version: review.version },
+    x.cookie,
+  );
+  assert.equal(undone.status, 200, JSON.stringify(undone.data));
+  workspace = await x.workspace();
+  assert.equal(workspace.tasks.length, 0);
 });

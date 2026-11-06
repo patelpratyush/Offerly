@@ -151,7 +151,7 @@ test("auth cookies, idle timeout, absolute expiry, logout and password changes r
     password,
   });
   assert.match(login.headers.get("set-cookie"), /HttpOnly/);
-  assert.match(login.headers.get("set-cookie"), /SameSite=Strict/);
+  assert.match(login.headers.get("set-cookie"), /SameSite=Lax/);
   const c2 = login.cookie;
   assert.equal(
     (
@@ -747,5 +747,30 @@ test("session revocation after password verification prevents password-change co
   assert.equal(
     (await request("/workspace", "GET", undefined, cookie)).status,
     401,
+  );
+});
+
+test("only the exact Gmail callback GET permits cross-site navigation", async (t) => {
+  const { request, register } = await setup(t);
+  const cookie = await register("oauth-security@example.com");
+  const headers = { "Sec-Fetch-Site": "cross-site" };
+  // Disabled OAuth rejects configuration after passing transport protection.
+  assert.equal(
+    (await request("/gmail/callback", "GET", undefined, cookie, headers))
+      .status,
+    503,
+  );
+  for (const path of [
+    "/gmail/status",
+    "/gmail/callback/",
+    "/gmail/callback/extra",
+  ])
+    assert.equal(
+      (await request(path, "GET", undefined, cookie, headers)).status,
+      403,
+    );
+  assert.equal(
+    (await request("/gmail/callback", "POST", {}, cookie, headers)).status,
+    403,
   );
 });
