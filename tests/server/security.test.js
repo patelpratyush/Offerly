@@ -774,3 +774,41 @@ test("only the exact Gmail callback GET permits cross-site navigation", async (t
     403,
   );
 });
+
+test("Gmail connect upgrades legacy cookie SameSite without extending session expiry", async (t) => {
+  const { store, request, register } = await setup(t, {
+    trustProxy: true,
+    production: true,
+    origin: "https://offerly.example",
+    registrationToken: "test-invitation-token-long-enough-12345",
+  });
+  const cookie = await register();
+  const token = cookie.slice(cookie.indexOf("=") + 1);
+  const expires = Date.now() + 123456;
+  await store.db
+    .prepare("UPDATE sessions SET expires=? WHERE token=?")
+    .run(expires, digest(token));
+  const response = await request(
+    "/gmail/connect",
+    "POST",
+    { retentionAccepted: true },
+    cookie,
+  );
+  assert.equal(response.status, 503); // Configuration absent in fixture; auth still upgrades cookie.
+  const header = response.headers.get("set-cookie");
+  assert.match(header, /SameSite=Lax/);
+  assert.match(header, /HttpOnly/);
+  assert.match(header, /Secure/);
+  assert.equal(
+    Date.parse(header.match(/Expires=([^;]+)/)[1]),
+    Math.floor(expires / 1000) * 1000,
+  );
+  assert.equal(
+    (
+      await store.db
+        .prepare("SELECT expires FROM sessions WHERE token=?")
+        .get(digest(token))
+    ).expires,
+    expires,
+  );
+});

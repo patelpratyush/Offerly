@@ -250,13 +250,21 @@ export function mountAuth(app, store, config, limit) {
         token &&
         (await db
           .prepare(
-            "SELECT u.* FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token=? AND s.expires>? AND s.last_seen>?",
+            "SELECT u.*, s.expires AS session_expires FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token=? AND s.expires>? AND s.last_seen>?",
           )
           .get(digest(token), now, now - 1800000));
       if (!user)
         throw Object.assign(new HttpError(401, "Sign in to continue"), {
           code: "SESSION_REQUIRED",
         });
+      if (req.method === "POST" && req.path === "/gmail/connect") {
+        // Upgrade cookies issued before hosted OAuth without extending the
+        // original absolute session lifetime.
+        res.cookie(cookieName, token, {
+          ...cookieOptions,
+          expires: new Date(Number(user.session_expires)),
+        });
+      }
       req.user = user;
       req.sessionHash = digest(token);
       await db
