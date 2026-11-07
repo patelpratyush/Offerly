@@ -539,6 +539,17 @@ function ReviewCard({
       >
         {evidence?.excerpt || "Evidence unavailable"}
       </blockquote>
+      {(evidence?.parserVersion ||
+        evidence?.model ||
+        evidence?.promptVersion) && (
+        <p className="muted">
+          Extraction provenance: {evidence.parserVersion || "Unknown parser"}
+          {evidence.model && ` · Model: ${evidence.model}`}
+          {evidence.promptVersion && ` · Prompt: ${evidence.promptVersion}`}.
+          The excerpt above is the retained source evidence; verify it before
+          accepting.
+        </p>
+      )}
       <p>
         Evidence time:{" "}
         {review.effectiveAt || evidence?.effectiveAt || "Unknown"}

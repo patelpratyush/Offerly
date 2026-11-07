@@ -56,3 +56,22 @@ require user confirmation of those facts. Extraction recall and real-mail
 application-link precision remain unmeasured; no production quality pass exists.
 
 Final frozen-code `npm run check` passed (ESLint, full test suite, strict TypeScript, Vite build, zero dependency vulnerabilities). Full browser rerun passed 42/42 scenarios. `git diff --check` passed. No production deployment or provider-backed mailbox result is claimed.
+
+## Gated AI follow-up (2026-11-06)
+
+Hosted AI adapter now exists behind disabled enable/quality/evidence/model/prompt
+approval gates and versioned user consent. Exact source-quote and application
+identity guards constrain review proposals. Private per-user/project reservations
+bound estimated daily spend and request count, including retries. Consent is
+rechecked before network and evidence commit; disconnect withdraws it. Provider
+failures are sanitized and retryable. Offline aggregate evaluator added.
+
+Full check passed 226 tests, build/lint and zero vulnerabilities; CI-mode browser
+run passed 42 scenarios. Focused policy tests passed SQLite and isolated
+PostgreSQL. Synthetic checks do not establish real accuracy. No real email was
+sent to AI. Production flags explicitly remain false. See
+`reference/operations/RECRUITING_AI.md` for release requirements.
+
+OAuth compatibility fix upgrades legacy Strict cookie at Connect to Lax without
+extending absolute session expiry. Auth reset now explicitly shows sign-in after
+URL cleanup; browser tests verify expiry/logout/password transitions.

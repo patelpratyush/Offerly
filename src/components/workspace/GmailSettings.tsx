@@ -187,6 +187,13 @@ export function GmailSettings({ request }: { request: Request }) {
               </div>
             </>
           )}
+          {progress?.extractionIncomplete && (
+            <p role="status">
+              Some messages were not evaluated by AI because processing gates or
+              input limits prevented analysis. Deterministic suggestions remain
+              available; this import does not establish complete extraction.
+            </p>
+          )}
           {progress?.coverageIncomplete && (
             <p role="status">
               Import coverage is incomplete because the message limit was

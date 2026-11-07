@@ -1,3 +1,4 @@
+import { initializeAiPolicy } from "./recruiting-ai-policy.js";
 import { initializeGmailSync } from "./gmail-sync.js";
 import { initializeGmail } from "./gmail-account.js";
 import { openDatabase } from "./database.js";
@@ -270,5 +271,6 @@ export async function createStore(path, options) {
   const store = { db, list, get, save, atomic };
   await initializeGmail(store);
   await initializeGmailSync(store);
+  await initializeAiPolicy(store);
   return store;
 }

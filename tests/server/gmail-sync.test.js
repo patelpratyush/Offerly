@@ -330,3 +330,39 @@ test("provider unauthorized marks reconnect required without persisting provider
   assert.ok(!row.state.includes("secret provider response"));
   assert.equal(JSON.parse(row.state).status, "failed");
 });
+
+test("AI extraction failure retries without recording message as handled", async (t) => {
+  const store = await setup(t);
+  const fetchImpl = async (url) => {
+    if (url.endsWith("/profile")) return json({ historyId: "100" });
+    if (url.includes("/messages?")) return json({ messages: [{ id: "abc" }] });
+    return json(message("Non-template recruiting wording"));
+  };
+  await processGmailSync(store, {
+    enabled: true,
+    accessToken: async () => "token",
+    fetchImpl,
+    aiExtract: async () => {
+      const e = new Error("sanitized");
+      e.code = "RECRUITING_AI_FAILED";
+      throw e;
+    },
+  });
+  const state = JSON.parse(
+    (
+      await store.db
+        .prepare("SELECT state FROM gmail_sync WHERE user_id=?")
+        .get("u")
+    ).state,
+  );
+  assert.equal(state.status, "retry");
+  assert.equal(state.aiStatus, "failed");
+  assert.equal(
+    (
+      await store.db
+        .prepare("SELECT * FROM gmail_seen WHERE user_id=?")
+        .all("u")
+    ).length,
+    0,
+  );
+});

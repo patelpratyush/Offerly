@@ -357,7 +357,14 @@ test("expired sessions discard private dialogs and filters before another accoun
   });
   expect(logout.ok()).toBeTruthy();
   await detail.getByRole("button", { name: "Archive", exact: true }).click();
-  await expect(page.getByLabel("Your name")).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Welcome back." }),
+  ).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByText("Private prior-account notes")).toHaveCount(0);
+  await page
+    .getByRole("button", { name: "New here? Create a workspace" })
+    .click();
   await page.getByLabel("Your name").fill("New Account");
   await page
     .getByLabel("Email address")
@@ -445,8 +452,12 @@ test("signing out clears private state in other open tabs", async ({
       .getByRole("main")
       .getByRole("button", { name: "Sign out", exact: true })
       .click();
-    await expect(page.getByLabel("Your name")).toBeVisible();
-    await expect(second.getByLabel("Your name")).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Welcome back." }),
+    ).toBeVisible();
+    await expect(
+      second.getByRole("heading", { name: "Welcome back." }),
+    ).toBeVisible();
     await expect(second.getByRole("dialog")).toHaveCount(0);
   } finally {
     await second.close();

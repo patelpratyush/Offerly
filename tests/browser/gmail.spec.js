@@ -4,6 +4,30 @@ import { navigate } from "./navigation.js";
 test("Gmail settings disclose gates and control bounded imports", async ({
   page,
 }) => {
+  const aiPolicy = {
+    enabled: false,
+    qualityApproved: false,
+    consented: false,
+    available: false,
+    requiredConsentVersion: "2026-11-05-v1",
+    dailyRequestLimit: 10,
+    dailySpendLimitMicroDollars: 100000,
+    requestsUsed: 0,
+    reservedMicroDollars: 0,
+    maxInputCharacters: 4000,
+    maxOutputTokens: 512,
+  };
+  await page.route("**/api/recruiting/ai-policy", async (route) => {
+    if (route.request().method() === "POST") {
+      const body = route.request().postDataJSON();
+      if (body.consent)
+        expect(body.version).toBe(aiPolicy.requiredConsentVersion);
+      aiPolicy.consented = body.consent;
+      aiPolicy.available =
+        aiPolicy.consented && aiPolicy.enabled && aiPolicy.qualityApproved;
+    }
+    await route.fulfill({ json: aiPolicy });
+  });
   let connected = false;
   let configured = false;
   let state = { status: "idle", processed: 0, proposed: 0 };
@@ -51,6 +75,25 @@ test("Gmail settings disclose gates and control bounded imports", async ({
   await expect(panel).toContainText(
     "Production AI and automatic stage updates are disabled.",
   );
+  const ai = page.getByRole("region", { name: "AI recruiting extraction" });
+  await expect(ai).toContainText("capability incomplete");
+  await expect(
+    ai.getByRole("button", { name: "Grant AI data-sharing consent" }),
+  ).toBeDisabled();
+  await expect(ai).toContainText("Reserved budget: $0.00 / $0.10");
+  aiPolicy.enabled = true;
+  aiPolicy.qualityApproved = true;
+  await navigate(page, "Today");
+  await navigate(page, "Settings");
+  await ai.getByRole("checkbox").check();
+  await ai
+    .getByRole("button", { name: "Grant AI data-sharing consent" })
+    .click();
+  await expect(ai).toContainText("Your data-sharing consent: granted");
+  await ai
+    .getByRole("button", { name: "Revoke AI data-sharing consent" })
+    .click();
+  await expect(ai).toContainText("Your data-sharing consent: not granted");
   configured = true;
   connected = true;
   await expect(

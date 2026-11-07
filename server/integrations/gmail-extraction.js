@@ -1,7 +1,7 @@
 import { guardApplicationLink } from "./recruiting-match-guard.js";
 
 // Deterministic proposals only. This is not a validated production AI extractor.
-export function extractRecruitingMessage(message, applications) {
+export function parseGmailMessage(message) {
   const headers = message.payload?.headers || [];
   const header = (name) =>
     headers.find((h) => h.name?.toLowerCase() === name)?.value || "";
@@ -28,6 +28,34 @@ export function extractRecruitingMessage(message, applications) {
     .join("\n")
     .slice(0, 100000);
   const source = `${subject}\n${current}`;
+  const timestamp = Number(message.internalDate);
+  if (!Number.isFinite(timestamp) || timestamp <= 0) return null;
+  const from = header("from");
+  const email = from
+    .match(
+      /(?:<|^|\s)([A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9.-]+\.[A-Z]{2,})(?:>|$)/i,
+    )?.[1]
+    ?.toLowerCase();
+  const contacts =
+    email &&
+    !/(?:no[-_.]?reply|do[-_.]?not[-_.]?reply|mailer-daemon)/i.test(email)
+      ? [
+          {
+            email,
+            name: from.includes("<")
+              ? from.split("<")[0].replace(/^"|"$/g, "").trim().slice(0, 200)
+              : "",
+            verified: false,
+            source: "Gmail From header",
+          },
+        ]
+      : [];
+  return { subject, current, source, timestamp, contacts };
+}
+export function extractRecruitingMessage(message, applications) {
+  const parsed = parseGmailMessage(message);
+  if (!parsed) return null;
+  const { subject, current, source, timestamp, contacts } = parsed;
   const rules = [
     [
       "rejection",
@@ -83,28 +111,6 @@ export function extractRecruitingMessage(message, applications) {
         .applicationId === a.id,
   );
   const application = candidates.length === 1 ? candidates[0] : null;
-  const timestamp = Number(message.internalDate);
-  if (!Number.isFinite(timestamp) || timestamp <= 0) return null;
-  const from = header("from");
-  const email = from
-    .match(
-      /(?:<|^|\s)([A-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Z0-9.-]+\.[A-Z]{2,})(?:>|$)/i,
-    )?.[1]
-    ?.toLowerCase();
-  const contacts =
-    email &&
-    !/(?:no[-_.]?reply|do[-_.]?not[-_.]?reply|mailer-daemon)/i.test(email)
-      ? [
-          {
-            email,
-            name: from.includes("<")
-              ? from.split("<")[0].replace(/^"|"$/g, "").trim().slice(0, 200)
-              : "",
-            verified: false,
-            source: "Gmail From header",
-          },
-        ]
-      : [];
   return {
     sourceId: `gmail:${message.id}`,
     sourceType: "gmail",

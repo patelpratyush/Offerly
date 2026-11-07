@@ -42,6 +42,7 @@ import { SubmittedDocuments } from "./components/workspace/SubmittedDocuments";
 import { OfferFields } from "./components/workspace/OfferFields";
 import { ListingSnapshots } from "./components/workspace/ListingSnapshots";
 import { RecruitingReview } from "./components/workspace/RecruitingReview";
+import { RecruitingAISettings } from "./components/workspace/RecruitingAISettings";
 import { GmailSettings } from "./components/workspace/GmailSettings";
 import { Reminders } from "./components/workspace/Reminders";
 import { Timeline } from "./components/workspace/Timeline";
@@ -75,6 +76,13 @@ const sessionChannel =
     ? null
     : new BroadcastChannel("offerly-session");
 function resetSession(notifyOtherTabs = true) {
+  // A reset remounts App and discards private state. Choose the sign-in view
+  // before remounting; successful authentication intentionally clears its hash.
+  window.history.replaceState(
+    null,
+    "",
+    window.location.pathname + window.location.search + "#signin",
+  );
   sessionGeneration++;
   window.dispatchEvent(new Event("offerly:session-reset"));
   if (notifyOtherTabs) sessionChannel?.postMessage("reset");
@@ -330,7 +338,11 @@ function App() {
     }
     account.current = next.user.email;
     if (["#signin", "#signup"].includes(window.location.hash)) {
-      window.history.replaceState(null, "", window.location.pathname + window.location.search);
+      window.history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search,
+      );
       setEntry("home");
     }
     setW(next);
@@ -3046,6 +3058,7 @@ function SettingsPage({
           <RecoveryCodes run={run} busy={busy} />
         </section>
         <GmailSettings request={api} />
+        <RecruitingAISettings request={api} />
         <section className="panel settings-panel space-top">
           <h2>Your data belongs to you</h2>
           <p>

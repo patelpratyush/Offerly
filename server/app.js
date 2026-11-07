@@ -1,3 +1,4 @@
+import { mountAiPolicy, revokeAiConsent } from "./recruiting-ai-policy.js";
 import { mountRecruitingActions } from "./recruiting-actions.js";
 import { mountGmailSync, purgeGmailEvidence } from "./gmail-sync.js";
 import { mountGmail } from "./gmail-account.js";
@@ -341,11 +342,15 @@ export async function createApp(store, options = {}) {
   await mountTracker(app, store, validate);
   mountGmail(app, store, {
     ...options.gmail,
-    cleanup: (s, u) => purgeGmailEvidence(s, u, { all: true }),
+    cleanup: async (s, u) => {
+      await revokeAiConsent(s, u);
+      return purgeGmailEvidence(s, u, { all: true });
+    },
   });
   mountGmailSync(app, store, options.gmail || {});
   mountRecruiting(app, store, validate);
   mountRecruitingActions(app, store, validate);
+  mountAiPolicy(app, store, options.recruitingAi || {});
   mountReminders(app, store);
   async function matchingSubmission(userId, data, excludeId) {
     if (data.retracted) return undefined;

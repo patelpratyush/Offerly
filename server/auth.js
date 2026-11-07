@@ -1,3 +1,4 @@
+import { revokeAiConsent } from "./recruiting-ai-policy.js";
 import { disconnectGmail } from "./gmail-account.js";
 import { purgeGmailEvidence } from "./gmail-sync.js";
 import { randomBytes, randomUUID, scrypt, timingSafeEqual } from "node:crypto";
@@ -382,7 +383,10 @@ export function mountAuth(app, store, config, limit) {
         throw new HttpError(400, "Enter your email to confirm deletion");
       await reauthenticate(req, req.body.password);
       await disconnectGmail(store, req.user.id, {
-        cleanup: (s, u) => purgeGmailEvidence(s, u, { all: true }),
+        cleanup: async (s, u) => {
+          await revokeAiConsent(s, u);
+          return purgeGmailEvidence(s, u, { all: true });
+        },
       });
       await atomic(async () => {
         const session = await db

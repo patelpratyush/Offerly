@@ -1,3 +1,5 @@
+import { validateAiReservation } from "./recruiting-ai-policy.js";
+import { extractRecruitingWithAi } from "./integrations/recruiting-ai.js";
 import { z } from "zod";
 import { HttpError } from "./security.js";
 import {
@@ -53,6 +55,8 @@ function publicState(state) {
     truncated,
     resync,
     coverageIncomplete,
+    aiStatus,
+    extractionIncomplete,
   } = state;
   return {
     status,
@@ -66,6 +70,8 @@ function publicState(state) {
     truncated,
     resync,
     coverageIncomplete,
+    aiStatus,
+    extractionIncomplete,
   };
 }
 async function update(store, r, state) {
@@ -177,6 +183,7 @@ export async function processGmailSync(
     fetchImpl = fetch,
     accessToken = gmailAccessToken,
     enabled = process.env.GMAIL_ENABLED === "true",
+    aiExtract = extractRecruitingWithAi,
   } = {},
 ) {
   if (!enabled) return { disabled: true, processed: 0 };
@@ -302,9 +309,28 @@ export async function processGmailSync(
           }
           throw error;
         }
+        let evidence = extractRecruitingMessage(message, applications);
+        let aiResult;
+        if (!evidence) {
+          aiResult = await aiExtract(
+            store,
+            initial.user_id,
+            message,
+            applications,
+            { deadline },
+          );
+          evidence = aiResult.evidence;
+          claim.aiStatus = aiResult.status;
+          if (["policy_denied", "input_too_large"].includes(aiResult.status))
+            claim.extractionIncomplete = true;
+        }
         proposals.push({
           id: entry.id,
-          evidence: extractRecruitingMessage(message, applications),
+          evidence,
+          aiReservation: aiResult?.reservation,
+          deferred: ["policy_denied", "input_too_large"].includes(
+            aiResult?.status,
+          ),
         });
       }
       await store.atomic(async () => {
@@ -326,6 +352,12 @@ export async function processGmailSync(
               .get(initial.user_id, item.id)
           )
             continue;
+          if (item.aiReservation)
+            await validateAiReservation(
+              store,
+              initial.user_id,
+              item.aiReservation,
+            );
           if (item.evidence) {
             const evidence = await store.save(
               initial.user_id,
@@ -356,11 +388,14 @@ export async function processGmailSync(
             );
             claim.proposed++;
           }
-          await store.db
-            .prepare(
-              "INSERT INTO gmail_seen(user_id,source_id) VALUES(?,?) ON CONFLICT(user_id,source_id) DO NOTHING",
-            )
-            .run(initial.user_id, item.id);
+          // Deferred extraction is not a processed-message receipt. A later
+          // explicitly requested import may reconsider it after gate approval.
+          if (!item.deferred)
+            await store.db
+              .prepare(
+                "INSERT INTO gmail_seen(user_id,source_id) VALUES(?,?) ON CONFLICT(user_id,source_id) DO NOTHING",
+              )
+              .run(initial.user_id, item.id);
         }
         claim.processed += count;
         if (
@@ -412,6 +447,8 @@ export async function processGmailSync(
         processed += count;
       });
     } catch (error) {
+      if (error.code === "RECRUITING_AI_FAILED") claim.aiStatus = "failed";
+      if (error.code === "AI_POLICY_DENIED") claim.aiStatus = "policy_denied";
       if (error.status === 401)
         await markGmailRevoked(store, initial.user_id, account.generation);
       const attempts = (claim.attempts || 0) + 1;
