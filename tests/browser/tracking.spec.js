@@ -238,6 +238,7 @@ test("saved views survive reload and bulk edits work in table and board", async 
   await navigate(page, /Applications/);
   await page.getByText("More filters", { exact: false }).click();
   await page.getByLabel("Work arrangement filter").selectOption("Remote");
+  await page.getByLabel("Stage filter", { exact: true }).selectOption("Saved");
   await page.getByText("Save or manage views", { exact: true }).click();
   await page.getByLabel("View name").fill("Remote roles");
   await page.getByRole("button", { name: "Save new view" }).click();
@@ -250,6 +251,20 @@ test("saved views survive reload and bulk edits work in table and board", async 
     .getByLabel("Saved view", { exact: true })
     .selectOption({ label: "Remote roles" });
   await expect(page.getByRole("table").getByRole("row")).toHaveCount(2);
+  const savedViewId = await page
+    .getByLabel("Saved view", { exact: true })
+    .inputValue();
+  await page.reload();
+  await expect(page.getByLabel("Saved view", { exact: true })).toHaveValue(
+    savedViewId,
+  );
+  await expect(page.getByLabel("Stage filter", { exact: true })).toHaveValue(
+    "Saved",
+  );
+  await page.getByText("More filters", { exact: false }).click();
+  await expect(page.getByLabel("Work arrangement filter")).toHaveValue(
+    "Remote",
+  );
   await page.getByLabel("Select Acme · Backend Engineer").check();
   await page.getByLabel("Bulk value").selectOption("High");
   await page.getByRole("button", { name: "Apply to 1 selected" }).click();
@@ -374,7 +389,7 @@ test("expired sessions discard private dialogs and filters before another accoun
     .fill("new-workspace-password");
   await page.getByRole("button", { name: "Create workspace" }).click();
   await expect(
-    page.getByRole("heading", { name: "Make your next move, New." }),
+    page.getByRole("heading", { name: "Application unavailable" }),
   ).toBeVisible();
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await expect(page.getByText("Private prior-account notes")).toHaveCount(0);

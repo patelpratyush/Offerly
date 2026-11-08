@@ -32,12 +32,15 @@ test("submitted documents retain exact versions and support correction, retracti
   });
   await page.goto("/#signup");
   async function openSubmissions() {
-    await page
-      .getByRole("button", {
-        name: /Saved.*Evidence Engineer.*Exact Version Co/,
-      })
-      .click();
     const detail = page.getByRole("dialog", { name: "Application details" });
+    if (/^\/applications\/[^/]+$/.test(new URL(page.url()).pathname)) {
+      await detail.waitFor();
+    } else if (!(await detail.isVisible()))
+      await page
+        .getByRole("button", {
+          name: /Saved.*Evidence Engineer.*Exact Version Co/,
+        })
+        .click();
     await detail
       .getByRole("button", { name: "People & files", exact: true })
       .click();

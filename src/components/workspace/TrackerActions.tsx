@@ -1,8 +1,10 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 type Item = { id: string; version: number; [key: string]: any };
 export function TrackerActions({
   views,
+  viewId,
+  setViewId,
   filters,
   applyView,
   api,
@@ -15,8 +17,10 @@ export function TrackerActions({
   notify,
 }: {
   views: Item[];
+  viewId: string;
+  setViewId: (value: string) => void;
   filters: Record<string, any>;
-  applyView: (v: any) => void;
+  applyView: (v: any, viewId?: string) => void;
   api: (path: string, method?: string, body?: any) => Promise<any>;
   run: (fn: () => Promise<any>) => Promise<void>;
   busy: boolean;
@@ -26,8 +30,12 @@ export function TrackerActions({
   stages: string[];
   notify: (message: string) => void;
 }) {
-  const [name, setName] = useState("");
-  const [viewId, setViewId] = useState("");
+  const [name, setName] = useState(
+    () => views.find((v) => v.id === viewId)?.name || "",
+  );
+  useEffect(() => {
+    setName(views.find((v) => v.id === viewId)?.name || "");
+  }, [viewId]);
   const [field, setField] = useState("priority");
   const [value, setValue] = useState("High");
   const [operation, setOperation] = useState<{
@@ -57,7 +65,7 @@ export function TrackerActions({
               setViewId(e.target.value);
               const view = views.find((v) => v.id === e.target.value);
               if (view) {
-                applyView(view.filters);
+                applyView(view.filters, view.id);
                 setName(view.name);
               }
             }}

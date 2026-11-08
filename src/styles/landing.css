@@ -2977,3 +2977,267 @@
     font-size: 8px;
   }
 }
+
+/* Editorial public face: same paper, ink and restrained geometry as workspace. */
+.landing {
+  --lp-paper: #f5f2eb;
+  --lp-ink: #233d2e;
+  --lp-accent: #d9e1ca;
+  --lp-soft: #e9ebde;
+  background: var(--lp-paper);
+}
+.lp-header {
+  border-bottom-color: #d6d7c7;
+  height: 90px;
+}
+.lp-brand {
+  font-family: Georgia, serif;
+  font-size: 36px;
+  font-weight: 400;
+  letter-spacing: -1.8px;
+}
+.lp-brand > span:first-child {
+  border-radius: 3px;
+  background: transparent;
+  color: #34523b;
+  width: 32px;
+}
+.lp-brand .lp-brand-period {
+  color: #a77547;
+}
+.lp-button,
+.lp-button-small {
+  border-radius: 4px;
+  background: #234c3e;
+  font-weight: 600;
+  padding: 15px 21px;
+}
+.lp-button-small {
+  padding: 11px 16px;
+}
+.lp-button > svg {
+  background: transparent;
+  padding: 0;
+  width: 18px;
+  height: 18px;
+  border-radius: 0;
+}
+.lp-hero {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 48px;
+  padding-block: 75px 70px;
+}
+.lp-hero-copy > .lp-eyebrow {
+  border: 0;
+  border-radius: 0;
+  padding: 0;
+  background: transparent;
+  color: #6b7851;
+  font-size: 10px;
+  letter-spacing: 1.7px;
+}
+.landing #landing-title {
+  font-family: Georgia, "Times New Roman", serif;
+  font-weight: 400;
+  font-size: clamp(45px, 4.7vw, 70px);
+  line-height: 1.08;
+  letter-spacing: -2.6px;
+  margin-block: 23px 27px;
+}
+.landing #landing-title > .lp-title-script {
+  font: inherit;
+  color: #6b7d4f;
+  letter-spacing: inherit;
+  padding-bottom: 0;
+}
+.lp-title-script > svg {
+  display: none;
+}
+.lp-hero-copy > p {
+  color: #5c6953;
+  font-size: 15px;
+  line-height: 1.8;
+  max-width: 440px;
+}
+.lp-hero-note {
+  color: #68765b;
+  font-size: 10px;
+  flex-wrap: wrap;
+}
+.lp-motion-control {
+  font-size: 10px;
+  border-radius: 3px;
+  background: #e8eddd;
+}
+.lp-hero-visual {
+  min-height: 440px;
+  padding: 32px 0 35px;
+}
+.lp-studio-backdrop {
+  inset: 0;
+  border-radius: 4px;
+  background: #e2e7d5;
+  border: 1px solid #cbd4bc;
+}
+.lp-studio-grid {
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 35px,
+    #bcc8a940 36px
+  );
+}
+.lp-hero-bloom,
+.lp-studio-orbit,
+.lp-growth-stamp,
+.lp-handwritten,
+.lp-floating-label,
+.lp-floating-note {
+  display: none;
+}
+.lp-studio-caption {
+  color: #70805b;
+  left: 23px;
+  bottom: 13px;
+  font-size: 9px;
+}
+.lp-preview {
+  transform: none;
+  border-radius: 5px;
+  border: 1px solid #bac8ad;
+  box-shadow: 0 16px 36px #34462c18;
+  width: calc(100% - 44px);
+  margin: 0 auto;
+}
+.lp-preview-top {
+  background: #f0f1e5;
+  font-size: 8px;
+  letter-spacing: 0.7px;
+  border-color: #d4dbc5;
+}
+.lp-demo-sidebar {
+  background: #294532;
+}
+.lp-demo-content {
+  background: #fffef8;
+}
+.lp-demo-title h3 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+}
+.lp-job-card {
+  border-radius: 4px;
+  box-shadow: none;
+}
+.lp-ribbon {
+  background: #e6e9da;
+  border-block: 1px solid #d2dac1;
+  padding-block: 17px;
+}
+.lp-ribbon-track {
+  animation: none;
+}
+.lp-ribbon-group {
+  font-size: 11px;
+  letter-spacing: 1.1px;
+}
+.lp-ribbon-group > span > span {
+  color: #9b8556;
+  font-size: 16px;
+}
+.lp-manifesto {
+  padding-block: 65px;
+}
+.lp-manifesto h2,
+.lp-section-heading h2,
+.lp-headspace h2,
+.lp-process h2,
+.lp-faq h2,
+.lp-final h2 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  letter-spacing: -1.5px;
+}
+.lp-manifesto-arrow {
+  display: none;
+}
+.lp-feature-card,
+.lp-clarity-card,
+.lp-files-card,
+.lp-connections-card {
+  border-radius: 5px;
+  box-shadow: none;
+}
+.lp-final {
+  border-radius: 5px;
+  background: #243f2f;
+  padding: 48px;
+}
+.lp-final h2 {
+  font-size: clamp(36px, 4.2vw, 60px);
+}
+.lp-final .lp-button-light {
+  border-radius: 4px;
+  background: #e7e9d5;
+}
+.lp-footer {
+  border-color: #d1d6c1;
+}
+@media (max-width: 1000px) {
+  .lp-hero {
+    gap: 28px;
+  }
+  .landing #landing-title {
+    font-size: clamp(40px, 5vw, 56px);
+  }
+  .lp-hero-visual {
+    min-height: 420px;
+  }
+}
+@media (max-width: 760px) {
+  .lp-header {
+    height: 78px;
+  }
+  .lp-brand {
+    font-size: 31px;
+  }
+  .lp-hero {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block: 43px 40px;
+    gap: 32px;
+  }
+  .landing #landing-title {
+    font-size: clamp(40px, 8.8vw, 64px);
+    letter-spacing: -2px;
+  }
+  .lp-hero-copy > p {
+    font-size: 14px;
+  }
+  .lp-hero-visual {
+    min-height: 0;
+    padding: 24px 0 30px;
+  }
+  .lp-preview {
+    width: calc(100% - 32px);
+  }
+  .lp-studio-caption {
+    bottom: 10px;
+    font-size: 8px;
+  }
+  .lp-final {
+    padding: 30px 24px;
+  }
+  .lp-manifesto {
+    padding-block: 44px;
+  }
+  .lp-hero-copy > .lp-eyebrow {
+    font-size: 9px;
+  }
+}
+
+/* Small utility copy keeps AA contrast on warm paper. */
+.landing .lp-hero-copy > .lp-eyebrow,
+.landing .lp-hero-note,
+.landing .lp-hero-note > span {
+  color: #465b39;
+}

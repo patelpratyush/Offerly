@@ -569,17 +569,26 @@ function ReviewCard({
           })
           .join("; ") || "No match — select the application explicitly."}
       </p>
-      <p>
-        User-proposed update:{" "}
-        {[
-          review.proposedChanges?.stage &&
-            `Stage → ${review.proposedChanges.stage}`,
-          review.proposedChanges?.owner &&
-            `Response owner → ${review.proposedChanges.owner}`,
-        ]
-          .filter(Boolean)
-          .join("; ")}
-      </p>
+      <dl
+        className="review-comparison"
+        aria-label="Current and proposed values"
+      >
+        <div>
+          <dt>Current record</dt>
+          <dd>Stage: {application?.stage || "Choose an application"}</dd>
+          <dd>Next response: {application?.owner || "Not selected"}</dd>
+        </div>
+        <div>
+          <dt>Proposed update · requires your decision</dt>
+          <dd>
+            Stage: {review.proposedChanges?.stage || "No change proposed"}
+          </dd>
+          <dd>
+            Next response:{" "}
+            {review.proposedChanges?.owner || "No change proposed"}
+          </dd>
+        </div>
+      </dl>
       {pending && (
         <div className="form-fields">
           <label>

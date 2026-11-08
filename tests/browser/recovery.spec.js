@@ -48,6 +48,6 @@ test("saved recovery code restores access", async ({ page }) => {
   await page.getByRole("button", { name: "Sign in", exact: true }).click();
   await openMenu(page);
   await expect(
-    page.getByRole("button", { name: "Settings", exact: true }),
+    page.getByRole("link", { name: "Settings", exact: true }),
   ).toBeVisible();
 });

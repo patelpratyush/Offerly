@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { useEffect, useRef, useState } from "react";
 import {
   ArrowDown,
@@ -67,7 +68,7 @@ function WorkspacePreview() {
           <span className="lp-window-dot" />
           <span className="lp-window-dot" />
         </span>
-        <span>YOUR SPACE TO MOVE FORWARD</span>
+        <span>SAMPLE WORKSPACE · ILLUSTRATIVE DATA</span>
         <LockKeyhole size={12} />
       </div>
       <div className="lp-demo">
@@ -192,23 +193,23 @@ export function Landing() {
         Skip to content
       </a>
       <header className="lp-header">
-        <a className="lp-brand" href="/" aria-label="Offerly home">
+        <Link className="lp-brand" to="/" aria-label="Offerly home">
           <span>
             <Leaf size={21} strokeWidth={1.8} />
           </span>
           offerly<span className="lp-brand-period">.</span>
-        </a>
+        </Link>
         <nav className="lp-nav" aria-label="Main navigation">
           <a href="#a-little-clarity">The workspace</a>
           <a href="#your-pace">How it works</a>
         </nav>
         <div className="lp-header-actions">
-          <a className="lp-signin" href="#signin">
+          <Link className="lp-signin" to="/signin">
             Sign in <ArrowUpRight size={14} />
-          </a>
-          <a className="lp-button lp-button-small" href="#signup">
+          </Link>
+          <Link className="lp-button lp-button-small" to="/signup">
             Get started <ArrowRight size={15} />
-          </a>
+          </Link>
         </div>
       </header>
 
@@ -216,17 +217,17 @@ export function Landing() {
         <section className="lp-hero" aria-labelledby="landing-title">
           <div className="lp-hero-copy">
             <span className="lp-eyebrow">
-              <span className="lp-status-dot" /> LESS CHAOS. MORE POSSIBILITY.
+              <span className="lp-status-dot" /> YOUR JOB SEARCH, ON RECORD.
             </span>
             <h1 id="landing-title">
               <span className="lp-title-line">
-                <span>Big possibilities.</span>
+                <span>Your next move.</span>
               </span>
               <span className="lp-title-line">
-                <span>A little more</span>
+                <span>All the details.</span>
               </span>
               <span className="lp-title-line lp-title-script">
-                <span>headspace.</span>
+                <span>One workspace.</span>
                 <svg viewBox="0 0 470 24" fill="none" aria-hidden="true">
                   <path
                     d="M5 17C120 2 255 5 463 12M61 23C175 11 307 13 410 18"
@@ -238,14 +239,14 @@ export function Landing() {
               </span>
             </h1>
             <p>
-              For the open tabs, the follow-ups, and the what-ifs.
-              <br className="lp-desktop-break" /> One thoughtfully organized
-              space for your next chapter.
+              Applications, conversations, documents and next steps.
+              <br className="lp-desktop-break" /> A personal workspace that
+              keeps your job search moving, with you in control.
             </p>
             <div className="lp-hero-actions">
-              <a className="lp-button" href="#signup">
-                Make room for what’s next <ArrowUpRight size={19} />
-              </a>
+              <Link className="lp-button" to="/signup">
+                Start your workspace <ArrowUpRight size={19} />
+              </Link>
               <a className="lp-text-link" href="#workspace-preview">
                 Take a look <ArrowDown size={15} />
               </a>
@@ -281,7 +282,7 @@ export function Landing() {
               <span>good things ahead.</span>
             </div>
             <div className="lp-floating-label">
-              <Sparkles size={15} /> A fresh start looks good on you.
+              <Sparkles size={15} /> Your applications. Your decisions.
             </div>
             <WorkspacePreview />
             <div className="lp-floating-note">
@@ -392,9 +393,9 @@ export function Landing() {
                 stand. From the first “what if” to the final decision, keep the
                 full story in one place.
               </p>
-              <a className="lp-text-link" href="#signup">
+              <Link className="lp-text-link" to="/signup">
                 Meet your workspace <ArrowUpRight size={16} />
-              </a>
+              </Link>
             </div>
             <div
               className="lp-pipeline"
@@ -586,9 +587,9 @@ export function Landing() {
               Bring your search as it is. A few open tabs, an existing
               spreadsheet, or just a possibility.
             </p>
-            <a className="lp-text-link" href="#signup">
+            <Link className="lp-text-link" to="/signup">
               Find your starting point <ArrowUpRight size={17} />
-            </a>
+            </Link>
           </div>
           <ol className="lp-steps">
             <li>
@@ -652,8 +653,9 @@ export function Landing() {
               </summary>
               <p>
                 No. Your workspace works with information you add yourself or
-                import from CSV. Automatic inbox connections are not currently
-                available.
+                import from CSV. Optional read-only Gmail is available only when
+                configured for your account. Imports create proposals for your
+                review; automatic stage updates remain disabled.
               </p>
             </details>
             <details>
@@ -690,9 +692,9 @@ export function Landing() {
               <br />
               for <span>what’s next.</span>
             </h2>
-            <a className="lp-button lp-button-light" href="#signup">
+            <Link className="lp-button lp-button-light" to="/signup">
               Start your next chapter <ArrowUpRight size={19} />
-            </a>
+            </Link>
             <p>Have an invitation? Your workspace is waiting.</p>
           </div>
           <div className="lp-final-art" aria-hidden="true">
@@ -703,16 +705,16 @@ export function Landing() {
         </section>
       </main>
       <footer className="lp-footer">
-        <a className="lp-brand" href="/" aria-label="Offerly home">
+        <Link className="lp-brand" to="/" aria-label="Offerly home">
           <span>
             <Leaf size={18} />
           </span>
           offerly<span className="lp-brand-period">.</span>
-        </a>
+        </Link>
         <span>A little structure. A lot more possibility.</span>
-        <a href="#signin">
+        <Link to="/signin">
           Back to your workspace <ArrowDownRight size={15} />
-        </a>
+        </Link>
       </footer>
     </div>
   );

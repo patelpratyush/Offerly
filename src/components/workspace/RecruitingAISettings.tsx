@@ -80,18 +80,19 @@ export function RecruitingAISettings({ request }: { request: Request }) {
               ? "Available with your consent and within configured limits."
               : "Unavailable: AI extraction remains gated."}
           </p>
-          <ul>
+          <ul className="ai-readiness">
             <li>
-              Server AI configuration: {policy.enabled ? "enabled" : "disabled"}
+              <strong>Configuration</strong>{" "}
+              {policy.enabled ? "enabled" : "disabled"}
             </li>
             <li>
-              Required quality evidence:{" "}
+              <strong>Quality approval</strong>{" "}
               {policy.qualityApproved
                 ? "server approval recorded; not independent proof"
                 : "not approved; capability incomplete"}
             </li>
             <li>
-              Your data-sharing consent:{" "}
+              <strong>Your consent</strong>{" "}
               {policy.consented ? "granted" : "not granted"}
             </li>
           </ul>

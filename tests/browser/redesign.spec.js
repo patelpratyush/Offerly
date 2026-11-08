@@ -142,7 +142,7 @@ test("dialog keyboard containment, Escape, focus restoration and actionable Toda
   await expect(
     page
       .getByRole("navigation")
-      .getByRole("button", { name: "Today", exact: true }),
+      .getByRole("link", { name: "Today", exact: true }),
   ).toHaveAttribute("aria-current", "page");
   await navigate(page, "Connections");
   await expect(page.locator(".mobile-menu")).toHaveAttribute(

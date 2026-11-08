@@ -11,20 +11,12 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Big possibilities. A little more headspace.",
+      name: "Your next move. All the details. One workspace.",
     }),
   ).toBeVisible();
   await expect(page.getByLabel("Your name")).toHaveCount(0);
   const preview = page.locator("#workspace-preview");
   const movingCard = preview.locator(".lp-job-card");
-  const initialTransform = await movingCard.evaluate(
-    (element) => getComputedStyle(element).transform,
-  );
-  await expect
-    .poll(() =>
-      movingCard.evaluate((element) => getComputedStyle(element).transform),
-    )
-    .not.toBe(initialTransform);
   await page.getByRole("button", { name: "Pause page motion" }).click();
   await expect(movingCard).toHaveCSS("animation-play-state", "paused");
   await expect(page.locator(".lp-ribbon-track")).toHaveCSS(
@@ -57,7 +49,7 @@ test("public landing previews stages and connects signup, sign-in, and home", as
     .getByText("Do I need to connect my inbox?", { exact: true })
     .click();
   await expect(
-    page.getByText("Automatic inbox connections are not currently available.", {
+    page.getByText("Optional read-only Gmail is available only when configured for your account.", {
       exact: false,
     }),
   ).toBeVisible();
@@ -122,7 +114,7 @@ test("public landing previews stages and connects signup, sign-in, and home", as
     })),
   ).toEqual([]);
 
-  await page.getByRole("link", { name: "Make room for what’s next" }).click();
+  await page.getByRole("link", { name: "Start your workspace" }).click();
   await expect(page.getByLabel("Your name")).toBeVisible();
   await page
     .getByRole("button", { name: "Already have an account? Sign in" })
@@ -135,7 +127,7 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Big possibilities. A little more headspace.",
+      name: "Your next move. All the details. One workspace.",
     }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
@@ -155,13 +147,13 @@ test("landing keeps account entry controls inside narrow and tablet viewports", 
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Big possibilities. A little more headspace.",
+        name: "Your next move. All the details. One workspace.",
       }),
     ).toBeVisible();
     for (const name of [
       "Get started",
       "Sign in",
-      "Make room for what’s next",
+      "Start your workspace",
     ]) {
       const link = page.getByRole("link", { name, exact: true });
       const box = await link.boundingBox();

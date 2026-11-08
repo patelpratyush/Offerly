@@ -169,7 +169,7 @@ test("rich contacts retain sources, explicit confirmations and multiple applicat
   await page.reload();
   await navigate(page, "Connections");
   await page
-    .getByRole("button", { name: /Alex Rivera.*alex@agency.example/ })
+    .getByRole("button", { name: "Edit connection Alex Rivera" })
     .click();
   await expect(
     editor.getByLabel("Hiring company", { exact: true }),
@@ -225,9 +225,9 @@ test("rich contacts retain sources, explicit confirmations and multiple applicat
     current.contacts.every((contact) => contact.name === "Alex Rivera"),
   ).toBe(true);
   await page.getByLabel("Search connections").fill("personal.example");
-  await expect(page.locator(".person-card")).toHaveCount(1);
-  await expect(page.locator(".person-card")).toContainText(
-    "2 linked applications",
+  await expect(page.locator(".contact-directory-row")).toHaveCount(1);
+  await expect(page.locator(".contact-directory-row")).toContainText(
+    "2 LINKED APPLICATIONS",
   );
   expect(
     await page.evaluate(

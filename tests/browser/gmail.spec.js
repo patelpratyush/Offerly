@@ -89,11 +89,11 @@ test("Gmail settings disclose gates and control bounded imports", async ({
   await ai
     .getByRole("button", { name: "Grant AI data-sharing consent" })
     .click();
-  await expect(ai).toContainText("Your data-sharing consent: granted");
+  await expect(ai.getByRole("listitem").filter({ hasText: "Your consent" })).toContainText("granted");
   await ai
     .getByRole("button", { name: "Revoke AI data-sharing consent" })
     .click();
-  await expect(ai).toContainText("Your data-sharing consent: not granted");
+  await expect(ai.getByRole("listitem").filter({ hasText: "Your consent" })).toContainText("not granted");
   configured = true;
   connected = true;
   await expect(

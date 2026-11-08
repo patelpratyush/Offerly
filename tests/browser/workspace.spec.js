@@ -143,6 +143,6 @@ test("password change signs out all sessions and new password restores access", 
   await expect(
     page
       .getByRole("navigation")
-      .getByRole("button", { name: "Settings", exact: true }),
+      .getByRole("link", { name: "Settings", exact: true }),
   ).toBeVisible();
 });

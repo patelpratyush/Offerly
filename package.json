@@ -8,7 +8,7 @@
     "build": "tsc --noEmit && vite build",
     "start": "NODE_ENV=production node server/index.js",
     "test": "node --test --test-concurrency=1 tests/server/*.test.js tests/phase0/*.test.js",
-    "test:e2e": "playwright test --project=desktop && playwright test --project=mobile",
+    "test:e2e": "playwright test --project=desktop --shard=1/2 && playwright test --project=desktop --shard=2/2 && playwright test --project=mobile --shard=1/2 && playwright test --project=mobile --shard=2/2",
     "format": "prettier --write src server tests",
     "lint": "eslint server api scripts tests *.config.js",
     "test:security": "node --test tests/server/security.test.js",
@@ -50,6 +50,7 @@
     "pg": "8.23.1",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-router": "^8.5.1",
     "yauzl": "^3.4.0",
     "zod": "^4.6.6"
   },

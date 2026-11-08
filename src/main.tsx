@@ -1,6 +1,15 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createRoot } from "react-dom/client";
 import {
+  BrowserRouter,
+  Link,
+  Navigate,
+  useLocation,
+  useNavigate,
+  useSearchParams,
+} from "react-router";
+import { pagePaths, routePage, safeReturnTo } from "./routing";
+import {
   ArrowUpRight,
   Plus,
   Search,
@@ -46,6 +55,10 @@ import { RecruitingAISettings } from "./components/workspace/RecruitingAISetting
 import { GmailSettings } from "./components/workspace/GmailSettings";
 import { Reminders } from "./components/workspace/Reminders";
 import { Timeline } from "./components/workspace/Timeline";
+import { ContactDirectory } from "./components/workspace/ContactDirectory";
+import { DocumentLibrary } from "./components/workspace/DocumentLibrary";
+import { WorkspaceInsights } from "./components/workspace/WorkspaceInsights";
+import { TodayFocus } from "./components/workspace/TodayFocus";
 import { Landing } from "./pages/Landing";
 import { useDialogViewport } from "./useDialogViewport";
 const APPLICATION_PAGE_SIZE = 25;
@@ -76,13 +89,15 @@ const sessionChannel =
     ? null
     : new BroadcastChannel("offerly-session");
 function resetSession(notifyOtherTabs = true) {
-  // A reset remounts App and discards private state. Choose the sign-in view
-  // before remounting; successful authentication intentionally clears its hash.
+  const requested = safeReturnTo(
+    window.location.pathname + window.location.search,
+  );
   window.history.replaceState(
     null,
     "",
-    window.location.pathname + window.location.search + "#signin",
+    "/signin?returnTo=" + encodeURIComponent(requested),
   );
+  window.dispatchEvent(new PopStateEvent("popstate"));
   sessionGeneration++;
   window.dispatchEvent(new Event("offerly:session-reset"));
   if (notifyOtherTabs) sessionChannel?.postMessage("reset");
@@ -187,25 +202,89 @@ function useDialogFocus(active: boolean) {
   }, [active]);
 }
 function App() {
-  const publicView = () =>
-    window.location.hash === "#signup"
+  const location = useLocation();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const page = routePage(location.pathname) || "Not found";
+  const entry =
+    location.pathname === "/signup"
       ? "signup"
-      : window.location.hash === "#signin"
+      : location.pathname === "/signin"
         ? "signin"
         : "home";
-  const [entry, setEntry] = useState(publicView);
+  const setPage = (name: string) => navigate(pagePaths[name] || "/today");
+  const applicationId = /^\/applications\/([^/]+)$/.exec(
+    location.pathname,
+  )?.[1];
+  const useFilter = <T extends string | boolean>(
+    key: string,
+    fallback: T,
+  ): [T, (value: T) => void] => {
+    const raw = searchParams.get(key);
+    const value = (
+      typeof fallback === "boolean" ? raw === "true" : raw || fallback
+    ) as T;
+    return [
+      value,
+      (next: T) =>
+        setSearchParams(
+          (previous) => {
+            const params = new URLSearchParams(previous);
+            if (next === fallback) params.delete(key);
+            else params.set(key, String(next));
+            return params;
+          },
+          { replace: true },
+        ),
+    ];
+  };
+  const [stage, setStage] = useFilter("stage", "All stages" as string);
+  const [priority, setPriority] = useFilter(
+    "priority",
+    "Any priority" as string,
+  );
+  const [owner, setOwner] = useFilter("owner", "Any owner" as string);
+  const [view, setView] = useFilter("view", "table" as string);
+  const board = view === "board";
+  const setBoard = (value: boolean) => setView(value ? "board" : "table");
+  const [archived, setArchived] = useFilter("archived", false as boolean);
+  const [companyFilter, setCompanyFilter] = useFilter("company", "" as string);
+  const [sourceFilter, setSourceFilter] = useFilter("source", "" as string);
+  const [arrangement, setArrangement] = useFilter("arrangement", "" as string);
+  const [dateFrom, setDateFrom] = useFilter("from", "" as string);
+  const [dateTo, setDateTo] = useFilter("to", "" as string);
+  const [includeUnknownDates, setIncludeUnknownDates] = useFilter(
+    "unknownDates",
+    false as boolean,
+  );
+  const [sort, setSort] = useFilter("sort", "recent" as string);
+  const [savedViewId, setSavedViewId] = useFilter("savedView", "" as string);
   useEffect(() => {
-    const change = () => {
-      const next = publicView();
-      setEntry(next);
-      if (next !== "home") window.scrollTo(0, 0);
-    };
-    window.addEventListener("hashchange", change);
-    return () => window.removeEventListener("hashchange", change);
-  }, []);
+    if (["#signin", "#signup"].includes(location.hash))
+      navigate("/" + location.hash.slice(1) + location.search, {
+        replace: true,
+      });
+  }, [location.hash, location.search]);
+  useEffect(() => {
+    document.title =
+      (applicationId
+        ? "Application"
+        : page === "Not found"
+          ? entry === "home" && location.pathname === "/"
+            ? "Your job search, in order"
+            : entry === "signin"
+              ? "Sign in"
+              : entry === "signup"
+                ? "Create account"
+                : "Page not found"
+          : page) + " · Offerly";
+  }, [page, entry, applicationId, location.pathname]);
+  const currentPath = useRef(location.pathname);
+  currentPath.current = location.pathname;
+  const sessionReturnFocus = useRef<HTMLElement | null>(null);
+  const [verifiedPath, setVerifiedPath] = useState<string | null>(null);
   const [w, setW] = useState<Workspace | null>(null),
     [loading, setLoading] = useState(true),
-    [page, setPage] = useState("Today"),
     [navigationOpen, setNavigationOpen] = useState(false),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
@@ -213,22 +292,13 @@ function App() {
     [detail, setDetailState] = useState<Item | null>(null),
     [events, setEvents] = useState<any[]>([]),
     [query, setQuery] = useState(""),
-    [stage, setStage] = useState("All stages"),
-    [priority, setPriority] = useState("Any priority"),
-    [owner, setOwner] = useState("Any owner"),
-    [board, setBoard] = useState(false),
     [applicationPage, setApplicationPage] = useState(0),
     [boardLimits, setBoardLimits] = useState<Record<string, number>>({}),
-    [archived, setArchived] = useState(false),
     [detailTab, setDetailTab] = useState("Overview"),
-    [companyFilter, setCompanyFilter] = useState(""),
-    [sourceFilter, setSourceFilter] = useState(""),
-    [arrangement, setArrangement] = useState(""),
-    [dateFrom, setDateFrom] = useState(""),
-    [dateTo, setDateTo] = useState(""),
-    [includeUnknownDates, setIncludeUnknownDates] = useState(false),
-    [sort, setSort] = useState("recent"),
     [busy, setBusy] = useState(false);
+  useEffect(() => {
+    setQuery("");
+  }, [page]);
   const account = useRef<string | null>(null);
   const workspaceRequest = useRef(0);
   const detailRequest = useRef(0);
@@ -247,6 +317,16 @@ function App() {
     }
   }, [entry, loading, w]);
   const setDetail = (value: Item | null) => {
+    if (!value) {
+      const previous = location.state?.detailReturnTo;
+      navigate(
+        previous ? safeReturnTo(previous) : "/applications" + location.search,
+      );
+    } else if (applicationId !== value.id) {
+      navigate(
+        "/applications/" + encodeURIComponent(value.id) + location.search,
+      );
+    }
     detailRequest.current++;
     detailId.current = value?.id || null;
     setDetailState(value);
@@ -319,7 +399,7 @@ function App() {
   useEffect(() => {
     setNavigationOpen(false);
   }, [page]);
-  useDialogFocus(!!detail && !modal);
+  useDialogFocus(!!detail && !modal && verifiedPath === location.pathname);
   useEffect(() => {
     if (!detail || modal) return;
     const close = (e: KeyboardEvent) => {
@@ -337,15 +417,8 @@ function App() {
       return next;
     }
     account.current = next.user.email;
-    if (["#signin", "#signup"].includes(window.location.hash)) {
-      window.history.replaceState(
-        null,
-        "",
-        window.location.pathname + window.location.search,
-      );
-      setEntry("home");
-    }
     setW(next);
+    setVerifiedPath(currentPath.current);
     return next;
   };
   useEffect(() => {
@@ -357,6 +430,42 @@ function App() {
   }, []);
   const refreshCurrent = useRef(refresh);
   refreshCurrent.current = refresh;
+  // Cached private records stay hidden until the destination's session check passes.
+  useEffect(() => {
+    if (
+      !w ||
+      !routePage(location.pathname) ||
+      verifiedPath === location.pathname
+    )
+      return;
+    setError("");
+    void refreshCurrent.current().catch((e) => setError(e.message));
+  }, [location.pathname, w?.user.email, verifiedPath]);
+  useEffect(() => {
+    if (!w?.user.email) return;
+    const revalidate = () => {
+      if (document.visibilityState === "visible") {
+        sessionReturnFocus.current = document.activeElement as HTMLElement;
+        setVerifiedPath(null);
+      }
+    };
+    document.addEventListener("visibilitychange", revalidate);
+    window.addEventListener("pageshow", revalidate);
+    return () => {
+      document.removeEventListener("visibilitychange", revalidate);
+      window.removeEventListener("pageshow", revalidate);
+    };
+  }, [w?.user.email]);
+  useEffect(() => {
+    if (verifiedPath !== location.pathname || !sessionReturnFocus.current)
+      return;
+    const target = sessionReturnFocus.current;
+    sessionReturnFocus.current = null;
+    requestAnimationFrame(() => {
+      if (target.isConnected && !target.closest("[inert]"))
+        target.focus({ preventScroll: true });
+    });
+  }, [verifiedPath, location.pathname]);
   useEffect(() => {
     if (page !== "Today" || !w?.user.email) return;
     const update = () => {
@@ -383,11 +492,30 @@ function App() {
       setBusy(activeOperations.current > 0);
     }
   };
+  useEffect(() => {
+    if (!w) return;
+    const found = applicationId
+      ? w.applications.find((a) => a.id === applicationId)
+      : null;
+    if (found?.id !== detailId.current) {
+      detailRequest.current++;
+      detailId.current = found?.id || null;
+      setDetailState(found || null);
+      setDetailTab("Overview");
+      setEvents([]);
+      if (found) void loadEvents(found.id).catch((e) => setError(e.message));
+    } else if (found) setDetailState(found);
+    if (found) document.title = `${found.company} · ${found.title} · Offerly`;
+  }, [applicationId, w]);
   const showDetail = async (a: Item) => {
-    setDetail(a);
-    setDetailTab("Overview");
-    setEvents([]);
-    await run(() => loadEvents(a.id));
+    navigate(
+      "/applications/" +
+        encodeURIComponent(a.id) +
+        (page === "Applications" ? location.search : ""),
+      {
+        state: { detailReturnTo: location.pathname + location.search },
+      },
+    );
   };
   const newRecord = (kind: string, applicationId = "") =>
     setModal({
@@ -453,7 +581,42 @@ function App() {
         <Leaf /> Opening your workspace…
       </div>
     );
-  if (!w && entry === "home") return <Landing />;
+  const knownPublic = ["/", "/signin", "/signup"].includes(location.pathname);
+  if (!loading && !w && !knownPublic && page !== "Not found")
+    return (
+      <Navigate
+        replace
+        to={
+          "/signin?returnTo=" +
+          encodeURIComponent(safeReturnTo(location.pathname + location.search))
+        }
+      />
+    );
+  if (
+    (!w && !knownPublic && page === "Not found") ||
+    (w && page === "Not found" && !knownPublic)
+  )
+    return (
+      <div className="loading">
+        <h1>Page not found</h1>
+        <p>This address does not match an Offerly page.</p>
+        <Link to={w ? "/today" : "/"}>
+          Return to {w ? "workspace" : "home"}
+        </Link>
+      </div>
+    );
+  if (w && knownPublic)
+    return (
+      <Navigate
+        replace
+        to={
+          searchParams.get("gmail") === "connected"
+            ? "/settings"
+            : safeReturnTo(searchParams.get("returnTo"))
+        }
+      />
+    );
+  if (!w && location.pathname === "/") return <Landing />;
   if (!w)
     return (
       <Auth
@@ -464,6 +627,9 @@ function App() {
             await api("/auth/" + action, "POST", data);
             sessionChannel?.postMessage("reset");
             await refresh();
+            navigate(safeReturnTo(searchParams.get("returnTo")), {
+              replace: true,
+            });
           })
         }
         busy={busy}
@@ -535,20 +701,27 @@ function App() {
     board,
     sort,
   };
-  const applyView = (v: typeof filters) => {
+  const applyView = (v: typeof filters, viewId = savedViewId) => {
     setQuery(v.query);
-    setStage(v.stage);
-    setPriority(v.priority);
-    setOwner(v.owner);
-    setCompanyFilter(v.companyFilter);
-    setSourceFilter(v.sourceFilter);
-    setArrangement(v.arrangement);
-    setDateFrom(v.dateFrom);
-    setDateTo(v.dateTo);
-    setIncludeUnknownDates(v.includeUnknownDates);
-    setArchived(v.archived);
-    setBoard(v.board);
-    setSort(v.sort);
+    const params = new URLSearchParams();
+    const values: Record<string, string | boolean> = {
+      stage: v.stage,
+      priority: v.priority,
+      owner: v.owner,
+      company: v.companyFilter,
+      source: v.sourceFilter,
+      arrangement: v.arrangement,
+      from: v.dateFrom,
+      to: v.dateTo,
+      unknownDates: v.includeUnknownDates,
+      archived: v.archived,
+      view: v.board ? "board" : "table",
+      sort: v.sort,
+    };
+    for (const [key, value] of Object.entries(values))
+      if (value !== false && value !== "") params.set(key, String(value));
+    if (viewId) params.set("savedView", viewId);
+    setSearchParams(params, { replace: true });
     setSelected({});
   };
   const resetFilters = () =>
@@ -710,1514 +883,1453 @@ function App() {
         </button>
       </div>
     ));
+  const checkingSession = verifiedPath !== location.pathname;
   return (
-    <div
-      className="shell"
-      aria-busy={busy}
-      onClickCapture={(event) => {
-        // Safari does not focus pointer-clicked buttons. Capture a reliable dialog opener.
-        if (event.target instanceof Element)
-          event.target
-            .closest<HTMLElement>("button")
-            ?.focus({ preventScroll: true });
-      }}
-    >
-      <a className="skip-link" href="#workspace-content">
-        Skip to workspace
-      </a>
-      <aside className="sidebar" inert={!!detail || !!modal}>
-        <a
-          className="brand"
-          href="#"
-          onClick={(e) => {
-            e.preventDefault();
-            setPage("Today");
-          }}
-        >
-          <span className="brand-mark">
-            <Leaf size={23} />
-          </span>
-          offerly<span className="brand-dot">.</span>
-        </a>
-        <button
-          className="mobile-menu secondary"
-          aria-expanded={navigationOpen}
-          aria-controls="workspace-navigation"
-          onClick={() => setNavigationOpen(!navigationOpen)}
-        >
-          {navigationOpen ? <X size={18} /> : <Menu size={18} />}{" "}
-          {navigationOpen ? "Close menu" : page}
-        </button>
-        <div className="workspace-label">PERSONAL WORKSPACE</div>
-        <nav
-          id="workspace-navigation"
-          aria-label="Workspace"
-          className={navigationOpen ? "is-open" : ""}
-        >
-          {nav.map(([name, Icon]) => (
-            <button
-              key={name}
-              aria-current={page === name ? "page" : undefined}
-              className={page === name ? "active" : ""}
-              onClick={() => {
-                setPage(name);
-                setNavigationOpen(false);
-                setQuery("");
-                requestAnimationFrame(() =>
-                  document
-                    .querySelector<HTMLElement>("#workspace-content h1")
-                    ?.focus(),
-                );
-              }}
-            >
-              <Icon size={19} />
-              {name}
-              {name === "Applications" && (
-                <span className="nav-count">{active.length}</span>
-              )}
-            </button>
-          ))}
-        </nav>
-        <div className="sidebar-note">
-          <span className="tiny-label">YOUR SEARCH, YOUR RECORD</span>
-          <p>Keep the next step clear.</p>
-          <span>
-            Applications, conversations and the details that connect them.
-          </span>
-        </div>
-        <div className={"account" + (navigationOpen ? " is-open" : "")}>
-          <span className="avatar">{w.user.name.charAt(0).toUpperCase()}</span>
-          <div>
-            <strong>{w.user.name}</strong>
-            <small>Personal workspace</small>
-          </div>
-          <button
-            aria-label="Sign out"
-            onClick={() =>
-              run(async () => {
-                await api("/logout", "POST");
-                resetSession();
-              })
-            }
-          >
-            <LogOut size={17} />
-          </button>
-        </div>
-      </aside>
-      <main id="workspace-content" tabIndex={-1} inert={!!detail || !!modal}>
-        <header className="topbar">
-          <span>
-            Workspace <ChevronRight size={13} /> <b>{page}</b>
-          </span>
-          <span className="private-tag">
-            <span /> Private workspace
-          </span>
-        </header>
-        <div className="content">
-          {error && (
-            <div role="alert" className="alert">
-              {error}
-              <button aria-label="Dismiss error" onClick={() => setError("")}>
-                <X size={16} />
-              </button>
-            </div>
-          )}
-          {notice && (
-            <div role="status" className="notice">
-              {notice}
-              <button
-                aria-label="Dismiss notification"
-                onClick={() => setNotice("")}
-              >
-                <X size={16} />
-              </button>
-            </div>
-          )}
-          <div className="page-heading">
-            <div>
-              <div className="eyebrow" hidden={page !== "Today"}>
-                {page === "Today"
-                  ? new Intl.DateTimeFormat("en-US", {
-                      weekday: "long",
-                      month: "long",
-                      day: "numeric",
-                      timeZone: w.user.timezone,
-                    }).format(new Date())
-                  : "YOUR WORKSPACE"}
-              </div>
-              <h1 tabIndex={-1}>
-                {page === "Today"
-                  ? `Make your next move, ${w.user.name.split(" ")[0]}.`
-                  : page}
-              </h1>
-              <p>
-                {
-                  (
-                    {
-                      Today:
-                        "Tasks, deadlines and interviews that need your attention.",
-                      Applications:
-                        "Track each role, who replies next, and what needs doing.",
-                      Connections:
-                        "Recruiters, referrals and the applications you share.",
-                      Documents:
-                        "Keep original files, versions and submission records distinct.",
-                      Reviews:
-                        "Evidence first. Every update stays in your control.",
-                      Insights:
-                        "A snapshot of where your applications stand today.",
-                      Settings:
-                        "Workspace preferences, account security and your data.",
-                    } as any
-                  )[page]
-                }
-              </p>
-            </div>
-            {page !== "Settings" &&
-              page !== "Insights" &&
-              page !== "Reviews" && (
-                <button
-                  className="primary"
-                  onClick={() =>
-                    newRecord(
-                      page === "Connections"
-                        ? "contact"
-                        : page === "Documents"
-                          ? "document"
-                          : "application",
-                    )
-                  }
-                >
-                  <Plus size={17} />
-                  {page === "Connections"
-                    ? "Add connection"
-                    : page === "Documents"
-                      ? "Upload document"
-                      : "Add application"}
-                </button>
-              )}
-          </div>
-          {page === "Today" && (
+    <>
+      {checkingSession && (
+        <div className="loading" role="status">
+          {error ? (
             <>
-              <section className="stats">
-                {[
-                  [
-                    "Active applications",
-                    active.filter(
-                      (a) => !["Rejected", "Withdrawn"].includes(a.stage),
-                    ).length,
-                    "Excludes rejected and withdrawn",
-                  ],
-                  [
-                    "Interviews",
-                    w.rounds.filter((r) =>
-                      ["Invited", "Scheduled", "Rescheduled"].includes(
-                        r.status,
-                      ),
-                    ).length,
-                    "Invited, scheduled or rescheduled",
-                  ],
-                  [
-                    "Offer stage",
-                    active.filter((a) => a.stage === "Offer").length,
-                    "Outcome recorded separately",
-                  ],
-                  [
-                    "Open tasks",
-                    tasks.length,
-                    `${tasks.filter((t) => t.due && t.due < today).length} overdue`,
-                  ],
-                ].map(([label, value, sub]) => (
-                  <div className="stat" key={label}>
-                    <span>{label}</span>
-                    <strong>{value}</strong>
-                    <small>{sub}</small>
-                  </div>
-                ))}
-              </section>
-              <div className="today-grid">
-                <section className="panel">
-                  <div className="section-head">
-                    <h2>
-                      Your next steps{" "}
-                      <span className="count">{tasks.length}</span>
-                    </h2>
-                    <button
-                      className="text-button"
-                      onClick={() => newRecord("task")}
-                    >
-                      <Plus size={16} /> Add task
-                    </button>
-                  </div>
-                  {tasks.length ? (
-                    tasks.map((t) => (
-                      <div className="task" key={t.id}>
-                        <button
-                          aria-label={"Complete " + t.title}
-                          className="check-button"
-                          disabled={busy}
-                          onClick={() =>
-                            run(() => saveRecord("task", { ...t, done: true }))
-                          }
-                        >
-                          <Check size={14} />
-                        </button>
-                        <div>
-                          <button
-                            className="task-title"
-                            onClick={() => setModal({ kind: "task", data: t })}
-                          >
-                            {t.title}
-                            <span className="sr-only"> · Edit task</span>
-                          </button>
-                          <small>{appName(t.applicationId)}</small>
-                        </div>
-                        <span
-                          className={
-                            t.due && t.due < today ? "overdue" : "muted"
-                          }
-                        >
-                          {t.due
-                            ? t.due < today
-                              ? "Overdue · " + t.due
-                              : t.due
-                            : "No deadline"}
-                        </span>
-                      </div>
-                    ))
-                  ) : (
-                    <Empty
-                      title="No open tasks."
-                      text="Add a follow-up, a deadline, or one small next step."
-                      action="Add your first task"
-                      onClick={() => newRecord("task")}
-                    />
-                  )}
-                </section>
-                <section className="focus-panel deadlines-panel">
-                  <div className="section-head">
-                    <span className="tiny-label">UP NEXT</span>
-                    <Clock size={18} />
-                  </div>
-                  <h2>
-                    Deadlines to watch
-                    <span className="count">{assessmentDeadlines.length}</span>
-                  </h2>
-                  {assessmentDeadlines.length ? (
-                    assessmentDeadlines.slice(0, 3).map((a) => (
-                      <button
-                        className="deadline-item"
-                        key={a.id}
-                        onClick={() =>
-                          setModal({ kind: "assessment", data: a })
-                        }
-                      >
-                        <span
-                          className={
-                            "deadline-date " +
-                            (a.due && a.due < today ? "late" : "")
-                          }
-                        >
-                          <strong>{a.due ? a.due.slice(8) : "—"}</strong>
-                          <small>
-                            {a.due
-                              ? new Date(a.due + "T12:00:00Z").toLocaleString(
-                                  "en-US",
-                                  { month: "short", timeZone: "UTC" },
-                                )
-                              : "No date"}
-                          </small>
-                        </span>
-                        <span>
-                          <strong>{a.title}</strong>
-                          <small>{appName(a.applicationId)}</small>
-                        </span>
-                        <ArrowUpRight size={16} />
-                      </button>
-                    ))
-                  ) : (
-                    <div className="deadline-empty">
-                      <Check size={26} />
-                      <strong>No assessment deadlines.</strong>
-                      <p>
-                        Add an assessment from any application. Its deadline
-                        appears here.
-                      </p>
-                    </div>
-                  )}
-                  <button
-                    className="light-button"
-                    onClick={() => setPage("Applications")}
-                  >
-                    Open your applications <ArrowRight size={16} />
-                  </button>
-                </section>
-              </div>
-              <section className="panel space-top interviews-panel">
-                <div className="section-head">
-                  <h2>Upcoming conversations</h2>
-                  <Clock size={18} />
-                </div>
-                {w.rounds.filter(
-                  (r) =>
-                    ["Scheduled", "Rescheduled"].includes(r.status) &&
-                    r.date >= today,
-                ).length ? (
-                  w.rounds
-                    .filter(
-                      (r) =>
-                        ["Scheduled", "Rescheduled"].includes(r.status) &&
-                        r.date >= today,
-                    )
-                    .sort((a, b) => a.date.localeCompare(b.date))
-                    .map((r) => (
-                      <div className="task" key={r.id}>
-                        <span className="company-icon">
-                          <Users size={18} />
-                        </span>
-                        <div>
-                          <button
-                            className="task-title"
-                            onClick={() => setModal({ kind: "round", data: r })}
-                          >
-                            {r.title}
-                            <span className="sr-only"> · Edit interview</span>
-                          </button>
-                          <small>{appName(r.applicationId)}</small>
-                        </div>
-                        <span>
-                          {r.date} {r.time} · {r.timezone}
-                        </span>
-                      </div>
-                    ))
-                ) : (
-                  <p className="muted panel-copy">
-                    No upcoming interviews scheduled. Add rounds from an
-                    application.
-                  </p>
-                )}
-              </section>
-              <section className="panel review-shortcut">
-                <div>
-                  <h2>Updates to review</h2>
-                  <p>
-                    {w.reviews.filter((r) => r.status === "pending").length}{" "}
-                    pending · Evidence never changes applications without your
-                    decision.
-                  </p>
-                </div>
-                <button
-                  className="secondary"
-                  onClick={() => setPage("Reviews")}
-                >
-                  Open reviews
-                </button>
-              </section>
-              <Reminders
-                applications={w.applications}
-                rounds={w.rounds}
-                assessments={w.assessments}
-                tasks={w.tasks}
-                reminders={w.reminders}
-                request={api}
-                onChanged={async () => {
-                  await refresh();
-                }}
-              />
-              <div className="section-head space-top">
-                <h2>Recent applications</h2>
-                <button
-                  className="text-button"
-                  onClick={() => setPage("Applications")}
-                >
-                  View all applications <ArrowRight size={16} />
-                </button>
-              </div>
-              {active.length ? (
-                <div className="card-grid">
-                  {cards(active.slice(-3).reverse())}
-                </div>
-              ) : (
-                <section className="panel">
-                  <Empty
-                    title="Add your first application."
-                    text="Add your first application or bring over your spreadsheet."
-                    action="Add an application"
-                    onClick={() => newRecord("application")}
-                  />
-                </section>
-              )}
-            </>
-          )}
-          {page === "Reviews" && (
-            <RecruitingReview
-              rounds={w.rounds}
-              tasks={w.tasks}
-              assessments={w.assessments}
-              applications={w.applications}
-              evidence={w.evidence}
-              recruitingJobs={w.recruitingJobs}
-              reviews={w.reviews}
-              fieldLocks={w.fieldLocks}
-              stages={w.user.stages}
-              request={api}
-              onChanged={refresh}
-            />
-          )}
-          {page === "Applications" && (
-            <>
-              <div
-                className="pipeline-strip"
-                aria-label="Filter by current stage"
-              >
-                {["All stages", ...w.user.stages].map((name, i) => (
-                  <button
-                    key={name}
-                    aria-pressed={stage === name}
-                    className={stage === name ? "selected" : ""}
-                    onClick={() =>
-                      setStage(stage === name ? "All stages" : name)
-                    }
-                  >
-                    <span className={"pipeline-mark stage-" + i} />
-                    <strong>
-                      {
-                        w.applications.filter(
-                          (a) =>
-                            a.archived === archived &&
-                            (name === "All stages" || a.stage === name),
-                        ).length
-                      }
-                    </strong>
-                    <span>
-                      {name === "All stages" ? "All applications" : name}
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <div className="tracker-surface">
-                <div className="toolbar">
-                  <label className="search">
-                    <Search size={17} />
-                    <input
-                      aria-label="Search applications"
-                      placeholder="Search company, role, location…"
-                      value={query}
-                      onChange={(e) => setQuery(e.target.value)}
-                    />
-                  </label>
-                  <select
-                    aria-label="Stage filter"
-                    value={stage}
-                    onChange={(e) => setStage(e.target.value)}
-                  >
-                    {["All stages", ...w.user.stages].map((s) => (
-                      <option key={s}>{s}</option>
-                    ))}
-                  </select>
-                  <select
-                    aria-label="Sort applications"
-                    value={sort}
-                    onChange={(e) => setSort(e.target.value)}
-                  >
-                    <option value="recent">Recently applied</option>
-                    <option value="company">Company A–Z</option>
-                    <option value="priority">Highest priority</option>
-                  </select>
-                  <div className="view-toggle">
-                    <button
-                      aria-label="Table view"
-                      aria-pressed={!board}
-                      className={!board ? "selected" : ""}
-                      onClick={() => setBoard(false)}
-                    >
-                      <List size={18} />
-                    </button>
-                    <button
-                      aria-label="Board view"
-                      aria-pressed={board}
-                      className={board ? "selected" : ""}
-                      onClick={() => setBoard(true)}
-                    >
-                      <LayoutGrid size={18} />
-                    </button>
-                  </div>
-                </div>
-                <div
-                  className="filter-status"
-                  role="status"
-                  aria-label="Application results"
-                  aria-live="polite"
-                >
-                  <span>
-                    {visible.length}{" "}
-                    {visible.length === 1 ? "application" : "applications"}
-                    {filterCount
-                      ? ` · ${filterCount} active ${filterCount === 1 ? "filter" : "filters"}`
-                      : " · All results"}
-                    {archived ? " · Archived" : ""}
-                  </span>
-                  {filterCount > 0 && (
-                    <button className="text-button" onClick={resetFilters}>
-                      Clear filters
-                    </button>
-                  )}
-                </div>
-                <TrackerActions
-                  views={w.savedViews || []}
-                  filters={filters}
-                  applyView={applyView}
-                  api={api}
-                  run={run}
-                  busy={busy}
-                  refresh={refresh}
-                  selected={selected}
-                  clearSelection={() => setSelected({})}
-                  stages={w.user.stages}
-                  notify={setNotice}
-                />
-                <details className="advanced-filters">
-                  <summary>
-                    More filters{" "}
-                    <span>Company, dates, source & preferences</span>
-                  </summary>
-                  <div className="filter-grid">
-                    <label>
-                      Company
-                      <select
-                        aria-label="Company filter"
-                        value={companyFilter}
-                        onChange={(e) => setCompanyFilter(e.target.value)}
-                      >
-                        <option value="">All companies</option>
-                        {Array.from(
-                          new Set(w.applications.map((a) => a.company)),
-                        )
-                          .sort()
-                          .map((v) => (
-                            <option key={v}>{v}</option>
-                          ))}
-                      </select>
-                    </label>
-                    <label>
-                      Source
-                      <select
-                        aria-label="Source filter"
-                        value={sourceFilter}
-                        onChange={(e) => setSourceFilter(e.target.value)}
-                      >
-                        <option value="">All sources</option>
-                        {Array.from(
-                          new Set(
-                            w.applications.map((a) => a.source || "Unknown"),
-                          ),
-                        )
-                          .sort()
-                          .map((v) => (
-                            <option key={v}>{v}</option>
-                          ))}
-                      </select>
-                    </label>
-                    <label>
-                      Work arrangement
-                      <select
-                        aria-label="Work arrangement filter"
-                        value={arrangement}
-                        onChange={(e) => setArrangement(e.target.value)}
-                      >
-                        <option value="">All arrangements</option>
-                        {["Remote", "Hybrid", "On-site", "Unknown"].map((v) => (
-                          <option key={v}>{v}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Priority{" "}
-                      <select
-                        aria-label="Priority filter"
-                        value={priority}
-                        onChange={(e) => setPriority(e.target.value)}
-                      >
-                        {["Any priority", "High", "Medium", "Low"].map((s) => (
-                          <option key={s}>{s}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Next response{" "}
-                      <select
-                        aria-label="Response owner filter"
-                        value={owner}
-                        onChange={(e) => setOwner(e.target.value)}
-                      >
-                        {[
-                          "Any owner",
-                          "You",
-                          "Employer",
-                          "Nobody",
-                          "Unclear",
-                        ].map((s) => (
-                          <option key={s}>{s}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      Applied from
-                      <input
-                        aria-label="Applied from"
-                        type="date"
-                        value={dateFrom}
-                        max={dateTo || undefined}
-                        onChange={(e) => setDateFrom(e.target.value)}
-                      />
-                    </label>
-                    <label>
-                      Applied through
-                      <input
-                        aria-label="Applied through"
-                        type="date"
-                        value={dateTo}
-                        min={dateFrom || undefined}
-                        onChange={(e) => setDateTo(e.target.value)}
-                      />
-                    </label>
-                    <label className="checkbox-label">
-                      <input
-                        type="checkbox"
-                        checked={includeUnknownDates}
-                        onChange={(e) =>
-                          setIncludeUnknownDates(e.target.checked)
-                        }
-                      />
-                      Include unknown dates in date range
-                    </label>
-                    <button className="text-button" onClick={resetFilters}>
-                      Reset filters
-                    </button>
-                  </div>
-                  {dateFrom && dateTo && dateFrom > dateTo && (
-                    <p role="alert" className="form-error">
-                      Start date must be on or before end date.
-                    </p>
-                  )}
-                </details>
-                <div className="list-meta">
-                  <span>
-                    {visible.length} opportunities{" "}
-                    <label>
-                      <input
-                        type="checkbox"
-                        aria-label="Select matching applications (up to 100)"
-                        disabled={busy || !visible.length}
-                        checked={
-                          visible.length > 0 &&
-                          visible
-                            .slice(0, 100)
-                            .every((a) => Object.hasOwn(selected, a.id))
-                        }
-                        onChange={(e) =>
-                          setSelected(
-                            e.target.checked
-                              ? Object.fromEntries(
-                                  visible
-                                    .slice(0, 100)
-                                    .map((a) => [a.id, a.version]),
-                                )
-                              : {},
-                          )
-                        }
-                      />{" "}
-                      Select matching (up to 100)
-                    </label>
-                    <label>
-                      <input
-                        type="checkbox"
-                        checked={archived}
-                        onChange={(e) => setArchived(e.target.checked)}
-                      />{" "}
-                      Show archived
-                    </label>
-                  </span>
-                  <div>
-                    <button
-                      className="text-button"
-                      onClick={() => setModal({ kind: "duplicates", data: {} })}
-                    >
-                      Review duplicates{" "}
-                      <span className="count">{w.duplicates.length}</span>
-                    </button>
-                    <button
-                      className="text-button"
-                      onClick={() =>
-                        setModal({ kind: "import", data: { csv: "" } })
-                      }
-                    >
-                      <Upload size={15} /> Import CSV
-                    </button>
-                    <a className="text-button" href="/api/export.csv">
-                      <Download size={15} /> Export
-                    </a>
-                  </div>
-                </div>
-                {!visible.length ? (
-                  <section className="panel">
-                    <Empty
-                      title={
-                        filterCount
-                          ? "No applications match these filters."
-                          : archived
-                            ? "No archived applications."
-                            : "No applications yet."
-                      }
-                      text={
-                        filterCount
-                          ? "Try a different search or clear filters to see all applications."
-                          : "Add a role manually or use Import CSV to bring over your spreadsheet."
-                      }
-                      action={filterCount ? "Clear filters" : "Add application"}
-                      onClick={() =>
-                        filterCount ? resetFilters() : newRecord("application")
-                      }
-                    />
-                  </section>
-                ) : board ? (
-                  <div
-                    className="board"
-                    tabIndex={0}
-                    role="region"
-                    aria-label="Application board, scroll to see more stages"
-                  >
-                    {w.user.stages
-                      .filter((s) => stage === "All stages" || stage === s)
-                      .map((s) => {
-                        const column = stageApplications.get(s) || [];
-                        const limit = boardLimits[s] || APPLICATION_PAGE_SIZE;
-                        return (
-                          <section className="board-column" key={s}>
-                            <h3>
-                              <span className="stage-dot" />
-                              {s} <span>{column.length}</span>
-                            </h3>
-                            {cards(column.slice(0, limit))}
-                            {!column.length && (
-                              <p className="board-empty">No applications</p>
-                            )}
-                            {column.length > limit && (
-                              <div className="board-more">
-                                <span>
-                                  {limit} of {column.length} shown
-                                </span>
-                                <button
-                                  className="secondary"
-                                  aria-label={`Show more ${s} applications`}
-                                  onClick={(event) => {
-                                    const columnElement =
-                                      event.currentTarget.closest(
-                                        ".board-column",
-                                      );
-                                    setBoardLimits((previous) => ({
-                                      ...previous,
-                                      [s]: limit + APPLICATION_PAGE_SIZE,
-                                    }));
-                                    // Keep keyboard position when the final Show more button disappears.
-                                    requestAnimationFrame(() =>
-                                      columnElement
-                                        ?.querySelectorAll<HTMLElement>(
-                                          ".job-card",
-                                        )
-                                        [limit]?.focus(),
-                                    );
-                                  }}
-                                >
-                                  Show{" "}
-                                  {Math.min(
-                                    APPLICATION_PAGE_SIZE,
-                                    column.length - limit,
-                                  )}{" "}
-                                  more
-                                </button>
-                              </div>
-                            )}
-                          </section>
-                        );
-                      })}
-                  </div>
-                ) : (
-                  <div
-                    className="application-results"
-                    tabIndex={-1}
-                    role="region"
-                    aria-label="Application results"
-                  >
-                    <div
-                      className="table-wrap"
-                      tabIndex={0}
-                      role="region"
-                      aria-label="Applications table, scroll for more columns"
-                    >
-                      <table className="application-table" role="table">
-                        <caption className="sr-only">
-                          Applications, current stages and next actions. Open a
-                          role to edit its stage without dragging.
-                        </caption>
-                        <thead>
-                          <tr>
-                            <th scope="col">Select</th>
-                            <th>Company & role</th>
-                            <th>Stage</th>
-                            <th>Location</th>
-                            <th>Next response / action</th>
-                            <th>Priority</th>
-                            <th>Applied</th>
-                            <th />
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {tableApplications.map((a) => (
-                            <tr key={a.id}>
-                              <td data-label="Select">{selectionBox(a)}</td>
-                              <td className="role-cell">
-                                <button
-                                  className="table-role"
-                                  onClick={() => showDetail(a)}
-                                >
-                                  <span className="company-icon">
-                                    {a.company.slice(0, 2).toUpperCase()}
-                                  </span>
-                                  <span>
-                                    <strong>{a.title}</strong>
-                                    <small>{a.company}</small>
-                                  </span>
-                                </button>
-                              </td>
-                              <td data-label="Stage">
-                                <span
-                                  className={
-                                    "badge " +
-                                    a.stage.toLowerCase().replaceAll(" ", "-")
-                                  }
-                                >
-                                  {a.stage}
-                                </span>
-                              </td>
-                              <td data-label="Location">
-                                {a.location || "Unknown"}
-                              </td>
-                              <td data-label="Next response / action">
-                                <strong className="response-owner">
-                                  {a.owner === "Employer"
-                                    ? `Waiting for employer${a.ownerEffectiveAt ? ` · ${Math.max(0, Math.floor((Date.now() - Date.parse(a.ownerEffectiveAt)) / 86400000))} days` : ""}`
-                                    : a.owner === "You"
-                                      ? "Your reply is next"
-                                      : a.owner === "Nobody"
-                                        ? "No reply needed"
-                                        : "Response owner unclear"}
-                                </strong>
-                                <small className="table-next-action">
-                                  {nextAction(a.id)}
-                                </small>
-                              </td>
-                              <td data-label="Priority">
-                                <span
-                                  className={
-                                    "priority " + a.priority.toLowerCase()
-                                  }
-                                >
-                                  ●
-                                </span>{" "}
-                                {a.priority}
-                              </td>
-                              <td data-label="Applied">
-                                {a.appliedDate || "Unknown"}
-                              </td>
-                              <td className="open-cell">
-                                <button
-                                  aria-label={"Open " + a.title}
-                                  onClick={() => showDetail(a)}
-                                >
-                                  <span className="mobile-open-label">
-                                    Open details
-                                  </span>
-                                  <ArrowUpRight size={17} />
-                                </button>
-                              </td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                    {pageCount > 1 && (
-                      <div
-                        className="pagination"
-                        role="group"
-                        aria-label="Application pages"
-                      >
-                        <span role="status" aria-label="Application page">
-                          {pageOffset + 1}–
-                          {Math.min(
-                            pageOffset + APPLICATION_PAGE_SIZE,
-                            visible.length,
-                          )}{" "}
-                          of {visible.length} applications
-                        </span>
-                        <div>
-                          <button
-                            className="secondary"
-                            disabled={currentApplicationPage === 0}
-                            onClick={() =>
-                              changeApplicationPage(currentApplicationPage - 1)
-                            }
-                          >
-                            Previous page
-                          </button>
-                          <button
-                            className="secondary"
-                            disabled={currentApplicationPage + 1 === pageCount}
-                            onClick={() =>
-                              changeApplicationPage(currentApplicationPage + 1)
-                            }
-                          >
-                            Next page
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            </>
-          )}
-          {page === "Connections" && (
-            <>
-              <label className="search standalone">
-                <Search size={17} />
-                <input
-                  aria-label="Search connections"
-                  placeholder="Search people or companies…"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </label>
-              <div className="card-grid">
-                {w.contacts
-                  .filter((c) =>
-                    `${c.name} ${c.company} ${c.email} ${c.agency} ${c.hiringCompany || ""} ${c.role} ${c.phone || ""} ${(c.additionalEmails || []).map((e: any) => e.email).join(" ")}`
-                      .toLowerCase()
-                      .includes(query.toLowerCase()),
-                  )
-                  .map((c) => (
-                    <button
-                      key={c.id}
-                      className="person-card"
-                      onClick={() => setModal({ kind: "contact", data: c })}
-                    >
-                      <span className="avatar">{c.name.charAt(0)}</span>
-                      <h2>{c.name}</h2>
-                      <p>
-                        {c.role || "Role unknown"} ·{" "}
-                        {c.company || "Company unknown"}
-                      </p>
-                      <small>
-                        {c.email || "Email unknown"}{" "}
-                        {c.email
-                          ? c.emailConfirmed
-                            ? "· User confirmed"
-                            : "· Unconfirmed"
-                          : ""}
-                      </small>
-                      <small>
-                        {c.relationshipType || "Unknown relationship"}
-                        {c.agency ? ` · Agency: ${c.agency}` : ""}
-                      </small>
-                      <small>
-                        {c.lastInteraction
-                          ? `Last interaction: ${c.lastInteraction}`
-                          : "Last interaction unknown"}
-                      </small>
-                      <div className="card-foot">
-                        {c.applicationIds.length} linked applications{" "}
-                        <ArrowUpRight size={16} />
-                      </div>
-                    </button>
-                  ))}
-              </div>
-              {!!w.contacts.length &&
-                !w.contacts.some((c) =>
-                  `${c.name} ${c.company} ${c.email} ${c.agency} ${c.hiringCompany || ""} ${c.role} ${c.phone || ""} ${(c.additionalEmails || []).map((e: any) => e.email).join(" ")}`
-                    .toLowerCase()
-                    .includes(query.toLowerCase()),
-                ) && (
-                  <p className="panel panel-copy" role="status">
-                    No connections match “{query}”. Try a name, email or
-                    company.
-                  </p>
-                )}
-              {!w.contacts.length && (
-                <section className="panel">
-                  <Empty
-                    title="No connections yet."
-                    text="Keep recruiter details and relationships close to the opportunity."
-                    action="Add connection"
-                    onClick={() => newRecord("contact")}
-                  />
-                </section>
-              )}
-            </>
-          )}
-          {page === "Documents" && (
-            <>
-              <p className="subtle-info">
-                Each upload creates an immutable version. Previously attached
-                documents stay exactly as uploaded.
-              </p>
-              <div className="card-grid">
-                {w.documents.map((d) => (
-                  <article className="document-card" key={d.id}>
-                    <span className="file-icon">
-                      <Files size={26} />
-                    </span>
-                    <span className="badge">{d.label}</span>
-                    <h2>{d.title}</h2>
-                    <p>{d.applicationIds.length} linked applications</p>
-                    <p>
-                      {d.versionNumber
-                        ? `Version ${d.versionNumber}`
-                        : "Legacy version"}{" "}
-                      ·{" "}
-                      {d.createdAt
-                        ? new Date(d.createdAt).toLocaleDateString("en-US", {
-                            timeZone: w.user.timezone,
-                          })
-                        : "Upload date unknown"}
-                    </p>
-                    <p>
-                      {
-                        (w.documentUsages || []).filter(
-                          (u) => u.documentVersionId === d.id && !u.retracted,
-                        ).length
-                      }{" "}
-                      recorded submissions
-                    </p>
-                    <a className="text-button" href={"/api/files/" + d.fileId}>
-                      <Download size={16} /> Download original
-                    </a>
-                    <button
-                      className="text-button"
-                      onClick={() =>
-                        setModal({
-                          kind: "document",
-                          data: {
-                            title: d.title,
-                            label: d.label,
-                            documentId: d.documentId || d.id,
-                            applicationIds: [],
-                          },
-                        })
-                      }
-                    >
-                      <Plus size={16} /> New version
-                    </button>
-                  </article>
-                ))}
-              </div>
-              {!w.documents.length && (
-                <section className="panel">
-                  <Empty
-                    title="No documents uploaded."
-                    text="Upload resumes and cover letters. Keep the exact version used for each application."
-                    action="Upload document"
-                    onClick={() => newRecord("document")}
-                  />
-                </section>
-              )}
-            </>
-          )}
-          {page === "Insights" && (
-            <section className="panel">
-              <div className="section-head">
-                <h2>Your pipeline today</h2>
-                <span className="muted">
-                  {w.applications.length} total applications
-                </span>
-              </div>
-              <div className="insights">
-                {w.user.stages.map((s) => (
-                  <div className="bar-row" key={s}>
-                    <span>{s}</span>
-                    <div>
-                      <i
-                        style={{
-                          width:
-                            (w.applications.filter((a) => a.stage === s)
-                              .length /
-                              Math.max(w.applications.length, 1)) *
-                              100 +
-                            "%",
-                        }}
-                      />
-                    </div>
-                    <b>{w.applications.filter((a) => a.stage === s).length}</b>
-                  </div>
-                ))}
-              </div>
-              <p className="panel-copy muted">
-                Current stage counts include archived applications. Historical
-                conversion and time-in-stage metrics are planned.
-              </p>
-              <a className="text-button panel-copy" href="/api/export.csv">
-                <Download size={16} /> Export application data
-              </a>
-            </section>
-          )}
-          {page === "Settings" && (
-            <SettingsPage
-              w={w}
-              busy={busy}
-              run={run}
-              refresh={refresh}
-              logout={() => resetSession()}
-            />
-          )}
-          <footer>
-            Your job search, on record.<span>Offerly · Manual workspace</span>
-          </footer>
-        </div>
-      </main>
-      {detail && (
-        <div className="overlay" onClick={() => setDetail(null)}>
-          <section
-            className="drawer"
-            inert={!!modal}
-            role="dialog"
-            aria-modal="true"
-            aria-label="Application details"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="drawer-top">
-              <span className="eyebrow">APPLICATION DETAILS</span>
-              <button
-                aria-label="Close details"
-                autoFocus
-                onClick={() => setDetail(null)}
-              >
-                <X />
-              </button>
-            </div>
-            <span className="company-icon large">
-              {detail.company.slice(0, 2).toUpperCase()}
-            </span>
-            <h1>{detail.title}</h1>
-            <p className="muted">
-              {detail.company} · {detail.location || "Location unknown"}
-            </p>
-            <p className="detail-next-action">
-              <strong>Next action</strong>
-              <span>{nextAction(detail.id)}</span>
-            </p>
-            <div className="detail-actions">
-              <button
-                className="primary"
-                onClick={() => setModal({ kind: "application", data: detail })}
-              >
-                Edit application
-              </button>
-              {detail.url && (
-                <a
-                  className="secondary"
-                  target="_blank"
-                  rel="noreferrer"
-                  href={detail.url}
-                >
-                  View listing <ArrowUpRight size={15} />
-                </a>
-              )}
+              <p>{error}</p>
               <button
                 className="secondary"
-                onClick={() =>
-                  run(async () => {
-                    const a = await saveRecord("application", {
-                      ...detail,
-                      archived: !detail.archived,
-                    });
-                    setDetail(a);
-                    await loadEvents(a.id);
-                  })
-                }
+                disabled={busy}
+                onClick={() => run(refresh)}
               >
-                <Archive size={16} />
-                {detail.archived ? "Restore" : "Archive"}
+                Retry opening page
               </button>
-            </div>
-            <div
-              className="detail-tabs"
-              role="group"
-              aria-label="Application sections"
-            >
-              {["Overview", "Activity", "People & files"].map((tab) => (
-                <button
-                  aria-pressed={detailTab === tab}
-                  key={tab}
-                  className={detailTab === tab ? "selected" : ""}
-                  onClick={() => setDetailTab(tab)}
-                >
-                  {tab}
-                </button>
-              ))}
-            </div>
-            {detailTab === "Overview" && (
-              <>
-                <div className="detail-summary">
-                  <div>
-                    <small>Stage</small>
-                    <span className="badge">{detail.stage}</span>
-                  </div>
-                  <div>
-                    <small>Next response</small>
-                    <strong>{detail.owner}</strong>
-                  </div>
-                  <div>
-                    <small>Priority</small>
-                    <strong>{detail.priority}</strong>
-                  </div>
-                  <div>
-                    <small>Applied</small>
-                    <strong>{detail.appliedDate || "Unknown"}</strong>
-                  </div>
-                </div>
-                <section className="offer-summary" aria-label="Offer outcome">
-                  <h2>Offer outcome</h2>
-                  <p>
-                    <strong>{detail.offerOutcome || "Not recorded"}</strong>
-                  </p>
-                  <p>
-                    Received: {detail.offerReceivedDate || "Unknown"} ·
-                    Decision: {detail.offerDecisionDate || "Not recorded"}
-                  </p>
-                </section>
-                <section
-                  className="compensation-summary"
-                  aria-label="Compensation"
-                >
-                  <h2>Compensation</h2>
-                  <p>
-                    {detail.compensationMin || detail.compensationMax
-                      ? `${detail.compensationMin && detail.compensationMax ? detail.compensationMin + "–" + detail.compensationMax : detail.compensationMin ? "From " + detail.compensationMin : "Up to " + detail.compensationMax} · ${detail.compensationCurrency || "Currency unknown"} · ${detail.compensationPeriod && detail.compensationPeriod !== "Unknown" ? "Per " + detail.compensationPeriod.toLowerCase() : "Period unknown"} · ${detail.compensationBasis && detail.compensationBasis !== "Unknown" ? detail.compensationBasis + " compensation" : "Basis unknown"}`
-                      : "Not provided"}
-                  </p>
-                </section>
-                {w.duplicateReviews
-                  .filter(
-                    (r) => r.decision === "merge" && r.targetId === detail.id,
-                  )
-                  .map((r) => {
-                    const original = w.applications.find(
-                      (a) => a.id === r.sourceId,
-                    );
-                    return original ? (
-                      <section key={r.id} className="notice">
-                        <p>
-                          Original notes and history from the merged application
-                          remain available.
-                        </p>
-                        <button
-                          className="text-button"
-                          onClick={() => showDetail(original)}
-                        >
-                          View archived original · {original.title}
-                        </button>
-                      </section>
-                    ) : null;
-                  })}
-                <h2>Notes</h2>
-                <p className="notes">
-                  {detail.notes ||
-                    "No notes yet. Add context with Edit application."}
-                </p>
-                {detail.description && (
-                  <>
-                    <h2>Saved job description</h2>
-                    <p className="notes">{detail.description}</p>
-                  </>
-                )}
-              </>
-            )}
-            {detailTab === "Overview" && (
-              <ListingSnapshots
-                snapshots={(w.listingSnapshots || []).filter(
-                  (s) => s.applicationId === detail.id,
-                )}
-                timezone={w.user.timezone}
-              />
-            )}
-            {detailTab === "People & files" && (
-              <SubmittedDocuments
-                key={detail.id}
-                applicationId={detail.id}
-                documents={w.documents}
-                usages={w.documentUsages || []}
-                request={api}
-                onChanged={async () => {
-                  await refresh();
-                  await loadEvents(detail.id);
+            </>
+          ) : (
+            <>
+              <Leaf /> Checking your session…
+            </>
+          )}
+        </div>
+      )}
+      <div
+        className="shell"
+        style={{ display: checkingSession ? "none" : undefined }}
+        inert={checkingSession}
+        aria-busy={busy}
+        onClickCapture={(event) => {
+          // Safari does not focus pointer-clicked buttons. Capture a reliable dialog opener.
+          if (event.target instanceof Element)
+            event.target
+              .closest<HTMLElement>("button")
+              ?.focus({ preventScroll: true });
+        }}
+      >
+        <a className="skip-link" href="#workspace-content">
+          Skip to workspace
+        </a>
+        <aside className="sidebar" inert={!!detail || !!modal}>
+          <Link className="brand" to="/today">
+            <span className="brand-mark">
+              <Leaf size={23} />
+            </span>
+            offerly<span className="brand-dot">.</span>
+          </Link>
+          <button
+            className="mobile-menu secondary"
+            aria-expanded={navigationOpen}
+            aria-controls="workspace-navigation"
+            onClick={() => setNavigationOpen(!navigationOpen)}
+          >
+            {navigationOpen ? <X size={18} /> : <Menu size={18} />}{" "}
+            {navigationOpen ? "Close menu" : page}
+          </button>
+          <div className="workspace-label">PERSONAL WORKSPACE</div>
+          <nav
+            id="workspace-navigation"
+            aria-label="Workspace"
+            className={navigationOpen ? "is-open" : ""}
+          >
+            {nav.map(([name, Icon]) => (
+              <Link
+                key={name}
+                to={pagePaths[name]}
+                aria-current={page === name ? "page" : undefined}
+                className={page === name ? "active" : ""}
+                onClick={() => {
+                  setNavigationOpen(false);
+                  setQuery("");
+                  requestAnimationFrame(() =>
+                    document
+                      .querySelector<HTMLElement>("#workspace-content h1")
+                      ?.focus(),
+                  );
                 }}
-              />
+              >
+                <Icon size={19} />
+                {name}
+                {name === "Applications" && (
+                  <span className="nav-count">{active.length}</span>
+                )}
+              </Link>
+            ))}
+          </nav>
+          <div className="sidebar-note">
+            <span className="tiny-label">YOUR SEARCH, YOUR RECORD</span>
+            <p>Keep the next step clear.</p>
+            <span>
+              Applications, conversations and the details that connect them.
+            </span>
+          </div>
+          <div className={"account" + (navigationOpen ? " is-open" : "")}>
+            <span className="avatar">
+              {w.user.name.charAt(0).toUpperCase()}
+            </span>
+            <div>
+              <strong>{w.user.name}</strong>
+              <small>Personal workspace</small>
+            </div>
+            <button
+              aria-label="Sign out"
+              onClick={() =>
+                run(async () => {
+                  await api("/logout", "POST");
+                  resetSession();
+                })
+              }
+            >
+              <LogOut size={17} />
+            </button>
+          </div>
+        </aside>
+        <main id="workspace-content" tabIndex={-1} inert={!!detail || !!modal}>
+          <header className="topbar">
+            <span>
+              Workspace <ChevronRight size={13} /> <b>{page}</b>
+            </span>
+            <span className="private-tag">
+              <span /> Private workspace
+            </span>
+          </header>
+          <div className={`content page-${page.toLowerCase()}`}>
+            {error && (
+              <div role="alert" className="alert">
+                {error}
+                <button aria-label="Dismiss error" onClick={() => setError("")}>
+                  <X size={16} />
+                </button>
+              </div>
             )}
-            {(["round", "assessment", "task", "contact", "document"] as const)
-              .filter((kind) =>
-                detailTab === "Overview"
-                  ? ["round", "assessment", "task"].includes(kind)
-                  : detailTab === "People & files"
-                    ? ["contact", "document"].includes(kind)
-                    : false,
-              )
-              .map((kind) => {
-                const items = (
-                  kind === "assessment"
-                    ? w.assessments
-                    : kind === "round"
-                      ? w.rounds
-                      : kind === "task"
-                        ? w.tasks
-                        : kind === "contact"
-                          ? w.contacts
-                          : w.documents
-                ).filter(
-                  (v) =>
-                    v.applicationId === detail.id ||
-                    v.applicationIds?.includes(detail.id),
-                );
-                return (
-                  <section key={kind} className="detail-section">
+            {notice && (
+              <div role="status" className="notice">
+                {notice}
+                <button
+                  aria-label="Dismiss notification"
+                  onClick={() => setNotice("")}
+                >
+                  <X size={16} />
+                </button>
+              </div>
+            )}
+            <div className="page-heading">
+              <div>
+                <div className="eyebrow" hidden={page !== "Today"}>
+                  {page === "Today"
+                    ? new Intl.DateTimeFormat("en-US", {
+                        weekday: "long",
+                        month: "long",
+                        day: "numeric",
+                        timeZone: w.user.timezone,
+                      }).format(new Date())
+                    : "YOUR WORKSPACE"}
+                </div>
+                <h1 tabIndex={-1}>
+                  {page === "Today"
+                    ? `Make your next move, ${w.user.name.split(" ")[0]}.`
+                    : page}
+                </h1>
+                <p>
+                  {
+                    (
+                      {
+                        Today:
+                          "Tasks, deadlines and interviews that need your attention.",
+                        Applications:
+                          "Track each role, who replies next, and what needs doing.",
+                        Connections:
+                          "Recruiters, referrals and the applications you share.",
+                        Documents:
+                          "Keep original files, versions and submission records distinct.",
+                        Reviews:
+                          "Evidence first. Every update stays in your control.",
+                        Insights:
+                          "A snapshot of where your applications stand today.",
+                        Settings:
+                          "Workspace preferences, account security and your data.",
+                      } as any
+                    )[page]
+                  }
+                </p>
+              </div>
+              {page !== "Settings" &&
+                page !== "Insights" &&
+                page !== "Reviews" && (
+                  <button
+                    className="primary"
+                    onClick={() =>
+                      newRecord(
+                        page === "Connections"
+                          ? "contact"
+                          : page === "Documents"
+                            ? "document"
+                            : "application",
+                      )
+                    }
+                  >
+                    <Plus size={17} />
+                    {page === "Connections"
+                      ? "Add connection"
+                      : page === "Documents"
+                        ? "Upload document"
+                        : "Add application"}
+                  </button>
+                )}
+            </div>
+            {page === "Today" && (
+              <>
+                <TodayFocus
+                  workspace={w}
+                  today={today}
+                  onOpen={showDetail}
+                  onReviews={() => setPage("Reviews")}
+                />
+                <div className="today-grid">
+                  <section className="panel">
                     <div className="section-head">
                       <h2>
-                        {
-                          {
-                            assessment: "Assessments",
-                            round: "Interview rounds",
-                            task: "Tasks",
-                            contact: "People",
-                            document: "Documents",
-                          }[kind]
-                        }
+                        Your next steps{" "}
+                        <span className="count">{tasks.length}</span>
                       </h2>
                       <button
                         className="text-button"
-                        onClick={() => newRecord(kind, detail.id)}
+                        onClick={() => newRecord("task")}
                       >
-                        <Plus size={15} /> Add
+                        <Plus size={16} /> Add task
                       </button>
                     </div>
-                    {items.length ? (
-                      items.map((v) =>
-                        kind === "document" ? (
-                          <a
-                            className="detail-item"
-                            href={"/api/files/" + v.fileId}
-                            key={v.id}
-                          >
-                            {v.title}
-                            <Download size={16} />
-                          </a>
-                        ) : (
+                    {tasks.length ? (
+                      tasks.map((t) => (
+                        <div className="task" key={t.id}>
                           <button
-                            className="detail-item"
-                            key={v.id}
-                            onClick={() => setModal({ kind, data: v })}
+                            aria-label={"Complete " + t.title}
+                            className="check-button"
+                            disabled={busy}
+                            onClick={() =>
+                              run(() =>
+                                saveRecord("task", { ...t, done: true }),
+                              )
+                            }
                           >
-                            <span>
-                              {v.title || v.name}
-                              <small>
-                                {v.date || v.due || v.email} {v.time}{" "}
-                                {v.timezone}
-                              </small>
-                            </span>
-                            <span className="badge">
-                              {v.status ||
-                                (kind === "task"
-                                  ? v.done
-                                    ? "Done"
-                                    : "Open"
-                                  : "Contact")}
-                            </span>
+                            <Check size={14} />
                           </button>
-                        ),
-                      )
+                          <div>
+                            <button
+                              className="task-title"
+                              onClick={() =>
+                                setModal({ kind: "task", data: t })
+                              }
+                            >
+                              {t.title}
+                              <span className="sr-only"> · Edit task</span>
+                            </button>
+                            <small>{appName(t.applicationId)}</small>
+                          </div>
+                          <span
+                            className={
+                              t.due && t.due < today ? "overdue" : "muted"
+                            }
+                          >
+                            {t.due
+                              ? t.due < today
+                                ? "Overdue · " + t.due
+                                : t.due
+                              : "No deadline"}
+                          </span>
+                        </div>
+                      ))
                     ) : (
-                      <p className="muted">None added yet.</p>
+                      <Empty
+                        title="No open tasks."
+                        text="Add a follow-up, a deadline, or one small next step."
+                        action="Add your first task"
+                        onClick={() => newRecord("task")}
+                      />
                     )}
                   </section>
-                );
-              })}
-            {detailTab === "Activity" && (
-              <>
-                <div className="section-head space-top">
-                  <h2>Application activity</h2>
-                  <span className="muted">{events.length} events</span>
+                  <section className="focus-panel deadlines-panel">
+                    <div className="section-head">
+                      <span className="tiny-label">UP NEXT</span>
+                      <Clock size={18} />
+                    </div>
+                    <h2>
+                      Deadlines to watch
+                      <span className="count">
+                        {assessmentDeadlines.length}
+                      </span>
+                    </h2>
+                    {assessmentDeadlines.length ? (
+                      assessmentDeadlines.slice(0, 3).map((a) => (
+                        <button
+                          className="deadline-item"
+                          key={a.id}
+                          onClick={() =>
+                            setModal({ kind: "assessment", data: a })
+                          }
+                        >
+                          <span
+                            className={
+                              "deadline-date " +
+                              (a.due && a.due < today ? "late" : "")
+                            }
+                          >
+                            <strong>{a.due ? a.due.slice(8) : "—"}</strong>
+                            <small>
+                              {a.due
+                                ? new Date(a.due + "T12:00:00Z").toLocaleString(
+                                    "en-US",
+                                    { month: "short", timeZone: "UTC" },
+                                  )
+                                : "No date"}
+                            </small>
+                          </span>
+                          <span>
+                            <strong>{a.title}</strong>
+                            <small>{appName(a.applicationId)}</small>
+                          </span>
+                          <ArrowUpRight size={16} />
+                        </button>
+                      ))
+                    ) : (
+                      <div className="deadline-empty">
+                        <Check size={26} />
+                        <strong>No assessment deadlines.</strong>
+                        <p>
+                          Add an assessment from any application. Its deadline
+                          appears here.
+                        </p>
+                      </div>
+                    )}
+                    <button
+                      className="light-button"
+                      onClick={() => setPage("Applications")}
+                    >
+                      Open your applications <ArrowRight size={16} />
+                    </button>
+                  </section>
                 </div>
-                <Timeline
-                  events={events}
-                  applicationId={detail.id}
-                  timezone={w.user.timezone}
+                <section className="panel space-top interviews-panel">
+                  <div className="section-head">
+                    <h2>Upcoming conversations</h2>
+                    <Clock size={18} />
+                  </div>
+                  {w.rounds.filter(
+                    (r) =>
+                      ["Scheduled", "Rescheduled"].includes(r.status) &&
+                      r.date >= today,
+                  ).length ? (
+                    w.rounds
+                      .filter(
+                        (r) =>
+                          ["Scheduled", "Rescheduled"].includes(r.status) &&
+                          r.date >= today,
+                      )
+                      .sort((a, b) => a.date.localeCompare(b.date))
+                      .map((r) => (
+                        <div className="task" key={r.id}>
+                          <span className="company-icon">
+                            <Users size={18} />
+                          </span>
+                          <div>
+                            <button
+                              className="task-title"
+                              onClick={() =>
+                                setModal({ kind: "round", data: r })
+                              }
+                            >
+                              {r.title}
+                              <span className="sr-only"> · Edit interview</span>
+                            </button>
+                            <small>{appName(r.applicationId)}</small>
+                          </div>
+                          <span>
+                            {r.date} {r.time} · {r.timezone}
+                          </span>
+                        </div>
+                      ))
+                  ) : (
+                    <p className="muted panel-copy">
+                      No upcoming interviews scheduled. Add rounds from an
+                      application.
+                    </p>
+                  )}
+                </section>
+                <section className="panel review-shortcut">
+                  <div>
+                    <h2>Updates to review</h2>
+                    <p>
+                      {w.reviews.filter((r) => r.status === "pending").length}{" "}
+                      pending · Evidence never changes applications without your
+                      decision.
+                    </p>
+                  </div>
+                  <button
+                    className="secondary"
+                    onClick={() => setPage("Reviews")}
+                  >
+                    Open reviews
+                  </button>
+                </section>
+                <Reminders
+                  applications={w.applications}
+                  rounds={w.rounds}
+                  assessments={w.assessments}
+                  tasks={w.tasks}
+                  reminders={w.reminders}
+                  request={api}
+                  onChanged={async () => {
+                    await refresh();
+                  }}
                 />
+                <div className="section-head space-top">
+                  <h2>Recent applications</h2>
+                  <button
+                    className="text-button"
+                    onClick={() => setPage("Applications")}
+                  >
+                    View all applications <ArrowRight size={16} />
+                  </button>
+                </div>
+                {active.length ? (
+                  <div className="card-grid">
+                    {cards(active.slice(-3).reverse())}
+                  </div>
+                ) : (
+                  <section className="panel">
+                    <Empty
+                      title="Add your first application."
+                      text="Add your first application or bring over your spreadsheet."
+                      action="Add an application"
+                      onClick={() => newRecord("application")}
+                    />
+                  </section>
+                )}
               </>
             )}
-          </section>
-        </div>
-      )}
-      {modal && (
-        <Editor
-          modal={modal}
-          w={w}
-          busy={busy}
-          error={error}
-          onClose={() => {
-            setModal(null);
-          }}
-          request={api}
-          refresh={refresh}
-          onSave={(data, file) =>
-            run(async () => {
-              if (modal.kind === "import") {
-                await refresh();
-                setNotice(
-                  `Imported ${data.importResult.count} applications · ${data.importResult.skipped} skipped`,
-                );
-              } else {
-                if (modal.kind === "document") {
-                  if (!file) throw new Error("Choose a PDF or DOCX file");
-                  if (file.size > (w.filePolicy?.maxBytes ?? 20 * 1024 * 1024))
-                    throw new Error(
-                      `Choose a file smaller than ${(w.filePolicy?.maxBytes ?? 20 * 1024 * 1024) / 1024 / 1024} MB`,
-                    );
-                  const body = await new Promise<string>((resolve, reject) => {
-                    const reader = new FileReader();
-                    reader.onload = () =>
-                      resolve(String(reader.result).split(",")[1]);
-                    reader.onerror = reject;
-                    reader.readAsDataURL(file);
-                  });
-                  const result = await api("/files", "POST", {
-                    name: file.name,
-                    body,
-                  });
-                  data.fileId = result.id;
-                }
-                const result = await saveRecord(modal.kind, data);
-                if (
-                  detail &&
-                  modal.kind === "application" &&
-                  detail.id === result.id
-                ) {
-                  setDetail(result);
-                  await loadEvents(result.id);
-                }
-              }
+            {page === "Reviews" && (
+              <RecruitingReview
+                rounds={w.rounds}
+                tasks={w.tasks}
+                assessments={w.assessments}
+                applications={w.applications}
+                evidence={w.evidence}
+                recruitingJobs={w.recruitingJobs}
+                reviews={w.reviews}
+                fieldLocks={w.fieldLocks}
+                stages={w.user.stages}
+                request={api}
+                onChanged={refresh}
+              />
+            )}
+            {applicationId &&
+              !w.applications.some((a) => a.id === applicationId) && (
+                <section className="panel">
+                  <h2>Application unavailable</h2>
+                  <p>
+                    This application was removed or is not part of your
+                    workspace.
+                  </p>
+                  <Link to="/applications">Back to applications</Link>
+                </section>
+              )}
+            {page === "Applications" && (
+              <>
+                <div
+                  className="pipeline-strip"
+                  aria-label="Filter by current stage"
+                >
+                  {["All stages", ...w.user.stages].map((name, i) => (
+                    <button
+                      key={name}
+                      aria-pressed={stage === name}
+                      className={stage === name ? "selected" : ""}
+                      onClick={() =>
+                        setStage(stage === name ? "All stages" : name)
+                      }
+                    >
+                      <span className={"pipeline-mark stage-" + i} />
+                      <strong>
+                        {
+                          w.applications.filter(
+                            (a) =>
+                              a.archived === archived &&
+                              (name === "All stages" || a.stage === name),
+                          ).length
+                        }
+                      </strong>
+                      <span>
+                        {name === "All stages" ? "All applications" : name}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <div className="tracker-surface">
+                  <div className="toolbar">
+                    <label className="search">
+                      <Search size={17} />
+                      <input
+                        aria-label="Search applications"
+                        placeholder="Search company, role, location…"
+                        value={query}
+                        onChange={(e) => setQuery(e.target.value)}
+                      />
+                    </label>
+                    <select
+                      aria-label="Stage filter"
+                      value={stage}
+                      onChange={(e) => setStage(e.target.value)}
+                    >
+                      {["All stages", ...w.user.stages].map((s) => (
+                        <option key={s}>{s}</option>
+                      ))}
+                    </select>
+                    <select
+                      aria-label="Sort applications"
+                      value={sort}
+                      onChange={(e) => setSort(e.target.value)}
+                    >
+                      <option value="recent">Recently applied</option>
+                      <option value="company">Company A–Z</option>
+                      <option value="priority">Highest priority</option>
+                    </select>
+                    <div className="view-toggle">
+                      <button
+                        aria-label="Table view"
+                        aria-pressed={!board}
+                        className={!board ? "selected" : ""}
+                        onClick={() => setBoard(false)}
+                      >
+                        <List size={18} />
+                      </button>
+                      <button
+                        aria-label="Board view"
+                        aria-pressed={board}
+                        className={board ? "selected" : ""}
+                        onClick={() => setBoard(true)}
+                      >
+                        <LayoutGrid size={18} />
+                      </button>
+                    </div>
+                  </div>
+                  <div
+                    className="filter-status"
+                    role="status"
+                    aria-label="Application results"
+                    aria-live="polite"
+                  >
+                    <span>
+                      {visible.length}{" "}
+                      {visible.length === 1 ? "application" : "applications"}
+                      {filterCount
+                        ? ` · ${filterCount} active ${filterCount === 1 ? "filter" : "filters"}`
+                        : " · All results"}
+                      {archived ? " · Archived" : ""}
+                    </span>
+                    {filterCount > 0 && (
+                      <button className="text-button" onClick={resetFilters}>
+                        Clear filters
+                      </button>
+                    )}
+                  </div>
+                  <TrackerActions
+                    views={w.savedViews || []}
+                    viewId={savedViewId}
+                    setViewId={setSavedViewId}
+                    filters={filters}
+                    applyView={applyView}
+                    api={api}
+                    run={run}
+                    busy={busy}
+                    refresh={refresh}
+                    selected={selected}
+                    clearSelection={() => setSelected({})}
+                    stages={w.user.stages}
+                    notify={setNotice}
+                  />
+                  <details className="advanced-filters">
+                    <summary>
+                      More filters{" "}
+                      <span>Company, dates, source & preferences</span>
+                    </summary>
+                    <div className="filter-grid">
+                      <label>
+                        Company
+                        <select
+                          aria-label="Company filter"
+                          value={companyFilter}
+                          onChange={(e) => setCompanyFilter(e.target.value)}
+                        >
+                          <option value="">All companies</option>
+                          {Array.from(
+                            new Set(w.applications.map((a) => a.company)),
+                          )
+                            .sort()
+                            .map((v) => (
+                              <option key={v}>{v}</option>
+                            ))}
+                        </select>
+                      </label>
+                      <label>
+                        Source
+                        <select
+                          aria-label="Source filter"
+                          value={sourceFilter}
+                          onChange={(e) => setSourceFilter(e.target.value)}
+                        >
+                          <option value="">All sources</option>
+                          {Array.from(
+                            new Set(
+                              w.applications.map((a) => a.source || "Unknown"),
+                            ),
+                          )
+                            .sort()
+                            .map((v) => (
+                              <option key={v}>{v}</option>
+                            ))}
+                        </select>
+                      </label>
+                      <label>
+                        Work arrangement
+                        <select
+                          aria-label="Work arrangement filter"
+                          value={arrangement}
+                          onChange={(e) => setArrangement(e.target.value)}
+                        >
+                          <option value="">All arrangements</option>
+                          {["Remote", "Hybrid", "On-site", "Unknown"].map(
+                            (v) => (
+                              <option key={v}>{v}</option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+                      <label>
+                        Priority{" "}
+                        <select
+                          aria-label="Priority filter"
+                          value={priority}
+                          onChange={(e) => setPriority(e.target.value)}
+                        >
+                          {["Any priority", "High", "Medium", "Low"].map(
+                            (s) => (
+                              <option key={s}>{s}</option>
+                            ),
+                          )}
+                        </select>
+                      </label>
+                      <label>
+                        Next response{" "}
+                        <select
+                          aria-label="Response owner filter"
+                          value={owner}
+                          onChange={(e) => setOwner(e.target.value)}
+                        >
+                          {[
+                            "Any owner",
+                            "You",
+                            "Employer",
+                            "Nobody",
+                            "Unclear",
+                          ].map((s) => (
+                            <option key={s}>{s}</option>
+                          ))}
+                        </select>
+                      </label>
+                      <label>
+                        Applied from
+                        <input
+                          aria-label="Applied from"
+                          type="date"
+                          value={dateFrom}
+                          max={dateTo || undefined}
+                          onChange={(e) => setDateFrom(e.target.value)}
+                        />
+                      </label>
+                      <label>
+                        Applied through
+                        <input
+                          aria-label="Applied through"
+                          type="date"
+                          value={dateTo}
+                          min={dateFrom || undefined}
+                          onChange={(e) => setDateTo(e.target.value)}
+                        />
+                      </label>
+                      <label className="checkbox-label">
+                        <input
+                          type="checkbox"
+                          checked={includeUnknownDates}
+                          onChange={(e) =>
+                            setIncludeUnknownDates(e.target.checked)
+                          }
+                        />
+                        Include unknown dates in date range
+                      </label>
+                      <button className="text-button" onClick={resetFilters}>
+                        Reset filters
+                      </button>
+                    </div>
+                    {dateFrom && dateTo && dateFrom > dateTo && (
+                      <p role="alert" className="form-error">
+                        Start date must be on or before end date.
+                      </p>
+                    )}
+                  </details>
+                  <div className="list-meta">
+                    <span>
+                      {visible.length} opportunities{" "}
+                      <label>
+                        <input
+                          type="checkbox"
+                          aria-label="Select matching applications (up to 100)"
+                          disabled={busy || !visible.length}
+                          checked={
+                            visible.length > 0 &&
+                            visible
+                              .slice(0, 100)
+                              .every((a) => Object.hasOwn(selected, a.id))
+                          }
+                          onChange={(e) =>
+                            setSelected(
+                              e.target.checked
+                                ? Object.fromEntries(
+                                    visible
+                                      .slice(0, 100)
+                                      .map((a) => [a.id, a.version]),
+                                  )
+                                : {},
+                            )
+                          }
+                        />{" "}
+                        Select matching (up to 100)
+                      </label>
+                      <label>
+                        <input
+                          type="checkbox"
+                          checked={archived}
+                          onChange={(e) => setArchived(e.target.checked)}
+                        />{" "}
+                        Show archived
+                      </label>
+                    </span>
+                    <div>
+                      <button
+                        className="text-button"
+                        onClick={() =>
+                          setModal({ kind: "duplicates", data: {} })
+                        }
+                      >
+                        Review duplicates{" "}
+                        <span className="count">{w.duplicates.length}</span>
+                      </button>
+                      <button
+                        className="text-button"
+                        onClick={() =>
+                          setModal({ kind: "import", data: { csv: "" } })
+                        }
+                      >
+                        <Upload size={15} /> Import CSV
+                      </button>
+                      <a className="text-button" href="/api/export.csv">
+                        <Download size={15} /> Export
+                      </a>
+                    </div>
+                  </div>
+                  {!visible.length ? (
+                    <section className="panel">
+                      <Empty
+                        title={
+                          filterCount
+                            ? "No applications match these filters."
+                            : archived
+                              ? "No archived applications."
+                              : "No applications yet."
+                        }
+                        text={
+                          filterCount
+                            ? "Try a different search or clear filters to see all applications."
+                            : "Add a role manually or use Import CSV to bring over your spreadsheet."
+                        }
+                        action={
+                          filterCount ? "Clear filters" : "Add application"
+                        }
+                        onClick={() =>
+                          filterCount
+                            ? resetFilters()
+                            : newRecord("application")
+                        }
+                      />
+                    </section>
+                  ) : board ? (
+                    <div
+                      className="board"
+                      tabIndex={0}
+                      role="region"
+                      aria-label="Application board, scroll to see more stages"
+                    >
+                      {w.user.stages
+                        .filter((s) => stage === "All stages" || stage === s)
+                        .map((s) => {
+                          const column = stageApplications.get(s) || [];
+                          const limit = boardLimits[s] || APPLICATION_PAGE_SIZE;
+                          return (
+                            <section className="board-column" key={s}>
+                              <h3>
+                                <span className="stage-dot" />
+                                {s} <span>{column.length}</span>
+                              </h3>
+                              {cards(column.slice(0, limit))}
+                              {!column.length && (
+                                <p className="board-empty">No applications</p>
+                              )}
+                              {column.length > limit && (
+                                <div className="board-more">
+                                  <span>
+                                    {limit} of {column.length} shown
+                                  </span>
+                                  <button
+                                    className="secondary"
+                                    aria-label={`Show more ${s} applications`}
+                                    onClick={(event) => {
+                                      const columnElement =
+                                        event.currentTarget.closest(
+                                          ".board-column",
+                                        );
+                                      setBoardLimits((previous) => ({
+                                        ...previous,
+                                        [s]: limit + APPLICATION_PAGE_SIZE,
+                                      }));
+                                      // Keep keyboard position when the final Show more button disappears.
+                                      requestAnimationFrame(() =>
+                                        columnElement
+                                          ?.querySelectorAll<HTMLElement>(
+                                            ".job-card",
+                                          )
+                                          [limit]?.focus(),
+                                      );
+                                    }}
+                                  >
+                                    Show{" "}
+                                    {Math.min(
+                                      APPLICATION_PAGE_SIZE,
+                                      column.length - limit,
+                                    )}{" "}
+                                    more
+                                  </button>
+                                </div>
+                              )}
+                            </section>
+                          );
+                        })}
+                    </div>
+                  ) : (
+                    <div
+                      className="application-results"
+                      tabIndex={-1}
+                      role="region"
+                      aria-label="Application results"
+                    >
+                      <div
+                        className="table-wrap"
+                        tabIndex={0}
+                        role="region"
+                        aria-label="Applications table, scroll for more columns"
+                      >
+                        <table className="application-table" role="table">
+                          <caption className="sr-only">
+                            Applications, current stages and next actions. Open
+                            a role to edit its stage without dragging.
+                          </caption>
+                          <thead>
+                            <tr>
+                              <th scope="col">Select</th>
+                              <th>Company & role</th>
+                              <th>Stage</th>
+                              <th>Location</th>
+                              <th>Next response / action</th>
+                              <th>Priority</th>
+                              <th>Applied</th>
+                              <th />
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {tableApplications.map((a) => (
+                              <tr key={a.id}>
+                                <td data-label="Select">{selectionBox(a)}</td>
+                                <td className="role-cell">
+                                  <button
+                                    className="table-role"
+                                    onClick={() => showDetail(a)}
+                                  >
+                                    <span className="company-icon">
+                                      {a.company.slice(0, 2).toUpperCase()}
+                                    </span>
+                                    <span>
+                                      <strong>{a.title}</strong>
+                                      <small>{a.company}</small>
+                                    </span>
+                                  </button>
+                                </td>
+                                <td data-label="Stage">
+                                  <span
+                                    className={
+                                      "badge " +
+                                      a.stage.toLowerCase().replaceAll(" ", "-")
+                                    }
+                                  >
+                                    {a.stage}
+                                  </span>
+                                </td>
+                                <td data-label="Location">
+                                  {a.location || "Unknown"}
+                                </td>
+                                <td data-label="Next response / action">
+                                  <strong className="response-owner">
+                                    {a.owner === "Employer"
+                                      ? `Waiting for employer${a.ownerEffectiveAt ? ` · ${Math.max(0, Math.floor((Date.now() - Date.parse(a.ownerEffectiveAt)) / 86400000))} days` : ""}`
+                                      : a.owner === "You"
+                                        ? "Your reply is next"
+                                        : a.owner === "Nobody"
+                                          ? "No reply needed"
+                                          : "Response owner unclear"}
+                                  </strong>
+                                  <small className="table-next-action">
+                                    {nextAction(a.id)}
+                                  </small>
+                                </td>
+                                <td data-label="Priority">
+                                  <span
+                                    className={
+                                      "priority " + a.priority.toLowerCase()
+                                    }
+                                  >
+                                    ●
+                                  </span>{" "}
+                                  {a.priority}
+                                </td>
+                                <td data-label="Applied">
+                                  {a.appliedDate || "Unknown"}
+                                </td>
+                                <td className="open-cell">
+                                  <button
+                                    aria-label={"Open " + a.title}
+                                    onClick={() => showDetail(a)}
+                                  >
+                                    <span className="mobile-open-label">
+                                      Open details
+                                    </span>
+                                    <ArrowUpRight size={17} />
+                                  </button>
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                      {pageCount > 1 && (
+                        <div
+                          className="pagination"
+                          role="group"
+                          aria-label="Application pages"
+                        >
+                          <span role="status" aria-label="Application page">
+                            {pageOffset + 1}–
+                            {Math.min(
+                              pageOffset + APPLICATION_PAGE_SIZE,
+                              visible.length,
+                            )}{" "}
+                            of {visible.length} applications
+                          </span>
+                          <div>
+                            <button
+                              className="secondary"
+                              disabled={currentApplicationPage === 0}
+                              onClick={() =>
+                                changeApplicationPage(
+                                  currentApplicationPage - 1,
+                                )
+                              }
+                            >
+                              Previous page
+                            </button>
+                            <button
+                              className="secondary"
+                              disabled={
+                                currentApplicationPage + 1 === pageCount
+                              }
+                              onClick={() =>
+                                changeApplicationPage(
+                                  currentApplicationPage + 1,
+                                )
+                              }
+                            >
+                              Next page
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </>
+            )}
+            {page === "Connections" && (
+              <>
+                <label className="search standalone">
+                  <Search size={17} />
+                  <input
+                    aria-label="Search connections"
+                    placeholder="Search people or companies…"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                  />
+                </label>
+                <p className="directory-note">
+                  Identity confirmations are your records, not external
+                  verification. Open a connection to inspect or correct its
+                  sources.
+                </p>
+                <ContactDirectory
+                  contacts={w.contacts.filter((c) =>
+                    `${c.name} ${c.company} ${c.email} ${c.agency} ${c.hiringCompany || ""} ${c.role} ${c.phone || ""} ${(c.additionalEmails || []).map((e: any) => e.email).join(" ")}`
+                      .toLowerCase()
+                      .includes(query.toLowerCase()),
+                  )}
+                  applications={w.applications}
+                  onEdit={(c) => setModal({ kind: "contact", data: c })}
+                  onOpen={showDetail}
+                />
+                {!!w.contacts.length &&
+                  !w.contacts.some((c) =>
+                    `${c.name} ${c.company} ${c.email} ${c.agency} ${c.hiringCompany || ""} ${c.role} ${c.phone || ""} ${(c.additionalEmails || []).map((e: any) => e.email).join(" ")}`
+                      .toLowerCase()
+                      .includes(query.toLowerCase()),
+                  ) && (
+                    <p className="panel panel-copy" role="status">
+                      No connections match “{query}”. Try a name, email or
+                      company.
+                    </p>
+                  )}
+                {!w.contacts.length && (
+                  <section className="panel">
+                    <Empty
+                      title="No connections yet."
+                      text="Keep recruiter details and relationships close to the opportunity."
+                      action="Add connection"
+                      onClick={() => newRecord("contact")}
+                    />
+                  </section>
+                )}
+              </>
+            )}
+            {page === "Documents" && (
+              <>
+                <DocumentLibrary
+                  documents={w.documents}
+                  usages={w.documentUsages || []}
+                  applications={w.applications}
+                  timezone={w.user.timezone}
+                  maxBytes={w.filePolicy?.maxBytes}
+                  onOpen={showDetail}
+                  onVersion={(d) =>
+                    setModal({
+                      kind: "document",
+                      data: {
+                        title: d.title,
+                        label: d.label,
+                        documentId: d.documentId || d.id,
+                        applicationIds: [],
+                      },
+                    })
+                  }
+                />
+                {!w.documents.length && (
+                  <section className="panel">
+                    <Empty
+                      title="No documents uploaded."
+                      text="Upload resumes and cover letters. Keep the exact version used for each application."
+                      action="Upload document"
+                      onClick={() => newRecord("document")}
+                    />
+                  </section>
+                )}
+              </>
+            )}
+            {page === "Insights" && (
+              <WorkspaceInsights
+                applications={w.applications}
+                stages={w.user.stages}
+              />
+            )}
+            {page === "Settings" && (
+              <SettingsPage
+                w={w}
+                busy={busy}
+                run={run}
+                refresh={refresh}
+                logout={() => resetSession()}
+              />
+            )}
+            <footer>
+              Your job search, on record.<span>Offerly · Manual workspace</span>
+            </footer>
+          </div>
+        </main>
+        {detail && (
+          <div className="overlay" onClick={() => setDetail(null)}>
+            <section
+              className="drawer"
+              inert={!!modal}
+              role="dialog"
+              aria-modal="true"
+              aria-label="Application details"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="drawer-top">
+                <span className="eyebrow">APPLICATION DETAILS</span>
+                <button
+                  aria-label="Close details"
+                  autoFocus
+                  onClick={() => setDetail(null)}
+                >
+                  <X />
+                </button>
+              </div>
+              <span className="company-icon large">
+                {detail.company.slice(0, 2).toUpperCase()}
+              </span>
+              <h1>{detail.title}</h1>
+              <p className="muted">
+                {detail.company} · {detail.location || "Location unknown"}
+              </p>
+              <p className="detail-next-action">
+                <strong>Next action</strong>
+                <span>{nextAction(detail.id)}</span>
+              </p>
+              <div className="detail-actions">
+                <button
+                  className="primary"
+                  onClick={() =>
+                    setModal({ kind: "application", data: detail })
+                  }
+                >
+                  Edit application
+                </button>
+                {detail.url && (
+                  <a
+                    className="secondary"
+                    target="_blank"
+                    rel="noreferrer"
+                    href={detail.url}
+                  >
+                    View listing <ArrowUpRight size={15} />
+                  </a>
+                )}
+                <button
+                  className="secondary"
+                  onClick={() =>
+                    run(async () => {
+                      const a = await saveRecord("application", {
+                        ...detail,
+                        archived: !detail.archived,
+                      });
+                      setDetail(a);
+                      await loadEvents(a.id);
+                    })
+                  }
+                >
+                  <Archive size={16} />
+                  {detail.archived ? "Restore" : "Archive"}
+                </button>
+              </div>
+              <div
+                className="detail-tabs"
+                role="group"
+                aria-label="Application sections"
+              >
+                {["Overview", "Activity", "People & files"].map((tab) => (
+                  <button
+                    aria-pressed={detailTab === tab}
+                    key={tab}
+                    className={detailTab === tab ? "selected" : ""}
+                    onClick={() => setDetailTab(tab)}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              {detailTab === "Overview" && (
+                <>
+                  <div className="detail-summary">
+                    <div>
+                      <small>Stage</small>
+                      <span className="badge">{detail.stage}</span>
+                    </div>
+                    <div>
+                      <small>Next response</small>
+                      <strong>{detail.owner}</strong>
+                    </div>
+                    <div>
+                      <small>Priority</small>
+                      <strong>{detail.priority}</strong>
+                    </div>
+                    <div>
+                      <small>Applied</small>
+                      <strong>{detail.appliedDate || "Unknown"}</strong>
+                    </div>
+                  </div>
+                  <section className="offer-summary" aria-label="Offer outcome">
+                    <h2>Offer outcome</h2>
+                    <p>
+                      <strong>{detail.offerOutcome || "Not recorded"}</strong>
+                    </p>
+                    <p>
+                      Received: {detail.offerReceivedDate || "Unknown"} ·
+                      Decision: {detail.offerDecisionDate || "Not recorded"}
+                    </p>
+                  </section>
+                  <section
+                    className="compensation-summary"
+                    aria-label="Compensation"
+                  >
+                    <h2>Compensation</h2>
+                    <p>
+                      {detail.compensationMin || detail.compensationMax
+                        ? `${detail.compensationMin && detail.compensationMax ? detail.compensationMin + "–" + detail.compensationMax : detail.compensationMin ? "From " + detail.compensationMin : "Up to " + detail.compensationMax} · ${detail.compensationCurrency || "Currency unknown"} · ${detail.compensationPeriod && detail.compensationPeriod !== "Unknown" ? "Per " + detail.compensationPeriod.toLowerCase() : "Period unknown"} · ${detail.compensationBasis && detail.compensationBasis !== "Unknown" ? detail.compensationBasis + " compensation" : "Basis unknown"}`
+                        : "Not provided"}
+                    </p>
+                  </section>
+                  {w.duplicateReviews
+                    .filter(
+                      (r) => r.decision === "merge" && r.targetId === detail.id,
+                    )
+                    .map((r) => {
+                      const original = w.applications.find(
+                        (a) => a.id === r.sourceId,
+                      );
+                      return original ? (
+                        <section key={r.id} className="notice">
+                          <p>
+                            Original notes and history from the merged
+                            application remain available.
+                          </p>
+                          <button
+                            className="text-button"
+                            onClick={() => showDetail(original)}
+                          >
+                            View archived original · {original.title}
+                          </button>
+                        </section>
+                      ) : null;
+                    })}
+                  <h2>Notes</h2>
+                  <p className="notes">
+                    {detail.notes ||
+                      "No notes yet. Add context with Edit application."}
+                  </p>
+                  {detail.description && (
+                    <>
+                      <h2>Saved job description</h2>
+                      <p className="notes">{detail.description}</p>
+                    </>
+                  )}
+                </>
+              )}
+              {detailTab === "Overview" && (
+                <ListingSnapshots
+                  snapshots={(w.listingSnapshots || []).filter(
+                    (s) => s.applicationId === detail.id,
+                  )}
+                  timezone={w.user.timezone}
+                />
+              )}
+              {detailTab === "People & files" && (
+                <SubmittedDocuments
+                  key={detail.id}
+                  applicationId={detail.id}
+                  documents={w.documents}
+                  usages={w.documentUsages || []}
+                  request={api}
+                  onChanged={async () => {
+                    await refresh();
+                    await loadEvents(detail.id);
+                  }}
+                />
+              )}
+              {(["round", "assessment", "task", "contact", "document"] as const)
+                .filter((kind) =>
+                  detailTab === "Overview"
+                    ? ["round", "assessment", "task"].includes(kind)
+                    : detailTab === "People & files"
+                      ? ["contact", "document"].includes(kind)
+                      : false,
+                )
+                .map((kind) => {
+                  const items = (
+                    kind === "assessment"
+                      ? w.assessments
+                      : kind === "round"
+                        ? w.rounds
+                        : kind === "task"
+                          ? w.tasks
+                          : kind === "contact"
+                            ? w.contacts
+                            : w.documents
+                  ).filter(
+                    (v) =>
+                      v.applicationId === detail.id ||
+                      v.applicationIds?.includes(detail.id),
+                  );
+                  return (
+                    <section key={kind} className="detail-section">
+                      <div className="section-head">
+                        <h2>
+                          {
+                            {
+                              assessment: "Assessments",
+                              round: "Interview rounds",
+                              task: "Tasks",
+                              contact: "People",
+                              document: "Documents",
+                            }[kind]
+                          }
+                        </h2>
+                        <button
+                          className="text-button"
+                          onClick={() => newRecord(kind, detail.id)}
+                        >
+                          <Plus size={15} /> Add
+                        </button>
+                      </div>
+                      {items.length ? (
+                        items.map((v) =>
+                          kind === "document" ? (
+                            <a
+                              className="detail-item"
+                              href={"/api/files/" + v.fileId}
+                              key={v.id}
+                            >
+                              {v.title}
+                              <Download size={16} />
+                            </a>
+                          ) : (
+                            <button
+                              className="detail-item"
+                              key={v.id}
+                              onClick={() => setModal({ kind, data: v })}
+                            >
+                              <span>
+                                {v.title || v.name}
+                                <small>
+                                  {v.date || v.due || v.email} {v.time}{" "}
+                                  {v.timezone}
+                                </small>
+                              </span>
+                              <span className="badge">
+                                {v.status ||
+                                  (kind === "task"
+                                    ? v.done
+                                      ? "Done"
+                                      : "Open"
+                                    : "Contact")}
+                              </span>
+                            </button>
+                          ),
+                        )
+                      ) : (
+                        <p className="muted">None added yet.</p>
+                      )}
+                    </section>
+                  );
+                })}
+              {detailTab === "Activity" && (
+                <>
+                  <div className="section-head space-top">
+                    <h2>Application activity</h2>
+                    <span className="muted">{events.length} events</span>
+                  </div>
+                  <Timeline
+                    events={events}
+                    applicationId={detail.id}
+                    timezone={w.user.timezone}
+                  />
+                </>
+              )}
+            </section>
+          </div>
+        )}
+        {modal && (
+          <Editor
+            modal={modal}
+            w={w}
+            busy={busy}
+            error={error}
+            onClose={() => {
               setModal(null);
-            })
-          }
-        />
-      )}{" "}
-    </div>
+            }}
+            request={api}
+            refresh={refresh}
+            onSave={(data, file) =>
+              run(async () => {
+                if (modal.kind === "import") {
+                  await refresh();
+                  setNotice(
+                    `Imported ${data.importResult.count} applications · ${data.importResult.skipped} skipped`,
+                  );
+                } else {
+                  if (modal.kind === "document") {
+                    if (!file) throw new Error("Choose a PDF or DOCX file");
+                    if (
+                      file.size > (w.filePolicy?.maxBytes ?? 20 * 1024 * 1024)
+                    )
+                      throw new Error(
+                        `Choose a file smaller than ${(w.filePolicy?.maxBytes ?? 20 * 1024 * 1024) / 1024 / 1024} MB`,
+                      );
+                    const body = await new Promise<string>(
+                      (resolve, reject) => {
+                        const reader = new FileReader();
+                        reader.onload = () =>
+                          resolve(String(reader.result).split(",")[1]);
+                        reader.onerror = reject;
+                        reader.readAsDataURL(file);
+                      },
+                    );
+                    const result = await api("/files", "POST", {
+                      name: file.name,
+                      body,
+                    });
+                    data.fileId = result.id;
+                  }
+                  const result = await saveRecord(modal.kind, data);
+                  if (
+                    detail &&
+                    modal.kind === "application" &&
+                    detail.id === result.id
+                  ) {
+                    setDetail(result);
+                    await loadEvents(result.id);
+                  }
+                }
+                setModal(null);
+              })
+            }
+          />
+        )}{" "}
+      </div>
+    </>
   );
 }
 function Empty({
@@ -2256,6 +2368,8 @@ function Auth({
   error: string;
   busy: boolean;
 }) {
+  const navigate = useNavigate();
+  const location = useLocation();
   const [recovery, setRecovery] = useState(false);
   const [recoveryBusy, setRecoveryBusy] = useState(false);
   const [recoveryMessage, setRecoveryMessage] = useState("");
@@ -2264,7 +2378,7 @@ function Auth({
   const setRegister = (value: boolean) => {
     setRecovery(false);
     setRecoveryError("");
-    window.location.hash = value ? "signup" : "signin";
+    navigate((value ? "/signup" : "/signin") + location.search);
   };
   const [authConfig, setAuthConfig] = useState<any>(null),
     [configError, setConfigError] = useState("");
@@ -2283,10 +2397,10 @@ function Auth({
   return (
     <div className="auth">
       <section className="auth-story">
-        <a className="brand" href="/" aria-label="Offerly home">
+        <Link className="brand" to="/" aria-label="Offerly home">
           <Leaf />
           offerly.
-        </a>
+        </Link>
         <div>
           <span className="tiny-label">KEEP YOUR SEARCH IN ORDER.</span>
           <h1>
@@ -2329,7 +2443,7 @@ function Auth({
               try {
                 await api("/auth/recover", "POST", data);
                 setRecovery(false);
-                window.location.hash = "signin";
+                navigate("/signin" + location.search, { replace: true });
                 setRecoveryMessage(
                   "Password reset. Sign in, then generate new recovery codes in Settings.",
                 );
@@ -3134,4 +3248,8 @@ function SessionRoot() {
   }, []);
   return <App key={generation} />;
 }
-createRoot(document.getElementById("root")!).render(<SessionRoot />);
+createRoot(document.getElementById("root")!).render(
+  <BrowserRouter useTransitions={false}>
+    <SessionRoot />
+  </BrowserRouter>,
+);
