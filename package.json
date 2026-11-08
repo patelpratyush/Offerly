@@ -32,7 +32,7 @@
     "phase0:gmail:live": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/phase0-gmail.js",
     "phase0:import": "node --env-file-if-exists=.env --env-file-if-exists=.env.local scripts/phase0-import-proof.js",
     "phase0:valid-metrics": "node scripts/phase0-valid-only-metrics.js",
-    "test:devices": "playwright test -c playwright.devices.config.js",
+    "test:devices": "playwright test -c playwright.devices.config.js --shard=1/2 && playwright test -c playwright.devices.config.js --shard=2/2",
     "phase0:agreement": "node scripts/phase0-agreement.js",
     "phase0:stage-evaluate": "node scripts/phase0-stage-evaluate.js"
   },

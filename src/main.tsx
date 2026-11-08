@@ -8,7 +8,7 @@ import {
   useNavigate,
   useSearchParams,
 } from "react-router";
-import { pagePaths, routePage, safeReturnTo } from "./routing";
+import { pagePaths, routePage, routeAnchor, safeReturnTo } from "./routing";
 import {
   ArrowUpRight,
   Plus,
@@ -61,6 +61,7 @@ import { WorkspaceInsights } from "./components/workspace/WorkspaceInsights";
 import { TodayFocus } from "./components/workspace/TodayFocus";
 import { Landing } from "./pages/Landing";
 import { useDialogViewport } from "./useDialogViewport";
+import "./styles/flavor.css";
 const APPLICATION_PAGE_SIZE = 25;
 type Item = { id: string; version: number; [key: string]: any };
 type Workspace = {
@@ -90,7 +91,7 @@ const sessionChannel =
     : new BroadcastChannel("offerly-session");
 function resetSession(notifyOtherTabs = true) {
   const requested = safeReturnTo(
-    window.location.pathname + window.location.search,
+    window.location.pathname + window.location.search + window.location.hash,
   );
   window.history.replaceState(
     null,
@@ -428,6 +429,14 @@ function App() {
       })
       .finally(() => setLoading(false));
   }, []);
+  useEffect(() => {
+    const target = routeAnchor(location.pathname, location.hash);
+    if (!w || verifiedPath !== location.pathname || !target) return;
+    const frame = requestAnimationFrame(() =>
+      document.getElementById(target)?.scrollIntoView({ block: "start" }),
+    );
+    return () => cancelAnimationFrame(frame);
+  }, [location.pathname, location.hash, verifiedPath, !!w]);
   const refreshCurrent = useRef(refresh);
   refreshCurrent.current = refresh;
   // Cached private records stay hidden until the destination's session check passes.
@@ -513,7 +522,9 @@ function App() {
         encodeURIComponent(a.id) +
         (page === "Applications" ? location.search : ""),
       {
-        state: { detailReturnTo: location.pathname + location.search },
+        state: {
+          detailReturnTo: location.pathname + location.search + location.hash,
+        },
       },
     );
   };
@@ -588,7 +599,9 @@ function App() {
         replace
         to={
           "/signin?returnTo=" +
-          encodeURIComponent(safeReturnTo(location.pathname + location.search))
+          encodeURIComponent(
+            safeReturnTo(location.pathname + location.search + location.hash),
+          )
         }
       />
     );
@@ -944,7 +957,7 @@ function App() {
             aria-label="Workspace"
             className={navigationOpen ? "is-open" : ""}
           >
-            {nav.map(([name, Icon]) => (
+            {nav.map(([name, Icon], index) => (
               <Link
                 key={name}
                 to={pagePaths[name]}
@@ -960,7 +973,10 @@ function App() {
                   );
                 }}
               >
-                <Icon size={19} />
+                <span className="nav-index" aria-hidden="true">
+                  {String(index + 1).padStart(2, "0")}
+                </span>
+                <Icon size={18} />
                 {name}
                 {name === "Applications" && (
                   <span className="nav-count">{active.length}</span>
@@ -970,7 +986,11 @@ function App() {
           </nav>
           <div className="sidebar-note">
             <span className="tiny-label">YOUR SEARCH, YOUR RECORD</span>
-            <p>Keep the next step clear.</p>
+            <p>
+              Every move.
+              <br />
+              On record.
+            </p>
             <span>
               Applications, conversations and the details that connect them.
             </span>
@@ -1027,7 +1047,7 @@ function App() {
             )}
             <div className="page-heading">
               <div>
-                <div className="eyebrow" hidden={page !== "Today"}>
+                <div className="eyebrow">
                   {page === "Today"
                     ? new Intl.DateTimeFormat("en-US", {
                         weekday: "long",
@@ -1035,7 +1055,16 @@ function App() {
                         day: "numeric",
                         timeZone: w.user.timezone,
                       }).format(new Date())
-                    : "YOUR WORKSPACE"}
+                    : (
+                        {
+                          Applications: "02 / THE PIPELINE",
+                          Reviews: "03 / THE EVIDENCE DESK",
+                          Connections: "04 / YOUR PEOPLE",
+                          Documents: "05 / THE ARCHIVE",
+                          Insights: "06 / THE BIG PICTURE",
+                          Settings: "07 / MAKE IT YOURS",
+                        } as Record<string, string>
+                      )[page]}
                 </div>
                 <h1 tabIndex={-1}>
                   {page === "Today"
@@ -1097,7 +1126,7 @@ function App() {
                   onOpen={showDetail}
                   onReviews={() => setPage("Reviews")}
                 />
-                <div className="today-grid">
+                <div className="today-grid" id="today-actions">
                   <section className="panel">
                     <div className="section-head">
                       <h2>

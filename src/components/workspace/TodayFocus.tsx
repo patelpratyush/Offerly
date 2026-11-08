@@ -43,22 +43,34 @@ export function TodayFocus({ workspace: w, today, onOpen, onReviews }: Props) {
     <section className="daily-brief" aria-label="Daily priorities">
       <div className="daily-brief-summary">
         <span className="tiny-label">ATTENTION FIRST</span>
-        <p>
-          <strong>{overdue}</strong> overdue {overdue === 1 ? "item" : "items"}
-          <span aria-hidden="true"> / </span>
-          <strong>{replies.length}</strong>{" "}
-          {replies.length === 1 ? "reply" : "replies"} owed
-          <span aria-hidden="true"> / </span>
-          <button onClick={onReviews} className="brief-review-link">
-            <strong>{reviews}</strong> pending{" "}
-            {reviews === 1 ? "review" : "reviews"}
-            <ArrowRight size={15} aria-hidden="true" />
+        <h2 className="daily-brief-title">On your radar.</h2>
+        <div className="brief-signals">
+          <a href="#today-actions" className="brief-signal">
+            <strong>{String(overdue).padStart(2, "0")}</strong>
+            <span>
+              Overdue {overdue === 1 ? "item" : "items"}
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </span>
+          </a>
+          <a href="#reply-ownership" className="brief-signal">
+            <strong>{String(replies.length).padStart(2, "0")}</strong>
+            <span>
+              {replies.length === 1 ? "Reply" : "Replies"} owed
+              <ArrowUpRight size={16} aria-hidden="true" />
+            </span>
+          </a>
+          <button onClick={onReviews} className="brief-signal">
+            <strong>{String(reviews).padStart(2, "0")}</strong>
+            <span>
+              Pending {reviews === 1 ? "review" : "reviews"}
+              <ArrowRight size={16} aria-hidden="true" />
+            </span>
           </button>
-        </p>
+        </div>
         <small>Recorded next steps. You decide what changes.</small>
       </div>
       <div className="reply-agenda">
-        <div className="reply-agenda-column">
+        <div className="reply-agenda-column" id="reply-ownership">
           <div className="section-head">
             <h2>Your reply is next</h2>
             <span className="count">{replies.length}</span>

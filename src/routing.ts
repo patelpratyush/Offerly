@@ -1,3 +1,13 @@
+/** Known in-page destinations; arbitrary fragments are never forwarded. */
+export function routeAnchor(pathname: string, hash: string): string {
+  if (hash === "#workspace-content") return "workspace-content";
+  if (
+    pathname === "/today" &&
+    ["#today-actions", "#reply-ownership"].includes(hash)
+  )
+    return hash.slice(1);
+  return "";
+}
 /** Only known workspace routes can become post-auth destinations. */
 export function safeReturnTo(value: string | null): string {
   if (
@@ -39,7 +49,7 @@ export function safeReturnTo(value: string | null): string {
     return (
       url.pathname +
       (clean.size ? "?" + clean : "") +
-      (url.hash === "#workspace-content" ? url.hash : "")
+      (routeAnchor(url.pathname, url.hash) ? url.hash : "")
     );
   } catch {
     return "/today";

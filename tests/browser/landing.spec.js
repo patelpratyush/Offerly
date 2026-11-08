@@ -16,23 +16,14 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   ).toBeVisible();
   await expect(page.getByLabel("Your name")).toHaveCount(0);
   const preview = page.locator("#workspace-preview");
-  const movingCard = preview.locator(".lp-job-card");
+  const movingStrip = page.locator(".lp-record-track");
   await page.getByRole("button", { name: "Pause page motion" }).click();
-  await expect(movingCard).toHaveCSS("animation-play-state", "paused");
-  await expect(page.locator(".lp-ribbon-track")).toHaveCSS(
-    "animation-play-state",
-    "paused",
-  );
-  await expect(page.locator(".lp-bloom-petals").first()).toHaveCSS(
-    "animation-play-state",
-    "paused",
-  );
-  await expect(page.locator(".lp-coffee-steam").first()).toHaveCSS(
-    "animation-play-state",
-    "paused",
-  );
+  await expect(
+    page.getByRole("button", { name: "Play page motion" }),
+  ).toHaveAttribute("aria-pressed", "true");
+  await expect(movingStrip).toHaveCSS("animation-play-state", "paused");
   await page.getByRole("button", { name: "Play page motion" }).click();
-  await expect(movingCard).toHaveCSS("animation-play-state", "running");
+  await expect(movingStrip).toHaveCSS("animation-play-state", "running");
   await preview.getByRole("button", { name: "Offer" }).click();
   await expect(
     preview.getByRole("heading", { name: "Senior Designer" }),
@@ -49,9 +40,12 @@ test("public landing previews stages and connects signup, sign-in, and home", as
     .getByText("Do I need to connect my inbox?", { exact: true })
     .click();
   await expect(
-    page.getByText("Optional read-only Gmail is available only when configured for your account.", {
-      exact: false,
-    }),
+    page.getByText(
+      "Optional read-only Gmail is available only when configured for your account.",
+      {
+        exact: false,
+      },
+    ),
   ).toBeVisible();
   await expect
     .poll(() =>
@@ -60,38 +54,10 @@ test("public landing previews stages and connects signup, sign-in, and home", as
       ),
     )
     .toBe(true);
-  await page.getByRole("button", { name: "Pause animation" }).click();
-  await expect(
-    page.getByRole("button", { name: "Play animation" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await expect(page.locator(".lp-coffee-steam").first()).toHaveCSS(
-    "animation-play-state",
-    "paused",
-  );
-  await expect(movingCard).toHaveCSS("animation-play-state", "paused");
-  await expect(page.locator(".lp-headspace")).toHaveAttribute(
-    "data-revealed",
-    "true",
-  );
   await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(page.locator(".lp-coffee-steam").first()).toHaveCSS(
-    "animation-name",
-    "none",
-  );
+  await expect(movingStrip).toHaveCSS("animation-name", "none");
   await expect(
-    page.getByRole("button", { name: "Play animation" }),
-  ).toBeHidden();
-  await expect(movingCard).toHaveCSS("animation-name", "none");
-  await expect(page.locator(".lp-ribbon-track")).toHaveCSS(
-    "animation-name",
-    "none",
-  );
-  await expect(page.locator(".lp-bloom-petals").first()).toHaveCSS(
-    "animation-name",
-    "none",
-  );
-  await expect(
-    page.getByRole("button", { name: "Play page motion" }),
+    page.getByRole("button", { name: "Pause page motion" }),
   ).toBeHidden();
   await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.screenshot({
@@ -150,11 +116,7 @@ test("landing keeps account entry controls inside narrow and tablet viewports", 
         name: "Your next move. All the details. One workspace.",
       }),
     ).toBeVisible();
-    for (const name of [
-      "Get started",
-      "Sign in",
-      "Start your workspace",
-    ]) {
+    for (const name of ["Get started", "Sign in", "Start your workspace"]) {
       const link = page.getByRole("link", { name, exact: true });
       const box = await link.boundingBox();
       expect(box).not.toBeNull();

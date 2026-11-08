@@ -8,7 +8,7 @@ test("redesigned main pages stay usable with real synthetic workspace data", asy
   page,
 }, testInfo) => {
   test.setTimeout(90000);
-  const directory = "reference/redesign-2026-11/screenshots";
+  const directory = "reference/flavor-2026-11/screenshots";
   mkdirSync(directory, { recursive: true });
   const errors = [];
   const consoleErrors = [];
@@ -34,6 +34,36 @@ test("redesigned main pages stay usable with real synthetic workspace data", asy
     path: `${directory}/signin-${testInfo.project.name}.png`,
     fullPage: true,
   });
+  const signInAudit = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect
+    .soft(
+      signInAudit.violations.map((v) => ({
+        id: v.id,
+        targets: v.nodes.map((n) => n.target),
+      })),
+      "Sign in",
+    )
+    .toEqual([]);
+  await page.goto("/signup");
+  await expect(page.getByLabel("Your name")).toBeVisible();
+  await page.screenshot({
+    path: `${directory}/signup-${testInfo.project.name}.png`,
+    fullPage: true,
+  });
+  const signUpAudit = await new AxeBuilder({ page })
+    .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+    .analyze();
+  expect
+    .soft(
+      signUpAudit.violations.map((v) => ({
+        id: v.id,
+        targets: v.nodes.map((n) => n.target),
+      })),
+      "Sign up",
+    )
+    .toEqual([]);
   await post("/auth/register", {
     name: "Taylor Morgan",
     email: `visual-${Date.now()}-${Math.random()}@example.test`,
@@ -212,6 +242,45 @@ test("redesigned main pages stay usable with real synthetic workspace data", asy
         name,
       )
       .toEqual([]);
+    if (name === "Today") {
+      await page.locator('.brief-signals a[href="#today-actions"]').click();
+      await expect(page).toHaveURL(/\/today#today-actions$/);
+      await expect(page.locator("#today-actions")).toBeInViewport();
+      await page.locator('.brief-signals a[href="#reply-ownership"]').click();
+      await expect(page).toHaveURL(/\/today#reply-ownership$/);
+      await expect(page.locator("#reply-ownership")).toBeInViewport();
+    }
+    if (name === "Applications") {
+      await page.getByRole("button", { name: "Board view" }).click();
+      await expect(
+        page.getByRole("button", { name: "Board view" }),
+      ).toHaveAttribute("aria-pressed", "true");
+      await expect(page.locator(".job-card")).toHaveCount(3);
+      await page.screenshot({
+        path: `${directory}/board-${testInfo.project.name}.png`,
+        fullPage: true,
+      });
+      const boardAudit = await new AxeBuilder({ page })
+        .withTags(["wcag2a", "wcag2aa", "wcag21aa", "wcag22aa"])
+        .analyze();
+      expect
+        .soft(
+          boardAudit.violations.map((v) => ({
+            id: v.id,
+            targets: v.nodes.map((n) => n.target),
+          })),
+          "Board",
+        )
+        .toEqual([]);
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => document.documentElement.scrollWidth <= innerWidth,
+          ),
+        )
+        .toBe(true);
+      await page.getByRole("button", { name: "Table view" }).click();
+    }
   }
   await page.goto(`/applications/${application.id}`);
   await expect(

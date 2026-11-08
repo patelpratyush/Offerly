@@ -1,30 +1,25 @@
 import { Link } from "react-router";
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import {
   ArrowDown,
-  ArrowDownRight,
   ArrowRight,
   ArrowUpRight,
   BriefcaseBusiness,
   Check,
   ChevronDown,
-  CircleCheck,
   Clock3,
   LayoutGrid,
   Leaf,
   LockKeyhole,
-  MessageCircle,
   MoreHorizontal,
   Plus,
   Pause,
   Play,
   Search,
-  Sparkles,
   Users,
 } from "lucide-react";
 import "../styles/landing.css";
-import { WorkspaceScene } from "../components/landing/WorkspaceScene";
-import { PossibilityBloom } from "../components/landing/PossibilityBloom";
+import "../styles/flavor-public.css";
 
 const examples = {
   Saved: {
@@ -160,34 +155,9 @@ function WorkspacePreview() {
 
 export function Landing() {
   const [motionPaused, setMotionPaused] = useState(false);
-  const root = useRef<HTMLDivElement>(null);
-  const toggleMotion = () => setMotionPaused((value) => !value);
-  useEffect(() => {
-    if (!root.current || typeof IntersectionObserver === "undefined") return;
-    const observer = new IntersectionObserver(
-      (entries) => {
-        for (const entry of entries) {
-          if (!entry.isIntersecting) continue;
-          (entry.target as HTMLElement).dataset.revealed = "true";
-          observer.unobserve(entry.target);
-        }
-      },
-      { threshold: 0.08, rootMargin: "0px 0px -32px 0px" },
-    );
-    const sections = root.current.querySelectorAll<HTMLElement>(
-      ".lp-manifesto, .lp-feature-main, .lp-feature-pair > article, .lp-headspace, .lp-process-intro, .lp-steps > li, .lp-faq, .lp-final",
-    );
-    sections.forEach((section, index) => {
-      section.classList.add("lp-reveal");
-      section.style.transitionDelay = `${(index % 3) * 60}ms`;
-      observer.observe(section);
-    });
-    return () => observer.disconnect();
-  }, []);
   return (
     <div
-      ref={root}
-      className={`landing${motionPaused ? " lp-motion-paused" : ""}`}
+      className={`landing lp-editorial${motionPaused ? " lp-motion-paused" : ""}`}
     >
       <a className="lp-skip" href="#landing-content">
         Skip to content
@@ -195,7 +165,7 @@ export function Landing() {
       <header className="lp-header">
         <Link className="lp-brand" to="/" aria-label="Offerly home">
           <span>
-            <Leaf size={21} strokeWidth={1.8} />
+            <ArrowUpRight size={25} />
           </span>
           offerly<span className="lp-brand-period">.</span>
         </Link>
@@ -205,400 +175,183 @@ export function Landing() {
         </nav>
         <div className="lp-header-actions">
           <Link className="lp-signin" to="/signin">
-            Sign in <ArrowUpRight size={14} />
+            Sign in <ArrowUpRight size={15} />
           </Link>
           <Link className="lp-button lp-button-small" to="/signup">
-            Get started <ArrowRight size={15} />
+            Get started <ArrowRight size={16} />
           </Link>
         </div>
       </header>
-
       <main className="lp-main" id="landing-content" tabIndex={-1}>
-        <section className="lp-hero" aria-labelledby="landing-title">
-          <div className="lp-hero-copy">
-            <span className="lp-eyebrow">
-              <span className="lp-status-dot" /> YOUR JOB SEARCH, ON RECORD.
-            </span>
-            <h1 id="landing-title">
-              <span className="lp-title-line">
-                <span>Your next move.</span>
-              </span>
-              <span className="lp-title-line">
-                <span>All the details.</span>
-              </span>
-              <span className="lp-title-line lp-title-script">
-                <span>One workspace.</span>
-                <svg viewBox="0 0 470 24" fill="none" aria-hidden="true">
-                  <path
-                    d="M5 17C120 2 255 5 463 12M61 23C175 11 307 13 410 18"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                  />
-                </svg>
-              </span>
-            </h1>
-            <p>
-              Applications, conversations, documents and next steps.
-              <br className="lp-desktop-break" /> A personal workspace that
-              keeps your job search moving, with you in control.
-            </p>
-            <div className="lp-hero-actions">
-              <Link className="lp-button" to="/signup">
-                Start your workspace <ArrowUpRight size={19} />
-              </Link>
-              <a className="lp-text-link" href="#workspace-preview">
-                Take a look <ArrowDown size={15} />
-              </a>
-            </div>
-            <div className="lp-hero-note">
-              <LockKeyhole size={13} />
-              <span>Private by default. Thoughtfully yours.</span>
-              <button
-                className="lp-motion-control"
-                type="button"
-                aria-label={
-                  motionPaused ? "Play page motion" : "Pause page motion"
-                }
-                aria-pressed={motionPaused}
-                onClick={toggleMotion}
-              >
-                {motionPaused ? <Play size={11} /> : <Pause size={11} />}
-                {motionPaused ? "Play motion" : "Pause motion"}
-              </button>
-            </div>
+        <section className="lp-editorial-hero" aria-labelledby="landing-title">
+          <div className="lp-editorial-kicker">
+            <span>PERSONAL JOB-SEARCH WORKSPACE</span>
+            <span>YOUR SEARCH. YOUR RECORD.</span>
           </div>
-          <div className="lp-hero-visual">
-            <div className="lp-studio-backdrop" aria-hidden="true">
-              <div className="lp-studio-grid" />
-              <PossibilityBloom className="lp-hero-bloom" />
-              <span className="lp-studio-caption">YOUR SPACE TO GROW.</span>
-              <span className="lp-studio-orbit">
-                <span />
-              </span>
-            </div>
-            <div className="lp-growth-stamp" aria-hidden="true">
-              <PossibilityBloom />
-              <span>good things ahead.</span>
-            </div>
-            <div className="lp-floating-label">
-              <Sparkles size={15} /> Your applications. Your decisions.
-            </div>
-            <WorkspacePreview />
-            <div className="lp-floating-note">
-              <span>
-                <CircleCheck size={20} />
-              </span>
-              <div>
-                <strong>One step closer.</strong>
-                <p>Your next chapter is taking shape.</p>
-              </div>
-            </div>
-            <span className="lp-handwritten" aria-hidden="true">
-              room for a little possibility{" "}
-              <svg viewBox="0 0 72 42" fill="none">
-                <path
-                  d="M2 4C32 1 55 9 58 35m-10-8 11 10 9-13"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
+          <h1 id="landing-title">
+            <span>Your next move.</span>
+            <span>All the details.</span>
+            <span>
+              One <i>workspace.</i>
             </span>
+          </h1>
+          <div className="lp-editorial-intro">
+            <span className="lp-section-index" aria-hidden="true">
+              ↗
+            </span>
+            <p>
+              Applications, conversations, documents and next steps. A personal
+              workspace that keeps your job search moving, with you in control.
+            </p>
+            <div>
+              <Link className="lp-button" to="/signup">
+                Start your workspace <ArrowUpRight size={20} />
+              </Link>
+              <span className="lp-invite-note">
+                <LockKeyhole size={13} /> Private by default. Invitation
+                required.
+              </span>
+            </div>
           </div>
         </section>
-
         <section
-          className="lp-ribbon"
-          aria-label="Bring opportunities, conversations, and next steps together"
+          className="lp-product-spread"
+          aria-label="Explore the sample workspace"
         >
-          <div className="lp-ribbon-track" aria-hidden="true">
+          <div className="lp-product-caption">
+            <span className="lp-section-number">01 / THE WORKSPACE</span>
+            <h2>
+              Less retracing.
+              <br />
+              More <i>forward.</i>
+            </h2>
+            <p>
+              A role is more than a row. Keep its people, history, documents and
+              next action connected.
+            </p>
+            <a className="lp-spread-link" href="#workspace-preview">
+              Try the sample <ArrowDown size={20} />
+            </a>
+            <span className="lp-product-disclaimer">
+              Illustrative data. Your actual workspace starts with your records.
+            </span>
+          </div>
+          <div className="lp-product-demo">
+            <WorkspacePreview />
+          </div>
+        </section>
+        <div className="lp-record-strip">
+          <div className="lp-record-track" aria-hidden="true">
             {[0, 1].map((group) => (
-              <div className="lp-ribbon-group" key={group}>
-                {[
-                  "THE WHAT-IFS",
-                  "THE FOLLOW-UPS",
-                  "THE FRESH STARTS",
-                  "THE NEXT CHAPTERS",
-                ].map((word) => (
-                  <span key={word}>
-                    {word}
-                    <span>✳</span>
-                  </span>
-                ))}
-              </div>
+              <span key={group}>
+                APPLICATIONS <b>↗</b> PEOPLE <b>↗</b> EVIDENCE <b>↗</b> NEXT
+                STEPS <b>↗</b>
+              </span>
             ))}
           </div>
-        </section>
-
-        <section className="lp-manifesto" aria-labelledby="manifesto-title">
-          <span className="lp-eyebrow">
-            A SMALL SHIFT. A DIFFERENT KIND OF SEARCH.
-          </span>
-          <h2 id="manifesto-title">
-            You have enough on your mind.
-            <br />
-            Your job search can live <span>here.</span>
-          </h2>
-          <p>A place for the details. A little room for the bigger picture.</p>
-          <svg
-            className="lp-manifesto-arrow"
-            viewBox="0 0 60 80"
-            fill="none"
-            aria-hidden="true"
+          <button
+            className="lp-motion-control"
+            type="button"
+            aria-label={motionPaused ? "Play page motion" : "Pause page motion"}
+            aria-pressed={motionPaused}
+            onClick={() => setMotionPaused((v) => !v)}
           >
-            <path
-              d="M12 4C62 14 11 49 37 68m-14-6 16 10 7-16"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </section>
-
+            {motionPaused ? <Play size={13} /> : <Pause size={13} />}{" "}
+            {motionPaused ? "Play motion" : "Pause motion"}
+          </button>
+        </div>
         <section
-          className="lp-features"
+          className="lp-editorial-capabilities"
           id="a-little-clarity"
           aria-labelledby="features-title"
         >
-          <div className="lp-section-heading">
-            <div>
-              <span className="lp-eyebrow">
-                THE BIG PICTURE. THE LITTLE DETAILS.
-              </span>
-              <h2 id="features-title">
-                A place for every
-                <br />
-                <span>moving part.</span>
-              </h2>
-            </div>
-            <p>
-              Less switching tabs. Less retracing steps.
+          <div className="lp-editorial-section-head">
+            <span className="lp-section-number">02 / EVERY MOVING PART</span>
+            <h2 id="features-title">
+              The whole search.
               <br />
-              More energy for the opportunities that feel right.
-            </p>
-          </div>
-          <article className="lp-feature-main">
-            <div className="lp-feature-copy">
-              <span className="lp-feature-number">01 / THE POSSIBILITIES</span>
-              <h3>
-                Keep your options open.
-                <br />
-                And your tabs closed.
-              </h3>
-              <p>
-                Save roles, track applications, and see exactly where things
-                stand. From the first “what if” to the final decision, keep the
-                full story in one place.
-              </p>
-              <Link className="lp-text-link" to="/signup">
-                Meet your workspace <ArrowUpRight size={16} />
-              </Link>
-            </div>
-            <div
-              className="lp-pipeline"
-              aria-label="Example application pipeline"
-            >
-              <div className="lp-pipeline-header">
-                <span>
-                  <LayoutGrid size={14} /> Your possibilities
-                </span>
-                <span>BOARD VIEW</span>
-              </div>
-              <div className="lp-pipeline-columns">
-                {[
-                  {
-                    title: "Saved",
-                    tone: "saved",
-                    company: "Forma",
-                    role: "Product Designer",
-                    initials: "f",
-                    next: "Make it yours",
-                  },
-                  {
-                    title: "Interviewing",
-                    tone: "interview",
-                    company: "Northstar",
-                    role: "Design Engineer",
-                    initials: "n",
-                    next: "Keep the conversation going",
-                  },
-                  {
-                    title: "Offer",
-                    tone: "offer",
-                    company: "Evergreen",
-                    role: "Senior Designer",
-                    initials: "e",
-                    next: "A new possibility",
-                  },
-                ].map((item) => (
-                  <div
-                    className={`lp-pipeline-column ${item.tone}`}
-                    key={item.title}
-                  >
-                    <span className="lp-column-label">
-                      <i />
-                      {item.title}
-                      <small>1</small>
-                    </span>
-                    <div className="lp-mini-job">
-                      <span className={`lp-company-logo ${item.tone}`}>
-                        {item.initials}
-                        <span>✳</span>
-                      </span>
-                      <strong>{item.company}</strong>
-                      <p>{item.role}</p>
-                      <span className="lp-mini-job-footer">
-                        {item.next}
-                        <ArrowUpRight size={12} />
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-              <div className="lp-pipeline-foot">
-                <span className="lp-status-dot" /> A clear view of what’s
-                possible.<span>Sample applications</span>
-              </div>
-            </div>
-          </article>
-          <div className="lp-feature-pair">
-            <article className="lp-feature-people">
-              <span className="lp-feature-number">02 / THE PEOPLE</span>
-              <h3>
-                Good opportunities
-                <br />
-                start with people.
-              </h3>
-              <p>
-                Remember who you met, what you discussed, and which opportunity
-                brought you together.
-              </p>
-              <div className="lp-connection-visual" aria-hidden="true">
-                <span>AL</span>
-                <svg viewBox="0 0 150 48" fill="none">
-                  <path
-                    d="M3 24h144"
-                    stroke="#a7b994"
-                    strokeWidth="1.5"
-                    strokeDasharray="4 5"
-                  />
-                  <circle
-                    className="lp-connection-dot"
-                    cx="12"
-                    cy="24"
-                    r="5"
-                    fill="#537c44"
-                  />
-                </svg>
-                <span>YOU</span>
-                <span className="lp-connection-caption">
-                  More than a name in your inbox.
-                </span>
-              </div>
-              <div className="lp-contact-example">
-                <span className="lp-contact-avatar">AL</span>
-                <div>
-                  <strong>Alex Lee</strong>
-                  <span>Recruiter · Northstar</span>
-                </div>
-                <MessageCircle size={18} />
-                <span className="lp-contact-note">
-                  A conversation worth remembering.
-                </span>
-              </div>
-            </article>
-            <article className="lp-feature-steps">
-              <span className="lp-feature-number">03 / THE NEXT STEP</span>
-              <h3>
-                A big chapter.
-                <br />
-                One small step at a time.
-              </h3>
-              <p>
-                Keep interviews, tasks, and reminders close. Know what needs
-                your attention, and what can wait.
-              </p>
-              <div className="lp-focus-count" aria-hidden="true">
-                <span>
-                  01<span>next good move.</span>
-                </span>
-                <svg viewBox="0 0 130 70" fill="none">
-                  <path
-                    d="M8 58c18-22 26 3 43-15s20 1 35-17 17-9 30-15m-17 0 20-3-1 20"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </div>
-              <div className="lp-task-example">
-                <span>
-                  <Check size={14} />
-                </span>
-                <div>
-                  <strong>Send Alex a thank-you note</strong>
-                  <small>A little follow-through goes a long way.</small>
-                </div>
-                <span className="lp-today-pill">
-                  <Clock3 size={11} /> Today
-                </span>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section className="lp-headspace" aria-labelledby="headspace-title">
-          <div className="lp-headspace-copy">
-            <span className="lp-eyebrow">A LITTLE MORE HEADSPACE</span>
-            <h2 id="headspace-title">
-              Less to keep in mind.
-              <br />
-              <span>More room to be you.</span>
+              <i>Within reach.</i>
             </h2>
-            <p>
-              Your search deserves a little breathing room. Put the details in
-              their place, take a moment, and come back to your next step with a
-              clearer head.
-            </p>
-            <span className="lp-headspace-note">
-              <Leaf size={15} /> Good things grow at their own pace.
-            </span>
           </div>
-          <WorkspaceScene paused={motionPaused} onToggle={toggleMotion} />
+          <div className="lp-capability-ledger">
+            <article>
+              <span className="lp-ledger-number">01</span>
+              <BriefcaseBusiness size={25} />
+              <div>
+                <h3>A clear view of every role.</h3>
+                <p>
+                  Table or board. Filters and saved views. Distinct applications
+                  stay distinct, even at the same company.
+                </p>
+              </div>
+              <span className="lp-ledger-tag">APPLICATIONS</span>
+            </article>
+            <article>
+              <span className="lp-ledger-number">02</span>
+              <Users size={25} />
+              <div>
+                <h3>People with context.</h3>
+                <p>
+                  Remember who you met, what you discussed, and which
+                  opportunity brought you together. Keep sources and corrections
+                  visible.
+                </p>
+              </div>
+              <span className="lp-ledger-tag">CONNECTIONS</span>
+            </article>
+            <article>
+              <span className="lp-ledger-number">03</span>
+              <LayoutGrid size={25} />
+              <div>
+                <h3>The version you actually sent.</h3>
+                <p>
+                  Original files, immutable versions and submitted-document
+                  records. New uploads never replace your submission history.
+                </p>
+              </div>
+              <span className="lp-ledger-tag">DOCUMENTS</span>
+            </article>
+            <article>
+              <span className="lp-ledger-number">04</span>
+              <Clock3 size={25} />
+              <div>
+                <h3>Know your next move.</h3>
+                <p>
+                  Tasks, interviews, deadlines and response ownership. See what
+                  needs your attention and what is with the employer.
+                </p>
+              </div>
+              <span className="lp-ledger-tag">TODAY</span>
+            </article>
+          </div>
         </section>
-
         <section
-          className="lp-process"
+          className="lp-editorial-process"
           id="your-pace"
           aria-labelledby="process-title"
         >
-          <div className="lp-process-intro">
-            <span className="lp-eyebrow">YOUR SEARCH. YOUR PACE.</span>
+          <div>
+            <span className="lp-section-number">03 / START WHERE YOU ARE</span>
             <h2 id="process-title">
-              A fresh start.
+              Your search.
               <br />
-              <span>Without starting over.</span>
+              Your pace.
+              <br />
+              <i>Your decisions.</i>
             </h2>
             <p>
               Bring your search as it is. A few open tabs, an existing
               spreadsheet, or just a possibility.
             </p>
-            <Link className="lp-text-link" to="/signup">
-              Find your starting point <ArrowUpRight size={17} />
-            </Link>
           </div>
-          <ol className="lp-steps">
+          <ol className="lp-editorial-steps">
             <li>
               <span>01</span>
               <div>
                 <h3>Bring it all together.</h3>
                 <p>
                   Add your first role or import your application spreadsheet.
-                  Start with what you have.
+                  Review the preview before saving.
                 </p>
               </div>
             </li>
@@ -607,8 +360,8 @@ export function Landing() {
               <div>
                 <h3>Make the picture clearer.</h3>
                 <p>
-                  Connect the people, notes, and next steps that give each
-                  opportunity its context.
+                  Connect people, notes, documents and next steps to each
+                  opportunity. Keep the original evidence close.
                 </p>
               </div>
             </li>
@@ -617,21 +370,20 @@ export function Landing() {
               <div>
                 <h3>Move forward, your way.</h3>
                 <p>
-                  Check in, follow up, and make your next move. Keep the
-                  decisions in your hands.
+                  Check in, follow up and review proposed updates. Every
+                  application change stays in your hands.
                 </p>
               </div>
             </li>
           </ol>
         </section>
-
         <section className="lp-faq" aria-labelledby="faq-title">
           <div>
-            <span className="lp-eyebrow">A FEW THINGS TO KNOW</span>
+            <span className="lp-section-number">04 / BEFORE YOU BEGIN</span>
             <h2 id="faq-title">
-              Before your
+              Good
               <br />
-              <span>next chapter.</span>
+              <i>questions.</i>
             </h2>
           </div>
           <div className="lp-faq-list">
@@ -683,37 +435,29 @@ export function Landing() {
             </details>
           </div>
         </section>
-
-        <section className="lp-final" aria-labelledby="final-title">
+        <section className="lp-editorial-final" aria-labelledby="final-title">
+          <span className="lp-section-number">READY WHEN YOU ARE.</span>
+          <h2 id="final-title">
+            Make your
+            <br />
+            <i>next move.</i>
+            <ArrowUpRight aria-hidden="true" />
+          </h2>
           <div>
-            <span className="lp-eyebrow">THERE’S SOMETHING GOOD AHEAD.</span>
-            <h2 id="final-title">
-              Make room
-              <br />
-              for <span>what’s next.</span>
-            </h2>
-            <Link className="lp-button lp-button-light" to="/signup">
-              Start your next chapter <ArrowUpRight size={19} />
+            <Link className="lp-button" to="/signup">
+              Start your next chapter <ArrowUpRight size={21} />
             </Link>
             <p>Have an invitation? Your workspace is waiting.</p>
-          </div>
-          <div className="lp-final-art" aria-hidden="true">
-            <PossibilityBloom className="lp-final-bloom" />
-            <span>onward, at your own pace.</span>
-            <span className="lp-art-star">↗</span>
           </div>
         </section>
       </main>
       <footer className="lp-footer">
         <Link className="lp-brand" to="/" aria-label="Offerly home">
-          <span>
-            <Leaf size={18} />
-          </span>
           offerly<span className="lp-brand-period">.</span>
         </Link>
-        <span>A little structure. A lot more possibility.</span>
+        <span>Your job search, on record.</span>
         <Link to="/signin">
-          Back to your workspace <ArrowDownRight size={15} />
+          Back to your workspace <ArrowUpRight size={16} />
         </Link>
       </footer>
     </div>

@@ -95,6 +95,11 @@ test("protected deep link returns after sign-in and rejects external return dest
   await signIn(page, credentials);
   await expect(page).toHaveURL(/\/documents$/);
   await page.request.post("/api/logout", { headers, data: {} });
+  await page.goto("/today#today-actions");
+  await expect(page).toHaveURL(/\/signin\?/);
+  await signIn(page, credentials);
+  await expect(page).toHaveURL(/\/today#today-actions$/);
+  await page.request.post("/api/logout", { headers, data: {} });
   await page.goto("/signin?returnTo=https%3A%2F%2Fevil.example%2Fsteal");
   await signIn(page, credentials);
   await expect(page).toHaveURL(/\/today$/);
