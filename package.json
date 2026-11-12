@@ -13,6 +13,7 @@
     "lint": "eslint server api scripts tests *.config.js",
     "test:security": "node --test tests/server/security.test.js",
     "check": "npm run lint && npm test && npm run build && npm audit --audit-level=moderate",
+    "discovery:evaluate": "node scripts/discovery-evaluate.js reference/phase1-discovery/synthetic-seed.json",
     "discovery:admin": "node --env-file-if-exists=.env server/discovery/admin.js",
     "db:backup": "node server/backup.js backup",
     "db:restore": "node server/backup.js restore",

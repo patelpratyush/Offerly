@@ -7,10 +7,25 @@ export const normText = (value) =>
     .replace(/&/g, " and ")
     .replace(/[^a-z0-9]+/g, " ")
     .trim();
-export const normRequisition = (value) =>
-  String(value || "")
+// Placeholder values some boards use instead of a real requisition. Treating
+// them as identifiers would merge unrelated openings that all say "N/A".
+const PLACEHOLDER_REQUISITIONS = new Set([
+  "na",
+  "none",
+  "null",
+  "nil",
+  "tbd",
+  "unknown",
+  "unspecified",
+  "undefined",
+  "0",
+]);
+export const normRequisition = (value) => {
+  const text = String(value || "")
     .toLowerCase()
     .replace(/[^a-z0-9]/g, "");
+  return PLACEHOLDER_REQUISITIONS.has(text) ? "" : text;
+};
 export function canonicalDomain(value) {
   const text = String(value || "")
     .trim()

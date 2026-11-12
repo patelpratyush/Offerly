@@ -57,6 +57,7 @@ export async function seedDiscovery(path) {
           title: "Platform Engineer",
           location: "Remote",
           isRemote: true,
+          workplaceType: "Remote",
           isListed: true,
           publishedAt: hoursAgo(30),
           jobUrl: "https://jobs.ashbyhq.com/globex/ab-1",

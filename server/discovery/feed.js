@@ -58,7 +58,7 @@ export const filterSchema = z
   .strict();
 export const emptyFilters = () => filterSchema.parse({});
 const STALE_MS = 48 * 3600 * 1000;
-function inWindow(job, filters, basis, now) {
+export function inWindow(job, filters, basis, now) {
   if (!filters.window) return true;
   let start, end;
   if (basis === "discovered") {
