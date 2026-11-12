@@ -38,9 +38,10 @@ Open: daily/weekly digests, email/browser channels, unsubscribe, scheduler wirin
 | Server tests | 271/271 |
 | Playwright e2e | desktop 35/35, mobile 35/35 |
 | Device suite | 18/18 |
-| `npm audit --audit-level=moderate` | exit 0; one low advisory in `fast-xml-parser` |
+| `npm audit` | 0 vulnerabilities (lockfile bump of `fast-xml-parser` via `npm audit fix`) |
+| PostgreSQL 18 (local throwaway instance) | existing `test:postgres` suite 73/73; new discovery, preparation, insights, reminder-rule and calendar tests 45/45, run with all migrations applied |
 
-Not run: PostgreSQL suite (`npm run test:postgres`, needs `TEST_DATABASE_URL`), any live provider, any production check.
+Not run: hosted Supabase Postgres, any live provider, any production check. The new test files are not in the `test:postgres` script list; add them before relying on that script.
 
 ## Still owner-gated
 
