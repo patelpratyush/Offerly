@@ -26,7 +26,8 @@ export function WorkspaceInsights({
           here once you add records.
         </p>
         <p className="muted">
-          Historical conversion and time-in-stage metrics are not available.
+          Conversion, response time and time-in-stage metrics need recorded
+          submission dates and will appear below once you have them.
         </p>
       </section>
     );
@@ -99,9 +100,9 @@ export function WorkspaceInsights({
             {total - dated.length === 1 ? "date is" : "dates are"} unknown.
           </p>
           <p>
-            Stage counts do not establish response rates, interview conversion
-            or hiring probability. Historical conversion and time-in-stage
-            metrics are not available.
+            Current stage counts do not establish response rates or hiring
+            probability. Cohort conversion and time metrics below use recorded
+            submission dates and event history, and are descriptive only.
           </p>
         </section>
       </aside>

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { createStore } from "./store.js";
 import { processRecruitingJobs } from "./recruiting.js";
 import { processReminders } from "./reminders.js";
+import { processDeliveries } from "./reminder-rules.js";
 process.umask(0o077);
 const store = await createStore(
   resolve(process.env.DATABASE_PATH || "data/offerly.sqlite"),
@@ -15,6 +16,7 @@ async function runTick() {
     ["gmail", processGmailSync],
     ["recruiting", processRecruitingJobs],
     ["reminders", processReminders],
+    ["reminder_deliveries", processDeliveries],
   ]) {
     try {
       const result = await processWork(store, { now: new Date() });

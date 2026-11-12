@@ -1,0 +1,201 @@
+/* Insights metrics, reminder rules and calendar export. Tokens come from flavor.css. */
+.ir-section {
+  display: grid;
+  gap: var(--space-4);
+}
+.ir-note {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  border-left: 3px solid var(--cobalt, var(--focus));
+  background: var(--brand-soft);
+  color: var(--ink);
+  font-size: var(--text-body);
+}
+.ir-stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--space-3);
+  margin: 0;
+}
+.ir-stat {
+  padding: var(--space-4);
+  border: 1px solid var(--line);
+  background: var(--surface);
+  border-radius: var(--radius);
+}
+.ir-stat dt {
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+.ir-stat dd {
+  margin: var(--space-1) 0 0;
+  font: 800 26px/1.1 var(--heading-font);
+  color: var(--ink);
+}
+.ir-stat dd small {
+  display: block;
+  margin-top: var(--space-1);
+  font: 400 var(--text-small) / 1.4 var(--mono);
+  color: var(--muted);
+}
+.ir-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ir-table-wrap:focus-visible,
+.ir-rule input:focus-visible,
+.ir-rule select:focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+.ir-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-body);
+  min-width: 460px;
+}
+.ir-table caption {
+  text-align: left;
+  padding: var(--space-3) var(--space-4);
+  font: 700 var(--text-section) var(--heading-font);
+  color: var(--ink);
+}
+.ir-table th,
+.ir-table td {
+  padding: var(--space-2) var(--space-4);
+  text-align: left;
+  border-top: 1px solid var(--line);
+  white-space: nowrap;
+}
+.ir-table th {
+  font-weight: 600;
+  color: var(--muted);
+  font-size: var(--text-small);
+}
+.ir-table td:not(:first-child),
+.ir-table th:not(:first-child) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.ir-table tbody th {
+  color: var(--ink);
+  font-size: var(--text-body);
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.ir-tag {
+  display: inline-block;
+  margin-left: var(--space-2);
+  padding: 1px 6px;
+  font-size: var(--text-small);
+  color: var(--warning, var(--ink));
+  background: var(--warning-soft, var(--surface-subtle));
+  border-radius: var(--radius-sm);
+}
+.ir-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: flex-end;
+}
+.ir-filters label {
+  font-size: var(--text-small);
+  color: var(--muted);
+}
+.ir-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  align-items: center;
+}
+.ir-rules {
+  display: grid;
+  gap: var(--space-3);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ir-rule {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) auto auto;
+  gap: var(--space-3) var(--space-4);
+  align-items: center;
+  padding: var(--space-3) var(--space-4);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--surface);
+}
+.ir-rule fieldset {
+  display: contents;
+  border: 0;
+}
+.ir-rule .ir-channels {
+  display: flex;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+}
+.ir-rule label,
+.ir-check {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--space-2);
+  font-size: var(--text-body);
+  color: var(--ink);
+}
+.ir-rule input[type="number"] {
+  width: 6.5rem;
+}
+.ir-deliveries {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.ir-deliveries li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2) var(--space-4);
+  justify-content: space-between;
+  padding: var(--space-2) 0;
+  border-top: 1px solid var(--line);
+  font-size: var(--text-body);
+}
+.ir-state {
+  font: 600 var(--text-small) var(--mono);
+  text-transform: uppercase;
+}
+.ir-state[data-state="failed"] {
+  color: var(--danger);
+}
+.ir-state[data-state="suppressed"] {
+  color: var(--warning);
+}
+.ir-error {
+  color: var(--danger);
+  font-size: var(--text-body);
+}
+.ir-status {
+  color: var(--ink);
+  font-size: var(--text-body);
+}
+@media (max-width: 640px) {
+  .ir-rule {
+    grid-template-columns: 1fr;
+  }
+  .ir-stats {
+    grid-template-columns: 1fr 1fr;
+  }
+  .ir-actions > * {
+    flex: 1 1 100%;
+    text-align: center;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ir-section * {
+    transition: none !important;
+  }
+}
