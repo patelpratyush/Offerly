@@ -11,7 +11,7 @@ All work is deterministic: no AI, no email sending, no automatic stage updates. 
 - Collection is off by default: needs `DISCOVERY_COLLECTION_ENABLED=true`, an enabled source and a permission-confirmed source. Operator CLI: `npm run discovery:admin`. Nothing has run against real boards. Source redistribution permission remains open per `reference/phase0/access-decision.md`.
 - Failed fetches mark listings "could not verify", never closed. Four freshness timestamps stored separately; posting-date precision preserved.
 - Company size: Small 1–199, Mid 200–999, Large 1,000+, Unknown; spanning ranges flagged ambiguous.
-- Profile, eligibility (meets / needs verification / does not meet, with evidence) and fit score (35/30/20/10/5, rubric `fit-2026-11-v1`). Missing salary is unknown, never zero. Not an interview probability.
+- Profile, eligibility (meets / needs verification / does not meet, with evidence) and fit score (35/30/20/10/5, rubric `fit-2026-11-v2`). Missing salary is unknown, never zero. Not an interview probability.
 - Views, saved searches, dismissals, watchlist, already-applied detection. In-app alerts with dedupe, quiet hours, cap and delivery-time recheck.
 - Pages `/discover` and `/companies`.
 
