@@ -32,6 +32,7 @@ import {
   Clock,
   Archive,
   Menu,
+  ClipboardList,
 } from "lucide-react";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
@@ -59,6 +60,7 @@ import { ContactDirectory } from "./components/workspace/ContactDirectory";
 import { DocumentLibrary } from "./components/workspace/DocumentLibrary";
 import { WorkspaceInsights } from "./components/workspace/WorkspaceInsights";
 import { TodayFocus } from "./components/workspace/TodayFocus";
+import { PrepareHub } from "./components/workspace/prepare/PrepareHub";
 import { Landing } from "./pages/Landing";
 import { useDialogViewport } from "./useDialogViewport";
 import "./styles/flavor.css";
@@ -845,6 +847,7 @@ function App() {
     ["Reviews", Check],
     ["Connections", Users],
     ["Documents", Files],
+    ["Prepare", ClipboardList],
     ["Insights", ChartNoAxesCombined],
     ["Settings", Settings],
   ] as const;
@@ -1061,6 +1064,7 @@ function App() {
                           Reviews: "03 / THE EVIDENCE DESK",
                           Connections: "04 / YOUR PEOPLE",
                           Documents: "05 / THE ARCHIVE",
+                          Prepare: "05B / GET READY",
                           Insights: "06 / THE BIG PICTURE",
                           Settings: "07 / MAKE IT YOURS",
                         } as Record<string, string>
@@ -1083,6 +1087,8 @@ function App() {
                           "Recruiters, referrals and the applications you share.",
                         Documents:
                           "Keep original files, versions and submission records distinct.",
+                        Prepare:
+                          "Answers, interview notes, manual message drafts and contact import. Nothing is sent for you.",
                         Reviews:
                           "Evidence first. Every update stays in your control.",
                         Insights:
@@ -1096,6 +1102,7 @@ function App() {
               </div>
               {page !== "Settings" &&
                 page !== "Insights" &&
+                page !== "Prepare" &&
                 page !== "Reviews" && (
                   <button
                     className="primary"
@@ -1996,6 +2003,17 @@ function App() {
                   </section>
                 )}
               </>
+            )}
+            {page === "Prepare" && (
+              <PrepareHub
+                applications={w.applications}
+                contacts={w.contacts}
+                rounds={w.rounds}
+                documents={w.documents}
+                userName={w.user.name}
+                maxBytes={w.filePolicy?.maxBytes}
+                onChanged={refresh}
+              />
             )}
             {page === "Insights" && (
               <WorkspaceInsights

@@ -1,4 +1,10 @@
-const sources = ["Manual entry", "Email signature", "Introduction", "Other"];
+const sources = [
+  "Manual entry",
+  "Email signature",
+  "Introduction",
+  "Imported",
+  "Other",
+];
 const fields = [
   ["name", "Full name", "text"],
   ["email", "Email address", "email"],
