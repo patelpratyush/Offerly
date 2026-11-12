@@ -3,8 +3,9 @@
 // never changes the fit score and a strong fit never waives a restriction.
 // Absence of a stated restriction is reported as such, not as a guarantee.
 const COUNTRIES = [
-  ["US", /\b(?:united states|u\.s\.a?\.?|usa)\b/i],
-  ["GB", /\b(?:united kingdom|u\.k\.|uk)\b/i],
+  // Lookarounds, not \b: "U.S." ends in a dot, which \b cannot anchor after.
+  ["US", /(?<![a-z])(?:united states|u\.s\.a?|usa|us)(?![a-z])/i],
+  ["GB", /(?<![a-z])(?:united kingdom|u\.k|uk)(?![a-z])/i],
   ["CA", /\bcanada\b/i],
   ["DE", /\bgermany\b/i],
   ["IE", /\bireland\b/i],
@@ -37,7 +38,13 @@ export function checkEligibility(job, profile) {
     /(?:authori[sz]ed|eligible|legally (?:entitled|permitted)|right)\s+to\s+work\s+(?:in|within)\s+(?:the\s+)?([A-Za-z.\s]{2,30})/i,
   );
   if (auth) {
-    const country = COUNTRIES.find(([, re]) => re.test(auth.match[1]));
+    // The first country named wins ("Germany. Join us" is Germany, not "us").
+    const country = COUNTRIES.map(([code, re]) => [
+      code,
+      re.exec(auth.match[1])?.index,
+    ])
+      .filter(([, index]) => index !== undefined)
+      .sort((a, b) => a[1] - b[1])[0];
     if (country) {
       const given = answers.workAuthorization?.[country[0]] || "unknown";
       checks.push(
@@ -58,7 +65,9 @@ export function checkEligibility(job, profile) {
   }
   const sponsor = find(
     text,
-    /(?:unable|not able|cannot|can't|do not|does not|will not|won't|not)\s+(?:to\s+)?(?:offer|provide|support|available|eligible for)?\s*(?:visa\s+)?sponsor(?:ship)?|no\s+(?:visa\s+)?sponsorship|without\s+(?:visa\s+)?sponsorship/i,
+    // A negation shortly before "sponsor" in the same clause, or a negated
+    // predicate after it ("sponsorship is not available"). Offers do not match.
+    /\b(?:no|not|cannot|can't|unable|without|never|won't)\b[^.\n;,]{0,40}?\bsponsor|\bsponsor\w*\s+(?:is\s+|are\s+)?(?:not\s+(?:available|offered|provided|possible)|unavailable)/i,
   );
   if (sponsor) {
     const needs = answers.needsSponsorship || "unknown";
@@ -125,18 +134,27 @@ export function checkEligibility(job, profile) {
       ),
     );
   }
-  const grad = find(
-    text,
-    /(?:graduat\w*|class\s+of)[^.\n]{0,40}?\b(20\d{2})\b/i,
-  );
+  // The first graduation cue followed by year(s) in the same sentence. Several
+  // years ("between 2026 and 2027") form an inclusive range.
+  let grad = null;
+  for (const m of text.matchAll(/(?:graduat\w*|class\s+of)([^.\n]{0,60})/gi)) {
+    const years = [...m[1].matchAll(/\b(20\d{2})\b/g)].map((y) => Number(y[1]));
+    if (years.length) {
+      grad = {
+        low: Math.min(...years),
+        high: Math.max(...years),
+        evidence: snippet(text, m.index, m[0].length),
+      };
+      break;
+    }
+  }
   if (grad) {
-    const year = Number(grad.match[1]);
     const given = answers.graduationYear;
     checks.push(
       result(
         "graduation",
         given
-          ? given === year
+          ? given >= grad.low && given <= grad.high
             ? "meets"
             : "does_not_meet"
           : "needs_verification",

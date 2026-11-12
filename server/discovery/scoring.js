@@ -4,7 +4,10 @@
 // The score describes match to the user's APPROVED profile. It is not a
 // probability of an interview or offer, and no AI is involved.
 import { LEVELS } from "./profile.js";
-export const RUBRIC_VERSION = "fit-2026-11-v1";
+// Bump whenever scoring behavior changes so evaluation reports can be tied to
+// the rubric that produced them. v2: robustness fixes (see CONNECTOR_NOTES and
+// reference/phase1-discovery/README.md); weights are unchanged.
+export const RUBRIC_VERSION = "fit-2026-11-v2";
 export const WEIGHTS = {
   experience: 35,
   requiredSkills: 30,
@@ -107,20 +110,75 @@ const SKILL_LIST = [
   ]),
 ];
 const escape = (s) => s.replace(/[.*+?^${}()|[\]\\/]/g, "\\$&");
-const mentions = (text, term) =>
-  new RegExp(`(?<![a-z0-9+#])${escape(term.toLowerCase())}(?![a-z0-9+#])`).test(
-    text,
+const boundary = (term) =>
+  new RegExp(`(?<![a-z0-9+#])${escape(term)}(?![a-z0-9+#])`);
+const mentions = (text, term) => boundary(term.toLowerCase()).test(text);
+// Words that are also ordinary English: count them as skills only when the
+// listing capitalizes them as a product or language name ("Excel", "Swift"),
+// and never in the verb phrase "excel in/at".
+const AMBIGUOUS = new Set([
+  "excel",
+  "sketch",
+  "swift",
+  "spring",
+  "rust",
+  "flask",
+  "ruby",
+]);
+// Alternative spellings. The approved profile is canonicalized so an approved
+// "Postgres" supports a listing's "PostgreSQL". Short aliases that are common
+// words (go, ts) are accepted on the profile side only.
+const PROFILE_ALIASES = {
+  postgres: "postgresql",
+  nodejs: "node.js",
+  node: "node.js",
+  js: "javascript",
+  ts: "typescript",
+  k8s: "kubernetes",
+  go: "golang",
+  "c sharp": "c#",
+};
+const LISTING_ALIASES = {
+  postgresql: ["postgres"],
+  "node.js": ["nodejs"],
+  kubernetes: ["k8s"],
+  javascript: ["js"],
+};
+const canonicalSkill = (name) => {
+  const key = String(name).trim().toLowerCase();
+  return PROFILE_ALIASES[key] || key;
+};
+function skillMentioned(rawText, skill) {
+  if (AMBIGUOUS.has(skill)) {
+    const name = skill[0].toUpperCase() + skill.slice(1);
+    return new RegExp(
+      `(?<![A-Za-z0-9+#])${name}(?![A-Za-z0-9+#])(?!\\s+(?:in|at|as|on)\\b)`,
+    ).test(rawText);
+  }
+  const lower = rawText.toLowerCase();
+  return [skill, ...(LISTING_ALIASES[skill] || [])].some((t) =>
+    boundary(t).test(lower),
   );
+}
+// A "preferred" section starts at a line that BEGINS with a cue phrase. Matching
+// whole lines keeps sentences such as "eligible for a performance bonus" from
+// moving real requirements into the preferred bucket.
+const PREFERRED_HEADING =
+  /^[\s>*#\-•–:]*(?:preferred|nice[- ]to[- ]haves?|bonus points|desired|desirable|good to have|pluses|what(?:'s| is| would be) (?:a )?(?:plus|nice))\b/i;
 function splitSections(description) {
   const text = String(description || "");
-  const heading =
-    /(?:^|\n)[^\n]{0,60}(?:preferred|nice[- ]to[- ]have|bonus|desired|a plus)[^\n]{0,60}(?:\n|$)/i.exec(
-      text,
-    );
-  const index = heading ? heading.index : -1;
-  return index >= 0
-    ? { required: text.slice(0, index), preferred: text.slice(index) }
-    : { required: text, preferred: "" };
+  let offset = 0;
+  for (const line of text.split("\n")) {
+    const trimmed = line.trim();
+    if (
+      offset > 0 &&
+      PREFERRED_HEADING.test(line) &&
+      (trimmed.length <= 60 || /^[^:]{1,60}:/.test(trimmed))
+    )
+      return { required: text.slice(0, offset), preferred: text.slice(offset) };
+    offset += line.length + 1;
+  }
+  return { required: text, preferred: "" };
 }
 export function jobLevel(title) {
   const t = ` ${String(title).toLowerCase()} `;
@@ -135,9 +193,11 @@ export function jobLevel(title) {
   return null; // Unstated titles are unknown, not "mid".
 }
 function yearsRequired(description) {
+  // "5-7 years" asks for 5; the lower bound is what must be met. Only the
+  // first number of a range is captured.
   const found = [
     ...String(description).matchAll(
-      /(\d{1,2})\s*\+?\s*(?:or more\s+)?years?/gi,
+      /(?<![\d.])(\d{1,2})\s*(?:\+|(?:-|–|to)\s*\d{1,2})?\s*(?:or more\s+)?years?/gi,
     ),
   ].map((m) => Number(m[1]));
   return found.length
@@ -174,7 +234,7 @@ export function scoreJob(job, profile) {
   const approved = new Set(
     (facts.skills || [])
       .filter((s) => s.approved)
-      .map((s) => s.name.trim().toLowerCase()),
+      .map((s) => canonicalSkill(s.name)),
   );
   const components = [];
 
@@ -190,11 +250,16 @@ export function scoreJob(job, profile) {
     );
   else {
     const title = job.title.toLowerCase();
+    // Whole words only (optional plural/-ing): "java" must not match "javascript".
     const roleHit = roles.find((r) =>
       r
         .toLowerCase()
         .split(/\s+/)
-        .every((word) => title.includes(word)),
+        .every((word) =>
+          new RegExp(
+            `(?<![a-z0-9+#])${escape(word)}(?:s|es|ing)?(?![a-z0-9+#])`,
+          ).test(title),
+        ),
     );
     const termHits = terms.filter((t) => mentions(lower, t));
     const evidence = [],
@@ -242,13 +307,11 @@ export function scoreJob(job, profile) {
 
   // Required and preferred skills (30 / 10)
   const { required, preferred } = splitSections(description);
-  const reqText = required.toLowerCase(),
-    prefText = preferred.toLowerCase();
   const reqSkills = SKILL_LIST.filter((s) =>
-    mentions(job.title.toLowerCase() + "\n" + reqText, s),
+    skillMentioned(job.title + "\n" + required, s),
   );
   const prefSkills = SKILL_LIST.filter(
-    (s) => !reqSkills.includes(s) && mentions(prefText, s),
+    (s) => !reqSkills.includes(s) && skillMentioned(preferred, s),
   );
   if (!description || !reqSkills.length)
     components.push(
@@ -337,30 +400,51 @@ export function scoreJob(job, profile) {
     } else unknowns.push("Work arrangement is not stated.");
   if (prefs.locations?.length)
     if (job.location) {
-      const ok =
-        job.work_arrangement === "Remote" ||
-        prefs.locations.some((l) =>
-          job.location.toLowerCase().includes(l.toLowerCase()),
+      // Whole-word match: "US" must not match "Russia", "CA" not "Scranton".
+      const matches = prefs.locations.some((l) =>
+        boundary(l.trim().toLowerCase()).test(job.location.toLowerCase()),
+      );
+      // "Remote" alone fits any location preference; "Remote - Canada" names a
+      // region the person did not choose, so it stays unknown, not a match.
+      const regionless = !job.location
+        .toLowerCase()
+        .replace(/remote|anywhere|worldwide|global|work from home|wfh/g, "")
+        .replace(/[^a-z0-9]/g, "");
+      if (matches || (job.work_arrangement === "Remote" && regionless)) {
+        parts.push(1);
+        evidence.push(`Location: ${job.location}.`);
+      } else if (job.work_arrangement === "Remote")
+        unknowns.push(
+          `Remote role limited to "${job.location}"; your locations were not matched.`,
         );
-      parts.push(ok ? 1 : 0);
-      (ok ? evidence : gaps).push(`Location: ${job.location}.`);
+      else {
+        parts.push(0);
+        gaps.push(`Location: ${job.location}.`);
+      }
     } else unknowns.push("Location is not stated.");
   if (prefs.salaryMin)
     if (job.comp_max || job.comp_min) {
-      if (job.comp_basis !== "Unknown" && job.comp_basis !== prefs.salaryBasis)
+      if (job.comp_basis !== prefs.salaryBasis)
+        // Unknown basis is not assumed to be base pay.
         unknowns.push(
-          `Listing states ${job.comp_basis.toLowerCase()} pay; you set a ${prefs.salaryBasis.toLowerCase()} minimum, so they are not compared.`,
+          job.comp_basis === "Unknown"
+            ? "Listing does not say whether pay is base or total, so it is not compared."
+            : `Listing states ${job.comp_basis.toLowerCase()} pay; you set a ${prefs.salaryBasis.toLowerCase()} minimum, so they are not compared.`,
         );
       else if (
         job.comp_period === "Year" &&
-        (!prefs.salaryCurrency || prefs.salaryCurrency === job.comp_currency)
+        prefs.salaryCurrency &&
+        prefs.salaryCurrency === job.comp_currency
       ) {
         const ok = (job.comp_max || job.comp_min) >= prefs.salaryMin;
         parts.push(ok ? 1 : 0);
         (ok ? evidence : gaps).push(
           `Listed pay reaches ${job.comp_max || job.comp_min} ${job.comp_currency}.`,
         );
-      } else unknowns.push("Pay period or currency differs from your minimum.");
+      } else
+        unknowns.push(
+          "Pay period or currency differs from your minimum (or your minimum has no currency).",
+        );
     } else
       unknowns.push("Compensation is not stated; this is not treated as zero.");
   components.push(

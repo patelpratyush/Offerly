@@ -556,7 +556,7 @@ test("fit scoring is explainable, versioned and never rewards unsupported skills
   const description =
     "Requirements\n5+ years with Python and PostgreSQL. Payments experience. Kafka.\nNice to have\nKubernetes, Terraform";
   const fit = scoreJob(jobRow({ description }), approvedProfile());
-  assert.equal(fit.rubricVersion, "fit-2026-11-v1");
+  assert.equal(fit.rubricVersion, "fit-2026-11-v2");
   assert.deepEqual(
     fit.components.map((c) => c.weight),
     [35, 30, 20, 10, 5],

@@ -312,9 +312,9 @@ const PARSERS = {
           postedPrecision: posted.precision,
           postedTimezone: posted.timezone,
           description: str(job.descriptionPlain, MAX_DESCRIPTION),
-          workArrangement: job.isRemote
-            ? "Remote"
-            : arrangement(job.workplaceType),
+          // Ashby documents isRemote as true for Remote OR Hybrid, so it cannot
+          // establish "Remote" alone; only workplaceType can.
+          workArrangement: arrangement(job.workplaceType),
           employmentType: employment(job.employmentType),
           compensation: salary
             ? {

@@ -1,0 +1,355 @@
+{
+  "version": 1,
+  "datasetKind": "synthetic",
+  "provenance": "SYNTHETIC SEED SET. Invented profiles and listings with labels written by the harness author, who also knows the rubric. It exists only to prove the harness runs end to end. It is NOT human review and NOT validation of the fit rubric, eligibility checks or the 7-of-10 relevance target. No real person, employer or listing is represented.",
+  "reviewers": [{ "id": "synthetic-author", "independent": false }],
+  "profiles": [
+    {
+      "id": "p-backend",
+      "description": "Synthetic senior backend engineer.",
+      "profile": {
+        "facts": {
+          "targetRoles": ["Backend Engineer"],
+          "seniority": "senior",
+          "yearsExperience": 6,
+          "skills": [
+            { "name": "Python", "approved": true },
+            { "name": "PostgreSQL", "approved": true },
+            { "name": "Kafka", "approved": true },
+            { "name": "Rust", "approved": false }
+          ],
+          "experienceTerms": ["payments"]
+        },
+        "eligibility": {
+          "workAuthorization": { "US": "yes" },
+          "needsSponsorship": "no",
+          "usCitizen": "unknown",
+          "securityClearance": "unknown",
+          "graduationYear": null
+        },
+        "preferences": {
+          "locations": [],
+          "arrangements": [],
+          "salaryMin": 150000,
+          "salaryCurrency": "USD",
+          "salaryBasis": "Base"
+        }
+      }
+    },
+    {
+      "id": "p-analyst",
+      "description": "Synthetic junior data analyst.",
+      "profile": {
+        "facts": {
+          "targetRoles": ["Data Analyst"],
+          "seniority": "junior",
+          "yearsExperience": 1,
+          "skills": [
+            { "name": "SQL", "approved": true },
+            { "name": "Excel", "approved": true },
+            { "name": "Tableau", "approved": true },
+            { "name": "Python", "approved": true }
+          ],
+          "experienceTerms": ["reporting"]
+        },
+        "eligibility": {
+          "workAuthorization": {},
+          "needsSponsorship": "unknown",
+          "usCitizen": "unknown",
+          "securityClearance": "none",
+          "graduationYear": 2026
+        },
+        "preferences": {
+          "locations": ["Chicago"],
+          "arrangements": [],
+          "salaryMin": null,
+          "salaryCurrency": "",
+          "salaryBasis": "Base"
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "id": "a1",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Senior Backend Engineer",
+        "location": "New York, NY",
+        "description": "Build payments systems.\nRequirements\n5+ years with Python and PostgreSQL.\nNice to have\nKafka",
+        "comp_min": 170000,
+        "comp_max": 210000,
+        "comp_currency": "USD",
+        "comp_period": "Year",
+        "comp_basis": "Base"
+      }
+    },
+    {
+      "id": "a2",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Backend Engineer, Payments",
+        "location": "Remote - US",
+        "work_arrangement": "Remote",
+        "description": "Requirements\n3+ years of Python. Experience with payments and Kafka."
+      }
+    },
+    {
+      "id": "a3",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Staff Backend Engineer",
+        "location": "Austin, TX",
+        "description": "Requirements\n10+ years of Python and PostgreSQL. Lead architecture for payments."
+      }
+    },
+    {
+      "id": "a4",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Senior Frontend Engineer",
+        "location": "New York, NY",
+        "description": "Requirements\nReact, TypeScript, CSS."
+      }
+    },
+    {
+      "id": "a5",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Senior Backend Engineer",
+        "location": "Washington, DC",
+        "description": "Requirements\nPython and PostgreSQL. Must be a U.S. citizen."
+      }
+    },
+    {
+      "id": "a6",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Senior Backend Engineer",
+        "location": "Boston, MA",
+        "description": "Requirements\nPython and Kafka. You must be authorized to work in the United States. We are unable to provide visa sponsorship."
+      }
+    },
+    {
+      "id": "a7",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Engineering Manager, Backend",
+        "location": "New York, NY",
+        "description": "Requirements\nPeople management. Python background."
+      }
+    },
+    {
+      "id": "a8",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Senior Data Engineer",
+        "location": "Remote",
+        "work_arrangement": "Remote",
+        "description": "Requirements\nPython, SQL, Spark and Airflow pipelines."
+      }
+    },
+    {
+      "id": "a9",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Junior Backend Engineer",
+        "location": "New York, NY",
+        "description": "Requirements\nPython. Mentorship provided."
+      }
+    },
+    {
+      "id": "a10",
+      "profileId": "p-backend",
+      "listing": {
+        "title": "Backend Engineer",
+        "location": "New York, NY",
+        "description": ""
+      }
+    },
+    {
+      "id": "b1",
+      "profileId": "p-analyst",
+      "listing": {
+        "title": "Data Analyst",
+        "location": "Chicago, IL",
+        "description": "Requirements\nSQL, Excel and Tableau. Weekly reporting."
+      }
+    },
+    {
+      "id": "b2",
+      "profileId": "p-analyst",
+      "listing": {
+        "title": "Junior Data Analyst",
+        "location": "Chicago, IL",
+        "description": "Requirements\nSQL and Python. Build reporting dashboards."
+      }
+    },
+    {
+      "id": "b3",
+      "profileId": "p-analyst",
+      "listing": {
+        "title": "Senior Data Scientist",
+        "location": "San Francisco, CA",
+        "description": "Requirements\n6+ years. Python, machine learning, statistics."
+      }
+    },
+    {
+      "id": "b4",
+      "profileId": "p-analyst",
+      "listing": {
+        "title": "Marketing Manager",
+        "location": "Chicago, IL",
+        "description": "Requirements\nExcel and HubSpot. Campaign planning."
+      }
+    },
+    {
+      "id": "b5",
+      "profileId": "p-analyst",
+      "listing": {
+        "title": "Data Analyst",
+        "location": "Denver, CO",
+        "description": "Requirements\nSQL and Excel. Must be eligible to work in the United States."
+      }
+    },
+    {
+      "id": "b6",
+      "profileId": "p-analyst",
+      "listing": {
+        "title": "Data Analyst, New Graduate",
+        "location": "Chicago, IL",
+        "description": "Open to students graduating in 2027.\nRequirements\nSQL and Tableau."
+      }
+    }
+  ],
+  "labels": [
+    {
+      "exampleId": "a1",
+      "reviewer": "synthetic-author",
+      "fit": 3,
+      "eligibility": "meets",
+      "relevant": true,
+      "notes": ""
+    },
+    {
+      "exampleId": "a2",
+      "reviewer": "synthetic-author",
+      "fit": 3,
+      "eligibility": "meets",
+      "relevant": true,
+      "notes": ""
+    },
+    {
+      "exampleId": "a3",
+      "reviewer": "synthetic-author",
+      "fit": 1,
+      "eligibility": "meets",
+      "relevant": false,
+      "notes": "10+ years above profile"
+    },
+    {
+      "exampleId": "a4",
+      "reviewer": "synthetic-author",
+      "fit": 0,
+      "eligibility": "meets",
+      "relevant": false,
+      "notes": ""
+    },
+    {
+      "exampleId": "a5",
+      "reviewer": "synthetic-author",
+      "fit": 3,
+      "eligibility": "needs_verification",
+      "relevant": true,
+      "notes": "citizenship unanswered"
+    },
+    {
+      "exampleId": "a6",
+      "reviewer": "synthetic-author",
+      "fit": 3,
+      "eligibility": "meets",
+      "relevant": true,
+      "notes": ""
+    },
+    {
+      "exampleId": "a7",
+      "reviewer": "synthetic-author",
+      "fit": 1,
+      "eligibility": "meets",
+      "relevant": false,
+      "notes": "management track"
+    },
+    {
+      "exampleId": "a8",
+      "reviewer": "synthetic-author",
+      "fit": 2,
+      "eligibility": "meets",
+      "relevant": true,
+      "notes": "adjacent role"
+    },
+    {
+      "exampleId": "a9",
+      "reviewer": "synthetic-author",
+      "fit": 1,
+      "eligibility": "meets",
+      "relevant": false,
+      "notes": "too junior"
+    },
+    {
+      "exampleId": "a10",
+      "reviewer": "synthetic-author",
+      "fit": 1,
+      "eligibility": "meets",
+      "relevant": false,
+      "notes": "no listing text to judge; included to expose title-only scoring"
+    },
+    {
+      "exampleId": "b1",
+      "reviewer": "synthetic-author",
+      "fit": 3,
+      "eligibility": "meets",
+      "relevant": true,
+      "notes": ""
+    },
+    {
+      "exampleId": "b2",
+      "reviewer": "synthetic-author",
+      "fit": 3,
+      "eligibility": "meets",
+      "relevant": true,
+      "notes": ""
+    },
+    {
+      "exampleId": "b3",
+      "reviewer": "synthetic-author",
+      "fit": 0,
+      "eligibility": "meets",
+      "relevant": false,
+      "notes": ""
+    },
+    {
+      "exampleId": "b4",
+      "reviewer": "synthetic-author",
+      "fit": 0,
+      "eligibility": "meets",
+      "relevant": false,
+      "notes": ""
+    },
+    {
+      "exampleId": "b5",
+      "reviewer": "synthetic-author",
+      "fit": 2,
+      "eligibility": "needs_verification",
+      "relevant": true,
+      "notes": "work authorization unanswered"
+    },
+    {
+      "exampleId": "b6",
+      "reviewer": "synthetic-author",
+      "fit": 2,
+      "eligibility": "does_not_meet",
+      "relevant": false,
+      "notes": "graduation 2027 vs stated 2026"
+    }
+  ]
+}

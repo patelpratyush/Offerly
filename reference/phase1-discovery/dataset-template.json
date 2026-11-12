@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "datasetKind": "human",
+  "provenance": "REPLACE: who supplied the profiles and listings, how they were minimized and consented, and the date. Do not leave this text in place.",
+  "reviewers": [
+    { "id": "reviewer-a", "independent": true },
+    { "id": "reviewer-b", "independent": true }
+  ],
+  "profiles": [
+    {
+      "id": "profile-1",
+      "description": "REPLACE with a one-line, non-identifying description.",
+      "profile": {
+        "facts": {
+          "targetRoles": [],
+          "seniority": "",
+          "yearsExperience": null,
+          "skills": [{ "name": "REPLACE", "approved": true }],
+          "experienceTerms": []
+        },
+        "eligibility": {
+          "workAuthorization": {},
+          "needsSponsorship": "unknown",
+          "usCitizen": "unknown",
+          "securityClearance": "unknown",
+          "graduationYear": null
+        },
+        "preferences": {
+          "locations": [],
+          "arrangements": [],
+          "salaryMin": null,
+          "salaryCurrency": "",
+          "salaryBasis": "Base"
+        }
+      }
+    }
+  ],
+  "examples": [
+    {
+      "id": "ex-001",
+      "profileId": "profile-1",
+      "listing": {
+        "title": "REPLACE",
+        "location": "",
+        "description": "REPLACE with the listing text exactly as the rubric will see it.",
+        "work_arrangement": "Unknown",
+        "comp_min": null,
+        "comp_max": null,
+        "comp_currency": "",
+        "comp_period": "Unknown",
+        "comp_basis": "Unknown"
+      }
+    }
+  ],
+  "labels": []
+}
