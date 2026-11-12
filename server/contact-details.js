@@ -4,6 +4,7 @@ const source = z.enum([
   "Manual entry",
   "Email signature",
   "Introduction",
+  "Imported",
   "Other",
 ]);
 const evidence = z.string().trim().max(2000).default("");

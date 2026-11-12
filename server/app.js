@@ -27,6 +27,9 @@ import {
   applicationDetailsShape,
   validateApplicationDetails,
 } from "./application-details.js";
+import { mountPreparation } from "./preparation.js";
+import { mountTailored } from "./tailored.js";
+import { mountContactImport } from "./contact-import.js";
 import { stringify } from "csv-stringify/sync";
 const text = z.string().trim().max(10000);
 const date = z
@@ -445,7 +448,10 @@ export async function createApp(store, options = {}) {
       );
     res.json(events);
   });
-  mountFiles(app, store, config, limit);
+  const { storeFile } = mountFiles(app, store, config, limit);
+  mountPreparation(app, store, limit);
+  mountTailored(app, store, config, limit, storeFile);
+  mountContactImport(app, store);
   mountImportRoutes(app, store, validate);
   mountDuplicateRoutes(app, store);
   app.get("/api/export.csv", async (req, res) => {

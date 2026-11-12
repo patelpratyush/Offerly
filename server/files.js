@@ -224,12 +224,13 @@ export function mountFiles(app, store, config, limit) {
     ((body) => scanWithClamav(body, config.scannerSocket));
   const needsScan =
     config.production || !!config.scannerSocket || !!config.scanDocument;
-  app.post("/api/files", async (req, res, next) => {
+  // Shared by uploads and server-generated documents so scanning, quotas,
+  // storage lifecycle and ownership rechecks stay identical.
+  async function storeFile(user, sessionHash, name, b) {
     let key,
       putStarted = false,
       putConfirmed = false;
     try {
-      await limit("upload:" + req.user.id, 5, 60000);
       if (
         (config.production && !config.scannerSocket && !config.scanDocument) ||
         (config.vercel && !config.fileStorage)
@@ -238,27 +239,15 @@ export function mountFiles(app, store, config, limit) {
           503,
           "Uploads unavailable until document scanning is configured",
         );
-      const f = z
-        .object({
-          name: z.string().max(180),
-          body: z
-            .string()
-            .max(27962028)
-            .refine((v) => v.length % 4 === 0 && !/[^A-Za-z0-9+/=]/.test(v)),
-        })
-        .parse(req.body);
-      const b = Buffer.from(f.body, "base64");
-      if (b.toString("base64") !== f.body)
-        throw new HttpError(400, "Invalid file encoding");
       if (config.vercel && b.length > 2 * 1024 * 1024)
         throw new HttpError(413, "Hosted documents must be 2 MB or smaller");
-      const mime = await validateDocument(f.name, b);
+      const mime = await validateDocument(name, b);
       const id = randomUUID();
       if (config.fileStorage) {
-        key = `documents/${req.user.id}/${id}`;
+        key = `documents/${user}/${id}`;
         await reserveFileObject(store, {
           key,
-          userId: req.user.id,
+          userId: user,
           fileId: id,
           size: b.length,
         });
@@ -276,19 +265,14 @@ export function mountFiles(app, store, config, limit) {
             .prepare(
               "SELECT token FROM sessions WHERE token=? AND user_id=? AND expires>? AND last_seen>?",
             )
-            .get(
-              req.sessionHash,
-              req.user.id,
-              Date.now(),
-              Date.now() - 1800000,
-            ))
+            .get(sessionHash, user, Date.now(), Date.now() - 1800000))
         )
           throw new HttpError(401, "Sign in again");
         const used = await db
           .prepare(
             "SELECT COALESCE(sum(length(body)),0) bytes,count(*) n FROM files WHERE user_id=?",
           )
-          .get(req.user.id);
+          .get(user);
         if (
           !config.fileStorage &&
           (used.bytes + b.length > MAX_STORAGE || used.n >= 100)
@@ -303,8 +287,8 @@ export function mountFiles(app, store, config, limit) {
           )
           .run(
             id,
-            req.user.id,
-            f.name,
+            user,
+            name,
             mime,
             digest(b),
             config.fileStorage ? Buffer.alloc(0) : b,
@@ -315,7 +299,7 @@ export function mountFiles(app, store, config, limit) {
           );
         if (key) await attachFileObject(store, key);
       });
-      res.json({ id });
+      return id;
     } catch (e) {
       if (key) {
         try {
@@ -341,6 +325,36 @@ export function mountFiles(app, store, config, limit) {
           /* Durable cleanup retries storage or database failures. */
         }
       }
+      throw e;
+    }
+  }
+  app.post("/api/files", async (req, res, next) => {
+    try {
+      await limit("upload:" + req.user.id, 5, 60000);
+      if (
+        (config.production && !config.scannerSocket && !config.scanDocument) ||
+        (config.vercel && !config.fileStorage)
+      )
+        throw new HttpError(
+          503,
+          "Uploads unavailable until document scanning is configured",
+        );
+      const f = z
+        .object({
+          name: z.string().max(180),
+          body: z
+            .string()
+            .max(27962028)
+            .refine((v) => v.length % 4 === 0 && !/[^A-Za-z0-9+/=]/.test(v)),
+        })
+        .parse(req.body);
+      const b = Buffer.from(f.body, "base64");
+      if (b.toString("base64") !== f.body)
+        throw new HttpError(400, "Invalid file encoding");
+      res.json({
+        id: await storeFile(req.user.id, req.sessionHash, f.name, b),
+      });
+    } catch (e) {
       next(e);
     }
   });
@@ -365,6 +379,7 @@ export function mountFiles(app, store, config, limit) {
       next(e);
     }
   });
+  return { storeFile };
 }
 
 export async function readDocumentBody(file, config) {

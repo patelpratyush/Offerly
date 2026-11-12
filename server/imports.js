@@ -30,7 +30,7 @@ export const importFields = [
   "description",
   "archived",
 ];
-function readCsv(csv) {
+export function readCsv(csv) {
   if (typeof csv !== "string" || csv.length > 2000000)
     throw new HttpError(400, "Choose a CSV smaller than 2 MB");
   let rows;

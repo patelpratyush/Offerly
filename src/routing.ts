@@ -21,7 +21,7 @@ export function safeReturnTo(value: string | null): string {
     const url = new URL(value, "https://offerly.invalid");
     if (
       url.origin !== "https://offerly.invalid" ||
-      !/^\/(today|applications(?:\/[^/]+)?|discover|companies|reviews|connections|documents|insights|settings)$/.test(
+      !/^\/(today|applications(?:\/[^/]+)?|discover|companies|reviews|connections|documents|prepare|insights|settings)$/.test(
         url.pathname,
       )
     )
@@ -63,6 +63,7 @@ export const pagePaths: Record<string, string> = {
   Reviews: "/reviews",
   Connections: "/connections",
   Documents: "/documents",
+  Prepare: "/prepare",
   Insights: "/insights",
   Settings: "/settings",
 };
