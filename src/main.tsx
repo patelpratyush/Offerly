@@ -58,6 +58,9 @@ import { Timeline } from "./components/workspace/Timeline";
 import { ContactDirectory } from "./components/workspace/ContactDirectory";
 import { DocumentLibrary } from "./components/workspace/DocumentLibrary";
 import { WorkspaceInsights } from "./components/workspace/WorkspaceInsights";
+import { InsightsMetrics } from "./components/workspace/InsightsMetrics";
+import { ReminderRulesSettings } from "./components/workspace/ReminderRulesSettings";
+import { CalendarExport } from "./components/workspace/CalendarExport";
 import { TodayFocus } from "./components/workspace/TodayFocus";
 import { Landing } from "./pages/Landing";
 import { useDialogViewport } from "./useDialogViewport";
@@ -1998,10 +2001,13 @@ function App() {
               </>
             )}
             {page === "Insights" && (
-              <WorkspaceInsights
-                applications={w.applications}
-                stages={w.user.stages}
-              />
+              <>
+                <WorkspaceInsights
+                  applications={w.applications}
+                  stages={w.user.stages}
+                />
+                <InsightsMetrics request={api} />
+              </>
             )}
             {page === "Settings" && (
               <SettingsPage
@@ -3201,6 +3207,8 @@ function SettingsPage({
           <RecoveryCodes run={run} busy={busy} />
         </section>
         <GmailSettings request={api} />
+        <ReminderRulesSettings request={api} />
+        <CalendarExport />
         <RecruitingAISettings request={api} />
         <section className="panel settings-panel space-top">
           <h2>Your data belongs to you</h2>

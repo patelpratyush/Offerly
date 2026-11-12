@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { HttpError } from "./security.js";
+import { cancelStaleDeliveries } from "./reminder-rules.js";
 const date = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -174,6 +175,7 @@ export async function reconcileReminders(
   id,
 ) {
   if (!sourceKinds.includes(kind)) return;
+  await cancelStaleDeliveries(store, userId, id);
   const rows = await store.db
     .prepare(
       "SELECT * FROM records WHERE user_id=? AND kind='reminder' AND json_extract(data,'$.state') IN ('scheduled','due') AND (json_extract(data,'$.sourceId')=? OR json_extract(data,'$.applicationId')=?) LIMIT 501",

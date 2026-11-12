@@ -2,6 +2,7 @@ import { processGmailSync } from "./gmail-sync.js";
 import { randomUUID } from "node:crypto";
 import { processRecruitingJobs } from "./recruiting.js";
 import { processReminders } from "./reminders.js";
+import { processDeliveries } from "./reminder-rules.js";
 
 // Persistent lease and cursors survive cold starts and separate Vercel instances.
 // Lease exceeds the hosted function's 90-second maximum lifetime.
@@ -13,6 +14,8 @@ export async function runScheduler(
     recruiting = processRecruitingJobs,
     gmail = processGmailSync,
     reminders = processReminders,
+    deliveries = processDeliveries,
+    notificationProvider,
     cleanup,
   } = {},
 ) {
@@ -40,6 +43,14 @@ export async function runScheduler(
       cursor: state.reminder_cursor,
       deadline,
     });
+    // Delivery dispatch is best effort and reported only in logs; it must not
+    // alter queue progress. Email stays disabled unless a provider is injected.
+    await deliveries(store, {
+      deadline: deadline + 3000,
+      provider: notificationProvider,
+    }).catch(() =>
+      console.error(JSON.stringify({ event: "reminder_delivery_failed" })),
+    );
     const cleanupResult = cleanup
       ? await cleanup(store, { deadline: deadline + 5000 })
       : undefined;
