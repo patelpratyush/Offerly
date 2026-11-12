@@ -158,7 +158,12 @@ test("preparation workspace: answers, interview prep, manual drafts, tailoring a
   await page.getByLabel(/I reviewed this text/).check();
   await page.getByRole("button", { name: "Save as new version" }).click();
   await expect(page.getByText(/Saved as a new document version/)).toBeVisible();
-  await expect(page.getByText(/PDF export .* not available/)).toBeVisible();
+  await expect(
+    page.getByText(/Formatting-preserving export is not available/),
+  ).toBeVisible();
+  const pdfPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Download .pdf" }).click();
+  expect((await pdfPromise).suggestedFilename()).toMatch(/\.pdf$/);
   const downloadPromise = page.waitForEvent("download");
   await page.getByRole("button", { name: "Download .docx" }).click();
   expect((await downloadPromise).suggestedFilename()).toMatch(/\.docx$/);

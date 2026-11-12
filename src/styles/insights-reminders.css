@@ -199,3 +199,55 @@
     transition: none !important;
   }
 }
+.today-reminders {
+  margin-bottom: 27px;
+}
+.today-reminder-list {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.today-reminder-list li {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: start;
+  border-top: 1px solid var(--line, currentColor);
+  padding-top: 10px;
+}
+.today-reminder-list small {
+  display: block;
+  color: var(--muted, inherit);
+}
+.today-reminder-links {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+.cal-agenda {
+  list-style: none;
+  margin: 12px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 10px;
+}
+.cal-agenda li {
+  border-top: 1px solid var(--line, currentColor);
+  padding-top: 10px;
+}
+.cal-agenda small {
+  display: block;
+}
+.cal-agenda [data-cancelled="true"] strong {
+  text-decoration: line-through;
+}
+@media (max-width: 640px) {
+  .today-reminder-list li {
+    grid-template-columns: 1fr;
+  }
+  .today-reminder-links {
+    justify-items: start;
+  }
+}

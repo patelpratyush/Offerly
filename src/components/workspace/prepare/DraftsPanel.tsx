@@ -9,6 +9,12 @@ const templateLabels: Record<string, string> = {
   referral: "Referral request",
   deadline_extension: "Deadline extension",
 };
+const toneLabels: Record<string, string> = {
+  standard: "Standard",
+  concise: "Concise",
+  warm: "Warm",
+  formal: "Formal",
+};
 const placeholderPattern = /\[\[[^\]\n]{1,200}\]\]/g;
 const findPlaceholders = (...parts: string[]) => [
   ...new Set(parts.join("\n").match(placeholderPattern) || []),
@@ -18,6 +24,7 @@ type Form = {
   version?: number;
   clientId: string;
   template: string;
+  tone: string;
   applicationId: string;
   roundId: string;
   contactIds: string[];
@@ -29,6 +36,7 @@ type Form = {
 const blank = (): Form => ({
   clientId: newId(),
   template: "follow_up",
+  tone: "standard",
   applicationId: "",
   roundId: "",
   contactIds: [],
@@ -71,6 +79,7 @@ export function DraftsPanel({
     try {
       const result = await prepApi("/prepare/drafts/generate", "POST", {
         template: f.template,
+        tone: f.tone,
         applicationId: f.applicationId,
         roundId: f.roundId,
         contactIds: f.contactIds,
@@ -203,6 +212,21 @@ export function DraftsPanel({
             </select>
           </label>
           <label>
+            Tone
+            <select
+              value={form.tone}
+              onChange={(e) =>
+                setForm({ ...form, tone: e.target.value, generated: false })
+              }
+            >
+              {Object.entries(toneLabels).map(([v, l]) => (
+                <option key={v} value={v}>
+                  {l}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
             Linked application
             <select
               required
@@ -279,7 +303,8 @@ export function DraftsPanel({
               {form.generated ? "Refill from template" : "Fill from template"}
             </button>
             <span className="prepare-hint">
-              Refilling replaces the subject and body below.
+              Tone only changes fixed wording; it never adds facts. Refilling
+              replaces the subject and body below.
             </span>
           </div>
           {!!notes.length && (
@@ -452,6 +477,7 @@ export function DraftsPanel({
                     version: d.version,
                     clientId: d.clientId || newId(),
                     template: d.template,
+                    tone: "standard",
                     applicationId: d.applicationId,
                     roundId: d.roundId || "",
                     contactIds: d.contactIds,

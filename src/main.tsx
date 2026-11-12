@@ -1150,6 +1150,7 @@ function App() {
                   today={today}
                   onOpen={showDetail}
                   onReviews={() => setPage("Reviews")}
+                  request={api}
                 />
                 <div className="today-grid" id="today-actions">
                   <section className="panel">

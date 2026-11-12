@@ -2,6 +2,7 @@ import { z } from "zod";
 import { HttpError } from "./security.js";
 import { readDocumentBody } from "./files.js";
 import { buildDocx, docxText } from "./docx-text.js";
+import { buildPdf, pdfText } from "./pdf-text.js";
 
 // DOC 03/04 deterministic slice. Text is user-edited; the server never rewrites
 // it, never edits a submitted version, and only appends a new immutable version.
@@ -17,6 +18,7 @@ const tailoredInput = z.object({
   baseDocumentId: z.string().uuid(),
   text: z.string().trim().min(1).max(60000),
   gaps: z.array(z.string().trim().max(500)).max(100).default([]),
+  format: z.enum(["docx", "pdf"]).default("docx"),
 });
 
 export function mountTailored(app, store, config, limit, storeFile) {
@@ -40,11 +42,23 @@ export function mountTailored(app, store, config, limit, storeFile) {
           403,
           "This older document must be uploaded again for security screening",
         );
+      if (/\.pdf$/i.test(file.name)) {
+        const result = pdfText(await readDocumentBody(file, config));
+        return res.json(
+          result.available
+            ? {
+                ...result,
+                notice:
+                  "Extracted from a simple text-based PDF. Line breaks follow the PDF's layout; check it against the original and fix anything out of order.",
+              }
+            : result,
+        );
+      }
       if (!/\.docx$/i.test(file.name))
         return res.json({
           available: false,
           reason:
-            "Text extraction is available for DOCX files only. Paste the resume text instead.",
+            "Text extraction is available for DOCX files and simple text-based PDFs only. Paste the resume text instead.",
         });
       res.json({
         available: true,
@@ -63,15 +77,18 @@ export function mountTailored(app, store, config, limit, storeFile) {
         .object({
           text: z.string().min(1).max(60000),
           name: z.string().max(200).default("tailored-resume"),
+          format: z.enum(["docx", "pdf"]).default("docx"),
         })
         .parse(req.body);
+      const pdf = input.format === "pdf";
       res
         .set({
-          "Content-Type":
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-          "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(safeName(input.name))}.docx`,
+          "Content-Type": pdf
+            ? "application/pdf"
+            : "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+          "Content-Disposition": `attachment; filename*=UTF-8''${encodeURIComponent(safeName(input.name))}.${input.format}`,
         })
-        .send(buildDocx(input.text));
+        .send(pdf ? buildPdf(input.text) : buildDocx(input.text));
     } catch (e) {
       next(e);
     }
@@ -98,8 +115,8 @@ export function mountTailored(app, store, config, limit, storeFile) {
       const fileId = await storeFile(
         req.user.id,
         req.sessionHash,
-        `${safeName(base.title)} - tailored.docx`,
-        buildDocx(input.text),
+        `${safeName(base.title)} - tailored.${input.format}`,
+        input.format === "pdf" ? buildPdf(input.text) : buildDocx(input.text),
       );
       res.json(
         await atomic(async () => {

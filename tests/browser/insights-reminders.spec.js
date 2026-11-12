@@ -60,7 +60,20 @@ test("insights metrics, reminder rules and calendar export work end to end", asy
   );
   expect(overflow).toBeLessThanOrEqual(1);
 
+  await navigate(page, "Today");
+  const todayReminders = page.getByRole("region", {
+    name: "Reminder deliveries",
+  });
+  await expect(todayReminders).toContainText("Interview: Panel");
+  await expect(todayReminders).toContainText("Pending");
+  await expect(
+    todayReminders.getByRole("button", { name: /Open application/ }).first(),
+  ).toBeVisible();
+
   await navigate(page, "Settings");
+  await expect(
+    page.getByRole("list", { name: "Calendar agenda" }),
+  ).toContainText("Original: ");
   const rules = page.getByRole("heading", { name: "Reminder rules" });
   await expect(rules).toBeVisible();
   await expect(

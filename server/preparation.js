@@ -2,6 +2,7 @@ import { z } from "zod";
 import { HttpError } from "./security.js";
 import {
   templates,
+  tones,
   generateDraft,
   findPlaceholders,
 } from "./message-templates.js";
@@ -339,6 +340,7 @@ export function mountPreparation(app, store, limit) {
           applicationId: uuid,
           roundId: z.union([z.literal(""), uuid]).default(""),
           contactIds: z.array(uuid).max(10).default([]),
+          tone: z.enum(tones).default("standard"),
         })
         .parse(req.body);
       const application = await requireOwned(
@@ -380,6 +382,7 @@ export function mountPreparation(app, store, limit) {
           contacts,
           round,
           userName: req.user.name,
+          tone: input.tone,
         }),
       );
     } catch (e) {
