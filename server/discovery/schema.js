@@ -13,6 +13,9 @@ export const DISCOVERY_TABLES = [
   "discovery_saved_searches",
   "discovery_alert_rules",
   "discovery_notifications",
+  "discovery_digest_settings",
+  "discovery_digests",
+  "discovery_state",
 ];
 export const DISCOVERY_DDL = `
 CREATE TABLE IF NOT EXISTS discovery_companies(id TEXT PRIMARY KEY,canonical_domain TEXT NOT NULL UNIQUE,name TEXT NOT NULL,entity_label TEXT NOT NULL DEFAULT 'employer' CHECK(entity_label IN ('employer','subsidiary','parent')),entity_name TEXT NOT NULL DEFAULT '',size_min INTEGER CHECK(size_min IS NULL OR size_min>=1),size_max INTEGER CHECK(size_max IS NULL OR size_max>=1),size_source_url TEXT NOT NULL DEFAULT '',size_as_of TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
@@ -33,12 +36,33 @@ CREATE TABLE IF NOT EXISTS discovery_user_jobs(user_id TEXT NOT NULL REFERENCES 
 CREATE TABLE IF NOT EXISTS discovery_watchlist(user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,company_id TEXT NOT NULL REFERENCES discovery_companies(id) ON DELETE CASCADE,created_at TEXT NOT NULL,PRIMARY KEY(user_id,company_id));
 CREATE TABLE IF NOT EXISTS discovery_saved_searches(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,filters TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_disc_searches_user ON discovery_saved_searches(user_id);
-CREATE TABLE IF NOT EXISTS discovery_alert_rules(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,filters TEXT NOT NULL,min_fit INTEGER NOT NULL DEFAULT 0,include_unknown_eligibility INTEGER NOT NULL DEFAULT 0,watchlist_only INTEGER NOT NULL DEFAULT 0,paused INTEGER NOT NULL DEFAULT 0,quiet_start TEXT NOT NULL DEFAULT '',quiet_end TEXT NOT NULL DEFAULT '',daily_cap INTEGER NOT NULL DEFAULT 10,since TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS discovery_alert_rules(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,name TEXT NOT NULL,filters TEXT NOT NULL,min_fit INTEGER NOT NULL DEFAULT 0,include_unknown_eligibility INTEGER NOT NULL DEFAULT 0,watchlist_only INTEGER NOT NULL DEFAULT 0,paused INTEGER NOT NULL DEFAULT 0,quiet_start TEXT NOT NULL DEFAULT '',quiet_end TEXT NOT NULL DEFAULT '',daily_cap INTEGER NOT NULL DEFAULT 10,cadence TEXT NOT NULL DEFAULT 'immediate' CHECK(cadence IN ('immediate','daily','weekly')),since TEXT NOT NULL,created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_disc_rules_user ON discovery_alert_rules(user_id);
-CREATE TABLE IF NOT EXISTS discovery_notifications(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,rule_id TEXT NOT NULL REFERENCES discovery_alert_rules(id) ON DELETE CASCADE,job_id TEXT NOT NULL REFERENCES discovery_jobs(id) ON DELETE CASCADE,event TEXT NOT NULL CHECK(event IN ('new_job','reopened')),status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','delivered','suppressed')),suppress_reason TEXT NOT NULL DEFAULT '',payload TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL,deliver_after TEXT NOT NULL,delivered_at TEXT,read_at TEXT,UNIQUE(user_id,rule_id,job_id,event));
+CREATE TABLE IF NOT EXISTS discovery_notifications(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,rule_id TEXT NOT NULL REFERENCES discovery_alert_rules(id) ON DELETE CASCADE,job_id TEXT NOT NULL REFERENCES discovery_jobs(id) ON DELETE CASCADE,event TEXT NOT NULL CHECK(event IN ('new_job','reopened')),status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','delivered','suppressed')),suppress_reason TEXT NOT NULL DEFAULT '',payload TEXT NOT NULL DEFAULT '{}',created_at TEXT NOT NULL,deliver_after TEXT NOT NULL,delivered_at TEXT,read_at TEXT,digest_id TEXT NOT NULL DEFAULT '',UNIQUE(user_id,rule_id,job_id,event));
 CREATE INDEX IF NOT EXISTS idx_disc_notes_user ON discovery_notifications(user_id,status,created_at);
+CREATE TABLE IF NOT EXISTS discovery_digest_settings(user_id TEXT PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,hour INTEGER NOT NULL DEFAULT 8 CHECK(hour>=0 AND hour<=23),weekday INTEGER NOT NULL DEFAULT 1 CHECK(weekday>=0 AND weekday<=6),updated_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS discovery_digests(id TEXT PRIMARY KEY,user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,cadence TEXT NOT NULL CHECK(cadence IN ('daily','weekly')),period_key TEXT NOT NULL,payload TEXT NOT NULL DEFAULT '{}',item_count INTEGER NOT NULL DEFAULT 0,created_at TEXT NOT NULL,delivered_at TEXT NOT NULL,read_at TEXT,UNIQUE(user_id,cadence,period_key));
+CREATE INDEX IF NOT EXISTS idx_disc_digests_user ON discovery_digests(user_id,delivered_at);
+CREATE TABLE IF NOT EXISTS discovery_state(key TEXT PRIMARY KEY,value TEXT NOT NULL DEFAULT '',updated_at TEXT NOT NULL);
+CREATE INDEX IF NOT EXISTS idx_disc_notes_rule ON discovery_notifications(rule_id,status);
 `;
 export async function initializeDiscovery(store) {
   if (store.db.hosted) return; // Hosted schemas come from supabase/migrations.
   await store.db.exec(DISCOVERY_DDL);
+  // Databases created before digests existed gain the new columns in place.
+  const add = async (table, column, ddl) => {
+    const columns = await store.db.prepare(`PRAGMA table_info(${table})`).all();
+    if (!columns.some((c) => c.name === column))
+      await store.db.exec(`ALTER TABLE ${table} ADD COLUMN ${ddl}`);
+  };
+  await add(
+    "discovery_alert_rules",
+    "cadence",
+    "cadence TEXT NOT NULL DEFAULT 'immediate' CHECK(cadence IN ('immediate','daily','weekly'))",
+  );
+  await add(
+    "discovery_notifications",
+    "digest_id",
+    "digest_id TEXT NOT NULL DEFAULT ''",
+  );
 }

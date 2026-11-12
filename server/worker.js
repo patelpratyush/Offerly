@@ -5,18 +5,33 @@ import { createStore } from "./store.js";
 import { processRecruitingJobs } from "./recruiting.js";
 import { processReminders } from "./reminders.js";
 import { processDeliveries } from "./reminder-rules.js";
+import { processDiscovery } from "./discovery/runner.js";
 process.umask(0o077);
 const store = await createStore(
   resolve(process.env.DATABASE_PATH || "data/offerly.sqlite"),
 );
 let stopping = false;
 let active = null;
+// The worker ticks every second; discovery is flag-gated and runs at most once
+// per DISCOVERY_TICK_INTERVAL_MS (default 60s, minimum 10s).
+let lastDiscovery = 0;
+async function throttledDiscovery(db) {
+  const every = Math.max(
+    10000,
+    Number(process.env.DISCOVERY_TICK_INTERVAL_MS) || 60000,
+  );
+  if (Date.now() - lastDiscovery < every) return {};
+  lastDiscovery = Date.now();
+  const result = await processDiscovery(db, { deadline: Date.now() + 30000 });
+  return { failed: result.alerts?.failed || result.collection?.failed || 0 };
+}
 async function runTick() {
   for (const [kind, processWork] of [
     ["gmail", processGmailSync],
     ["recruiting", processRecruitingJobs],
     ["reminders", processReminders],
     ["reminder_deliveries", processDeliveries],
+    ["discovery", throttledDiscovery],
   ]) {
     try {
       const result = await processWork(store, { now: new Date() });

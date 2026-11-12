@@ -3,6 +3,7 @@ import { randomUUID } from "node:crypto";
 import { processRecruitingJobs } from "./recruiting.js";
 import { processReminders } from "./reminders.js";
 import { processDeliveries } from "./reminder-rules.js";
+import { processDiscovery } from "./discovery/runner.js";
 
 // Persistent lease and cursors survive cold starts and separate Vercel instances.
 // Lease exceeds the hosted function's 90-second maximum lifetime.
@@ -15,6 +16,7 @@ export async function runScheduler(
     gmail = processGmailSync,
     reminders = processReminders,
     deliveries = processDeliveries,
+    discovery = processDiscovery,
     notificationProvider,
     cleanup,
   } = {},
@@ -51,6 +53,15 @@ export async function runScheduler(
     }).catch(() =>
       console.error(JSON.stringify({ event: "reminder_delivery_failed" })),
     );
+    // Discovery collection and alert processing are off unless their env flags
+    // are set; the step returns {skipped:true} otherwise. Best effort, bounded,
+    // and kept out of queue progress like deliveries.
+    const discoveryResult = await discovery(store, {
+      now: Date.now(),
+      deadline: deadline + 3000,
+    }).catch(() => {
+      console.error(JSON.stringify({ event: "discovery_tick_failed" }));
+    });
     const cleanupResult = cleanup
       ? await cleanup(store, { deadline: deadline + 5000 })
       : undefined;
@@ -58,6 +69,9 @@ export async function runScheduler(
       gmail: gmailResult,
       recruiting: reviewResult,
       reminders: reminderResult,
+      ...(discoveryResult && !discoveryResult.skipped
+        ? { discovery: discoveryResult }
+        : {}),
       ...(cleanupResult ? { cleanup: cleanupResult } : {}),
     };
     await store.db

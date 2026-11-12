@@ -10,6 +10,7 @@ import { upsertCompany, upsertSource, setSourcePolicy } from "./registry.js";
 import { ingestDue, collectionEnabled } from "./ingest.js";
 import { createHttpFetcher, createRateLimiter } from "./connectors.js";
 import { processAlerts } from "./alerts.js";
+import { processDigests } from "./digests.js";
 import { canonicalDomain } from "./normalize.js";
 const [command, ...args] = process.argv.slice(2);
 const path =
@@ -59,6 +60,7 @@ try {
     });
     console.log(JSON.stringify(results));
     console.log(JSON.stringify(await processAlerts(store)));
+    console.log(JSON.stringify(await processDigests(store)));
   } else {
     console.error("Unknown command");
     process.exitCode = 1;

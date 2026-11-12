@@ -15,7 +15,12 @@ All work is deterministic: no AI, no email sending, no automatic stage updates. 
 - Views, saved searches, dismissals, watchlist, already-applied detection. In-app alerts with dedupe, quiet hours, cap and delivery-time recheck.
 - Pages `/discover` and `/companies`.
 
-Open: daily/weekly digests, email/browser channels, unsubscribe, scheduler wiring, rubric validation against human-reviewed examples (required by PRD), catalog paging at scale, snapshot retention, live-response verification of connectors.
+Follow-ups built after this phase:
+- Daily and weekly in-app digests (`server/discovery/digests.js`): one per user, cadence and local period, each job once with matched rules explained, rechecked at send time (aged-out, closed, dismissed, applied jobs are counted and left out; an empty digest says so). Honors user time zone, quiet hours, per-rule cap and pause. Pause or a change to matching or cadence cancels pending deliveries. The UI warns when a recency window is shorter than the digest interval.
+- Scheduler/worker wiring (`server/discovery/runner.js`), all off by default: `DISCOVERY_COLLECTION_ENABLED=true` collects (bounded sources per tick, per-source backoff) and `DISCOVERY_ALERTS_ENABLED=true` processes alerts and digests (bounded users per tick, persisted cursor). Worker cadence: `DISCOVERY_TICK_INTERVAL_MS` (default 60000, minimum 10000).
+- Scale: SQL pre-filtering and keyset/cursor paging for the feed (fit-ranked views scan a bounded set, `scanCap` 5000), alert queueing and delivery read only the rows they need. Snapshot retention keeps the newest `DISCOVERY_SNAPSHOT_KEEP` (default 20) per listing.
+
+Open: email/browser channels and unsubscribe (not built; email must use `server/notification-provider.js`), rubric validation against human-reviewed examples (required by PRD), live-response verification of connectors.
 
 ## Phase 4: preparation and communication
 

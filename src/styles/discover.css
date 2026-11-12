@@ -369,3 +369,22 @@
     animation: none !important;
   }
 }
+.discover-more {
+  justify-self: start;
+  margin-top: 12px;
+}
+.discover-warning {
+  margin: 4px 0;
+  padding: 6px 10px;
+  border-left: 4px solid var(--ink);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+}
+.discover-notes li ul {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0 0 0 12px;
+  display: grid;
+  gap: 6px;
+}

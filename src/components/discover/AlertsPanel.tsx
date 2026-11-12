@@ -13,7 +13,50 @@ type Rule = {
   quietStart: string;
   quietEnd: string;
   dailyCap: number;
+  cadence: Cadence;
+  warnings: string;
   filters: Filters;
+};
+type Cadence = "immediate" | "daily" | "weekly";
+type Digest = {
+  id: string;
+  cadence: "daily" | "weekly";
+  deliveredAt: string;
+  read: boolean;
+  message: string;
+  items: {
+    jobId: string;
+    title: string;
+    company: string;
+    event: string;
+    postedLabel: string;
+    firstDiscoveredAt: string;
+    rules: { id: string; name: string; why: string[] }[];
+  }[];
+  excluded: { total: number };
+};
+const WINDOW_HOURS: Record<string, number> = {
+  "24h": 24,
+  "3d": 72,
+  "7d": 168,
+  "30d": 720,
+};
+const INTERVAL_HOURS = { daily: 24, weekly: 168 };
+const DAYS = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+// Mirrors server/discovery/digest-rules.js so the warning shows while editing.
+const windowWarning = (windowValue: string, cadence: Cadence) => {
+  if (cadence === "immediate") return "";
+  const hours = WINDOW_HOURS[windowValue];
+  if (!hours || hours >= INTERVAL_HOURS[cadence]) return "";
+  return `The recency window (${windowValue}) is shorter than the ${cadence} digest interval, so jobs that match when found may age out before the digest is sent and will be left out.`;
 };
 type Note = {
   id: string;
@@ -34,6 +77,9 @@ export function AlertsPanel({
 }) {
   const [rules, setRules] = useState<Rule[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
+  const [digests, setDigests] = useState<Digest[]>([]);
+  const [settings, setSettings] = useState({ hour: 8, weekday: 1 });
+  const [cadence, setCadence] = useState<Cadence>("immediate");
   const [message, setMessage] = useState("");
   const [name, setName] = useState("");
   const [minFit, setMinFit] = useState(0);
@@ -45,15 +91,19 @@ export function AlertsPanel({
   const [backfill, setBackfill] = useState(false);
   const load = useCallback(async () => {
     try {
-      const [r, n] = await Promise.all([
+      const [r, n, d, st] = await Promise.all([
         discoveryApi<Rule[]>("/alerts"),
         discoveryApi<{ unread: number; notifications: Note[] }>(
           "/notifications",
         ),
+        discoveryApi<{ unread: number; digests: Digest[] }>("/digests"),
+        discoveryApi<{ hour: number; weekday: number }>("/digest-settings"),
       ]);
       setRules(r);
       setNotes(n.notifications);
-      onNewAlerts(n.unread);
+      setDigests(d.digests);
+      setSettings(st);
+      onNewAlerts(n.unread + d.unread);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Could not load alerts");
     }
@@ -83,6 +133,7 @@ export function AlertsPanel({
         quietStart,
         quietEnd,
         dailyCap: cap,
+        cadence,
         backfill,
       });
       setName("");
@@ -98,6 +149,7 @@ export function AlertsPanel({
     quietStart: r.quietStart,
     quietEnd: r.quietEnd,
     dailyCap: r.dailyCap,
+    cadence: r.cadence,
     ...patch,
   });
   return (
@@ -131,6 +183,107 @@ export function AlertsPanel({
         <span role="status" className="muted">
           {message}
         </span>
+      </div>
+      <h3>Digests</h3>
+      {digests.length ? (
+        <ul className="discover-notes" aria-label="Digests">
+          {digests.map((d) => (
+            <li key={d.id} className={d.read ? "" : "is-unread"}>
+              <strong>
+                {d.cadence === "weekly" ? "Weekly" : "Daily"} digest
+              </strong>
+              <span className="muted"> · sent {when(d.deliveredAt)}</span>
+              <p>{d.message}</p>
+              {d.items.length > 0 && (
+                <ul>
+                  {d.items.map((i) => (
+                    <li key={i.jobId}>
+                      <strong>
+                        {i.event === "reopened" ? "Reopened: " : ""}
+                        {i.title}
+                      </strong>{" "}
+                      at {i.company}
+                      <span className="muted">
+                        {" "}
+                        · {i.postedLabel} · found {when(i.firstDiscoveredAt)}
+                      </span>
+                      <ul>
+                        {i.rules.map((r) => (
+                          <li key={r.id} className="muted">
+                            Matched rule "{r.name}": {r.why.join("; ")}
+                          </li>
+                        ))}
+                      </ul>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {!d.read && (
+                <button
+                  className="text-button"
+                  onClick={() =>
+                    run(() =>
+                      discoveryApi("/digests/read", "POST", { id: d.id }),
+                    )
+                  }
+                >
+                  Mark digest read
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      ) : (
+        <p className="muted">
+          No digests yet. Digests are sent only at your scheduled time, and only
+          when something matched.
+        </p>
+      )}
+      <div className="discover-filter-grid">
+        <label>
+          Digest time (your local time)
+          <select
+            value={settings.hour}
+            onChange={(e) =>
+              void run(
+                () =>
+                  discoveryApi("/digest-settings", "PUT", {
+                    ...settings,
+                    hour: Number(e.target.value),
+                  }),
+                "Digest time saved.",
+              )
+            }
+          >
+            {Array.from({ length: 24 }, (_, h) => (
+              <option key={h} value={h}>
+                {String(h).padStart(2, "0")}:00
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Weekly digest day
+          <select
+            value={settings.weekday}
+            onChange={(e) =>
+              void run(
+                () =>
+                  discoveryApi("/digest-settings", "PUT", {
+                    ...settings,
+                    weekday: Number(e.target.value),
+                  }),
+                "Digest day saved.",
+              )
+            }
+          >
+            {DAYS.map((d, i) => (
+              <option key={d} value={i}>
+                {d}
+              </option>
+            ))}
+          </select>
+        </label>
       </div>
       <h3>Notifications</h3>
       {notes.length ? (
@@ -172,10 +325,19 @@ export function AlertsPanel({
               <strong>{r.name}</strong>
               <span className="muted">
                 {" "}
+                ·{" "}
+                {r.cadence === "immediate"
+                  ? "immediate"
+                  : r.cadence + " digest"}
                 · min fit {r.minFit} · max {r.dailyCap}/day
                 {r.quietStart ? ` · quiet ${r.quietStart}–${r.quietEnd}` : ""}
                 {r.paused ? " · paused" : ""}
               </span>{" "}
+              {r.warnings && (
+                <span role="note" className="discover-warning">
+                  Warning: {r.warnings}{" "}
+                </span>
+              )}
               <button
                 className="text-button"
                 onClick={() =>
@@ -215,6 +377,17 @@ export function AlertsPanel({
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
+          </label>
+          <label>
+            Delivery
+            <select
+              value={cadence}
+              onChange={(e) => setCadence(e.target.value as Cadence)}
+            >
+              <option value="immediate">Immediately</option>
+              <option value="daily">Daily digest</option>
+              <option value="weekly">Weekly digest</option>
+            </select>
           </label>
           <label>
             Minimum fit
@@ -277,6 +450,11 @@ export function AlertsPanel({
           />
           Also alert on jobs found in the last 7 days
         </label>
+        {windowWarning(filters.window, cadence) && (
+          <p role="note" className="discover-warning">
+            Warning: {windowWarning(filters.window, cadence)}
+          </p>
+        )}
         <button
           className="primary"
           disabled={!name.trim() || !!quietStart !== !!quietEnd}
