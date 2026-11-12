@@ -41,7 +41,7 @@ Open: daily/weekly digests, email/browser channels, unsubscribe, scheduler wirin
 | `npm audit` | 0 vulnerabilities (lockfile bump of `fast-xml-parser` via `npm audit fix`) |
 | PostgreSQL 18 (local throwaway instance) | existing `test:postgres` suite 73/73; new discovery, preparation, insights, reminder-rule and calendar tests 45/45, run with all migrations applied |
 
-Not run: hosted Supabase Postgres, any live provider, any production check. The new test files are not in the `test:postgres` script list; add them before relying on that script.
+Not run: hosted Supabase Postgres, any live provider, any production check. The new test files are now in the `test:postgres` script.
 
 ## Still owner-gated
 
