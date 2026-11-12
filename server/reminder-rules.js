@@ -452,8 +452,12 @@ export async function processDeliveries(store, options = {}) {
     ...(await dispatchDeliveries(store, { ...options, now, deadline })),
   };
 }
-const publicDelivery = (d) => ({
+const httpUrl = (v) => (/^https?:\/\/[^\s]+$/i.test(v || "") ? v : "");
+const publicDelivery = (d, urls = new Map()) => ({
   id: d.id,
+  sourceKind: d.sourceKind,
+  sourceId: d.sourceId,
+  sourceUrl: d.sourceKind === "round" ? urls.get(d.sourceId) || "" : "",
   ruleId: d.ruleId,
   channel: d.channel,
   title: d.title,
@@ -473,9 +477,12 @@ export function mountReminderRules(app, store, options = {}) {
       .filter((d) => d.state !== "canceled")
       .sort((a, b) => a.fireAt.localeCompare(b.fireAt))
       .slice(-100);
+    const urls = new Map(
+      (await store.list(userId, "round")).map((r) => [r.id, httpUrl(r.url)]),
+    );
     return {
       settings: await loadSettings(store, userId),
-      deliveries: deliveries.map(publicDelivery),
+      deliveries: deliveries.map((d) => publicDelivery(d, urls)),
       email: {
         available: provider.enabled === true,
         note: provider.enabled

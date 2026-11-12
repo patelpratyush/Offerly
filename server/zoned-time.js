@@ -45,6 +45,10 @@ export function zonedToUtc(date, time, timeZone) {
   }
   return found.size === 1 ? [...found][0] : null;
 }
+/** Local wall-clock "YYYY-MM-DD HH:mm" for an instant in a time zone. */
+export function localDateTimeOf(ms, timeZone) {
+  return parts(ms, timeZone).replace("T", " ");
+}
 export function localDateOf(ms, timeZone) {
   return parts(ms, timeZone).slice(0, 10);
 }

@@ -36,6 +36,7 @@ export function TailorPanel({
   const [status, setStatus] = useState("");
   const [busy, setBusy] = useState(false);
   const [clientId, setClientId] = useState(newId());
+  const [saveFormat, setSaveFormat] = useState<"docx" | "pdf">("docx");
   const application = applications.find((a) => a.id === applicationId);
   const description: string = application?.description || "";
   const version = documents.find((d) => d.id === documentId);
@@ -135,7 +136,9 @@ export function TailorPanel({
             Load text from this version
           </button>
           <span className="prepare-hint">
-            Text can be read from DOCX versions. For PDFs, paste the text below.
+            Text can be read from DOCX versions and simple text-based PDFs.
+            Scanned or custom-font PDFs are not supported: paste the text below
+            instead.
           </span>
         </div>
         {notice && (
@@ -156,7 +159,7 @@ export function TailorPanel({
           <textarea
             rows={14}
             value={source}
-            placeholder="Load a DOCX version or paste text here, then edit the right-hand copy."
+            placeholder="Load a DOCX or text-based PDF version, or paste text here, then edit the right-hand copy."
             onChange={(e) => {
               setSource(e.target.value);
               setText(e.target.value);
@@ -236,6 +239,16 @@ export function TailorPanel({
           {status}
         </p>
         <div className="prepare-actions wide">
+          <label>
+            Saved version format
+            <select
+              value={saveFormat}
+              onChange={(e) => setSaveFormat(e.target.value as "docx" | "pdf")}
+            >
+              <option value="docx">DOCX</option>
+              <option value="pdf">PDF (plain text)</option>
+            </select>
+          </label>
           <button
             className="primary"
             disabled={
@@ -249,6 +262,7 @@ export function TailorPanel({
                   baseDocumentId: documentId,
                   text,
                   gaps,
+                  format: saveFormat,
                 });
                 setClientId(newId());
                 setReviewed(false);
@@ -277,6 +291,24 @@ export function TailorPanel({
           </button>
           <button
             className="secondary"
+            disabled={!text.trim() || busy}
+            onClick={() =>
+              run(async () => {
+                saveBlob(
+                  await prepBlob("/prepare/export", {
+                    text,
+                    name: label,
+                    format: "pdf",
+                  }),
+                  `${label} - tailored.pdf`,
+                );
+              })
+            }
+          >
+            Download .pdf
+          </button>
+          <button
+            className="secondary"
             disabled={!text.trim()}
             onClick={() =>
               saveBlob(
@@ -289,8 +321,9 @@ export function TailorPanel({
           </button>
         </div>
         <p className="prepare-hint wide">
-          DOCX and plain text are plain, unformatted exports of exactly this
-          text. PDF export and formatting-preserving export are not available.
+          DOCX, PDF and plain text are plain, unformatted exports of exactly
+          this text (the PDF is a simple one-font layout; characters outside
+          Latin-1 appear as “?”). Formatting-preserving export is not available.
         </p>
       </div>
       {!!siblings.length && (
