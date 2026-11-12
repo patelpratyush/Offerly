@@ -3,6 +3,7 @@ import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
+import { seedDiscovery } from "./seed-discovery.js";
 const directory = mkdtempSync(join(tmpdir(), "offerly-e2e-"));
 const env = {
   ...process.env,
@@ -14,6 +15,7 @@ const env = {
 };
 for (const key of ["APP_ORIGIN", "REGISTRATION_TOKEN", "CLAMAV_SOCKET"])
   delete env[key];
+await seedDiscovery(env.DATABASE_PATH);
 let stopping = false;
 const children = [
   spawn(process.execPath, ["server/index.js"], { env, stdio: "inherit" }),

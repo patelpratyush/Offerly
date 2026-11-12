@@ -1,0 +1,32 @@
+{
+  "_note": "Synthetic fixture shaped like the Greenhouse Job Board API. Not recorded from any employer.",
+  "jobs": [
+    {
+      "id": 1001,
+      "title": "Senior Backend Engineer",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/1001",
+      "location": { "name": "New York, NY" },
+      "requisition_id": "REQ-100",
+      "first_published": "2026-11-11T05:00:00-05:00",
+      "updated_at": "2026-11-10T09:00:00-05:00",
+      "content": "&lt;p&gt;We build payments systems.&lt;/p&gt;&lt;h3&gt;Requirements&lt;/h3&gt;&lt;ul&gt;&lt;li&gt;5+ years of experience with Python and PostgreSQL&lt;/li&gt;&lt;li&gt;Experience with Kafka&lt;/li&gt;&lt;/ul&gt;&lt;h3&gt;Nice to have&lt;/h3&gt;&lt;ul&gt;&lt;li&gt;Kubernetes&lt;/li&gt;&lt;li&gt;Terraform&lt;/li&gt;&lt;/ul&gt;&lt;p&gt;You must be authorized to work in the United States. We are unable to provide visa sponsorship.&lt;/p&gt;"
+    },
+    {
+      "id": 1002,
+      "title": "Data Analyst",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/1002",
+      "location": { "name": "New York, NY" },
+      "requisition_id": "REQ-200",
+      "first_published": "2026-10-20",
+      "content": "&lt;p&gt;Analyze data with SQL and Excel.&lt;/p&gt;"
+    },
+    {
+      "id": 1003,
+      "title": "Data Analyst",
+      "absolute_url": "https://boards.greenhouse.io/acme/jobs/1003",
+      "location": { "name": "New York, NY" },
+      "requisition_id": "REQ-201",
+      "content": "&lt;p&gt;A second, separate opening on the same team.&lt;/p&gt;"
+    }
+  ]
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "id": "lv-aaa-1",
+    "text": "Senior Backend Engineer",
+    "hostedUrl": "https://jobs.lever.co/acme/lv-aaa-1",
+    "createdAt": 1793550000000,
+    "categories": { "location": "New York, NY", "commitment": "Full-time", "team": "Platform" },
+    "workplaceType": "hybrid",
+    "descriptionPlain": "Build services. Requirements: Python, PostgreSQL.",
+    "salaryRange": { "currency": "USD", "interval": "per-year-salary", "min": 180000, "max": 220000 }
+  },
+  {
+    "id": "lv-aaa-2",
+    "text": "Product Designer",
+    "hostedUrl": "https://jobs.lever.co/acme/lv-aaa-2",
+    "createdAt": 1793000000000,
+    "categories": { "location": "Remote - US", "commitment": "Full-time" },
+    "workplaceType": "remote",
+    "descriptionPlain": "Design with Figma."
+  }
+]

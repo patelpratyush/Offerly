@@ -1,0 +1,29 @@
+{
+  "apiVersion": "1",
+  "jobs": [
+    {
+      "id": "ab-1",
+      "title": "Platform Engineer",
+      "location": "Remote",
+      "isRemote": true,
+      "isListed": true,
+      "publishedAt": "2026-11-09T12:30:00.000+00:00",
+      "jobUrl": "https://jobs.ashbyhq.com/globex/ab-1",
+      "employmentType": "FullTime",
+      "descriptionPlain": "Operate infrastructure with Kubernetes and Terraform on AWS.",
+      "compensation": {
+        "summaryComponents": [
+          { "compensationType": "Salary", "interval": "1 YEAR", "currencyCode": "USD", "minValue": 150000, "maxValue": 190000 }
+        ]
+      }
+    },
+    {
+      "id": "ab-2",
+      "title": "Hidden Role",
+      "location": "Remote",
+      "isListed": false,
+      "jobUrl": "https://jobs.ashbyhq.com/globex/ab-2",
+      "descriptionPlain": "Unlisted postings must not be ingested."
+    }
+  ]
+}

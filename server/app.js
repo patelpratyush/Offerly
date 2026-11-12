@@ -5,6 +5,7 @@ import { mountGmail } from "./gmail-account.js";
 import express from "express";
 import { mountRecruiting } from "./recruiting.js";
 import { mountReminders } from "./reminders.js";
+import { mountDiscovery } from "./discovery/routes.js";
 import { z } from "zod";
 import {
   securityConfig,
@@ -352,6 +353,7 @@ export async function createApp(store, options = {}) {
   mountRecruitingActions(app, store, validate);
   mountAiPolicy(app, store, options.recruitingAi || {});
   mountReminders(app, store);
+  mountDiscovery(app, store);
   async function matchingSubmission(userId, data, excludeId) {
     if (data.retracted) return undefined;
     return (await list(userId, "document_usage")).find(
