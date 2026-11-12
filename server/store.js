@@ -1,6 +1,7 @@
 import { initializeAiPolicy } from "./recruiting-ai-policy.js";
 import { initializeGmailSync } from "./gmail-sync.js";
 import { initializeGmail } from "./gmail-account.js";
+import { initializeDiscovery } from "./discovery/schema.js";
 import { openDatabase } from "./database.js";
 import { randomUUID } from "node:crypto";
 import { chmodSync, existsSync } from "node:fs";
@@ -272,5 +273,6 @@ export async function createStore(path, options) {
   await initializeGmail(store);
   await initializeGmailSync(store);
   await initializeAiPolicy(store);
+  await initializeDiscovery(store);
   return store;
 }

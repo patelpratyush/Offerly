@@ -13,6 +13,7 @@
     "lint": "eslint server api scripts tests *.config.js",
     "test:security": "node --test tests/server/security.test.js",
     "check": "npm run lint && npm test && npm run build && npm audit --audit-level=moderate",
+    "discovery:admin": "node --env-file-if-exists=.env server/discovery/admin.js",
     "db:backup": "node server/backup.js backup",
     "db:restore": "node server/backup.js restore",
     "test:postgres": "node --input-type=module -e \"if (!process.env.TEST_DATABASE_URL) throw new Error('TEST_DATABASE_URL required')\" && node --test --test-concurrency=1 tests/server/database.test.js tests/server/api.test.js tests/server/recruiting.test.js tests/server/document-usage.test.js tests/server/tracker-completion.test.js tests/server/tracker-fields.test.js tests/server/scheduler.test.js tests/server/file-lifecycle.test.js tests/server/hosted-files.test.js tests/server/scanner-maintenance.test.js tests/server/recovery.test.js",

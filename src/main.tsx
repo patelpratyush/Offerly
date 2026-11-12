@@ -32,6 +32,8 @@ import {
   Clock,
   Archive,
   Menu,
+  Compass,
+  Building2,
 } from "lucide-react";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
@@ -62,6 +64,9 @@ import { TodayFocus } from "./components/workspace/TodayFocus";
 import { Landing } from "./pages/Landing";
 import { useDialogViewport } from "./useDialogViewport";
 import "./styles/flavor.css";
+import "./styles/discover.css";
+import { DiscoverPage } from "./components/discover/DiscoverPage";
+import { CompaniesPage } from "./components/discover/CompaniesPage";
 const APPLICATION_PAGE_SIZE = 25;
 type Item = { id: string; version: number; [key: string]: any };
 type Workspace = {
@@ -842,6 +847,8 @@ function App() {
   const nav = [
     ["Today", Sun],
     ["Applications", BriefcaseBusiness],
+    ["Discover", Compass],
+    ["Companies", Building2],
     ["Reviews", Check],
     ["Connections", Users],
     ["Documents", Files],
@@ -1058,6 +1065,8 @@ function App() {
                     : (
                         {
                           Applications: "02 / THE PIPELINE",
+                          Discover: "03 / THE FEED",
+                          Companies: "04 / THE COVERAGE",
                           Reviews: "03 / THE EVIDENCE DESK",
                           Connections: "04 / YOUR PEOPLE",
                           Documents: "05 / THE ARCHIVE",
@@ -1079,6 +1088,10 @@ function App() {
                           "Tasks, deadlines and interviews that need your attention.",
                         Applications:
                           "Track each role, who replies next, and what needs doing.",
+                        Discover:
+                          "Roles from the employer boards Offerly covers, with the evidence behind each match.",
+                        Companies:
+                          "Which employers and boards Offerly checks, and how recently.",
                         Connections:
                           "Recruiters, referrals and the applications you share.",
                         Documents:
@@ -1095,6 +1108,8 @@ function App() {
                 </p>
               </div>
               {page !== "Settings" &&
+                page !== "Discover" &&
+                page !== "Companies" &&
                 page !== "Insights" &&
                 page !== "Reviews" && (
                   <button
@@ -1997,6 +2012,8 @@ function App() {
                 )}
               </>
             )}
+            {page === "Discover" && <DiscoverPage />}
+            {page === "Companies" && <CompaniesPage />}
             {page === "Insights" && (
               <WorkspaceInsights
                 applications={w.applications}
