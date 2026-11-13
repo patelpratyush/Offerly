@@ -94,6 +94,9 @@ export function TodayFocus({
           today={today}
           onSource={open}
         />
+        {!w.assessments.some(
+          (a) => !["Completed", "Canceled"].includes(a.status),
+        ) && <p className="dep-note">No assessment deadlines.</p>}
         <p className="dep-note">Recorded next steps. You decide what changes.</p>
       </section>
       <section className="hold" aria-labelledby="hold-heading">
