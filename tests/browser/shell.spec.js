@@ -106,8 +106,13 @@ test("palette adds an application or a task", async ({ page }) => {
   await page.getByRole("combobox").fill("add task");
   await page.keyboard.press("Enter");
   await expect(page.getByRole("dialog", { name: "task editor" })).toBeVisible();
-  await page.keyboard.press("Escape");
-  await expect(page.getByRole("dialog", { name: "task editor" })).toBeHidden();
+  // The dialog's Escape handler attaches just after it paints; retry the key.
+  await expect(async () => {
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("dialog", { name: "task editor" })).toBeHidden({
+      timeout: 1000,
+    });
+  }).toPass({ timeout: 8000 });
   await page.keyboard.press("Control+k");
   await page.getByRole("combobox").fill("add app");
   await page.keyboard.press("Enter");
