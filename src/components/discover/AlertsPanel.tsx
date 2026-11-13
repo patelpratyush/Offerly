@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { discoveryApi, when } from "./api";
 import { Filters } from "./DiscoverFilters";
@@ -79,6 +79,30 @@ export function AlertsPanel({
   const [notes, setNotes] = useState<Note[]>([]);
   const [digests, setDigests] = useState<Digest[]>([]);
   const [settings, setSettings] = useState({ hour: 8, weekday: 1 });
+  // Latest digest settings, updated synchronously so back-to-back changes never
+  // send a stale value for the other field.
+  const settingsRef = useRef(settings);
+  // Bumped on every local settings edit; a reload that began before an edit must
+  // not overwrite it with a stale server snapshot.
+  const editSeq = useRef(0);
+  const pendingSaves = useRef(0);
+  const saveDigest = (
+    patch: Partial<{ hour: number; weekday: number }>,
+    done: string,
+  ) => {
+    editSeq.current += 1;
+    const next = { ...settingsRef.current, ...patch };
+    settingsRef.current = next;
+    setSettings(next);
+    pendingSaves.current += 1;
+    void run(async () => {
+      try {
+        await discoveryApi("/digest-settings", "PUT", next);
+      } finally {
+        pendingSaves.current -= 1;
+      }
+    }, done);
+  };
   const [cadence, setCadence] = useState<Cadence>("immediate");
   const [message, setMessage] = useState("");
   const [name, setName] = useState("");
@@ -90,6 +114,7 @@ export function AlertsPanel({
   const [cap, setCap] = useState(10);
   const [backfill, setBackfill] = useState(false);
   const load = useCallback(async () => {
+    const seenEdit = editSeq.current;
     try {
       const [r, n, d, st] = await Promise.all([
         discoveryApi<Rule[]>("/alerts"),
@@ -102,7 +127,10 @@ export function AlertsPanel({
       setRules(r);
       setNotes(n.notifications);
       setDigests(d.digests);
-      setSettings(st);
+      if (editSeq.current === seenEdit && pendingSaves.current === 0) {
+        settingsRef.current = st;
+        setSettings(st);
+      }
       onNewAlerts(n.unread + d.unread);
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Could not load alerts");
@@ -245,14 +273,7 @@ export function AlertsPanel({
           <select
             value={settings.hour}
             onChange={(e) =>
-              void run(
-                () =>
-                  discoveryApi("/digest-settings", "PUT", {
-                    ...settings,
-                    hour: Number(e.target.value),
-                  }),
-                "Digest time saved.",
-              )
+              saveDigest({ hour: Number(e.target.value) }, "Digest time saved.")
             }
           >
             {Array.from({ length: 24 }, (_, h) => (
@@ -267,12 +288,8 @@ export function AlertsPanel({
           <select
             value={settings.weekday}
             onChange={(e) =>
-              void run(
-                () =>
-                  discoveryApi("/digest-settings", "PUT", {
-                    ...settings,
-                    weekday: Number(e.target.value),
-                  }),
+              saveDigest(
+                { weekday: Number(e.target.value) },
                 "Digest day saved.",
               )
             }
