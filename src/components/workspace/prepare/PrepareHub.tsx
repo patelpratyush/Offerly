@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import "../../../styles/prepare.css";
 import { Item, prepApi } from "./prepareApi";
 import { AnswersPanel } from "./AnswersPanel";
 import { InterviewPrepPanel } from "./InterviewPrepPanel";
