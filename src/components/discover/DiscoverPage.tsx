@@ -136,6 +136,13 @@ export function DiscoverPage() {
   return (
     <div className="discover" id="discover-root">
       <section className="discover-coverage panel" aria-label="Source coverage">
+        {coverage && (
+          <span className="discover-board" aria-hidden="true">
+            <b>{coverage.summary.collectingSources}</b>/
+            {coverage.summary.sources}
+            <i>boards collected</i>
+          </span>
+        )}
         <strong>Coverage is limited.</strong>{" "}
         {coverage
           ? `${coverage.summary.collectingSources} of ${coverage.summary.sources} registered employer boards are being collected across ${coverage.summary.companies} companies${
@@ -220,6 +227,13 @@ export function DiscoverPage() {
               {when(generatedAt)}
               {nextCursor ? " · more available" : ""}
             </p>
+            <div className="discover-colhead" aria-hidden="true">
+              <span>Service</span>
+              <span>Where</span>
+              <span>Fit</span>
+              <span>Eligibility</span>
+              <span>Freshness</span>
+            </div>
             <div className="discover-list">
               {jobs.map((job) => (
                 <JobCard
@@ -242,6 +256,11 @@ export function DiscoverPage() {
           </>
         ) : (
           <div className="panel discover-empty">
+            <span className="discover-code">
+              {coverage && coverage.summary.collectingSources === 0
+                ? "NO SERVICE"
+                : "NO MATCH"}
+            </span>
             <h2>{current[1]}: nothing to show</h2>
             <p>{empty}</p>
             {nextCursor && (
