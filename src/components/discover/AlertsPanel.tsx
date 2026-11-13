@@ -1,4 +1,4 @@
-import { FormEvent, useCallback, useEffect, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { discoveryApi, when } from "./api";
 import { Filters } from "./DiscoverFilters";
@@ -79,6 +79,18 @@ export function AlertsPanel({
   const [notes, setNotes] = useState<Note[]>([]);
   const [digests, setDigests] = useState<Digest[]>([]);
   const [settings, setSettings] = useState({ hour: 8, weekday: 1 });
+  // Latest digest settings, updated synchronously so back-to-back changes never
+  // send a stale value for the other field.
+  const settingsRef = useRef(settings);
+  const saveDigest = (
+    patch: Partial<{ hour: number; weekday: number }>,
+    done: string,
+  ) => {
+    const next = { ...settingsRef.current, ...patch };
+    settingsRef.current = next;
+    setSettings(next);
+    void run(() => discoveryApi("/digest-settings", "PUT", next), done);
+  };
   const [cadence, setCadence] = useState<Cadence>("immediate");
   const [message, setMessage] = useState("");
   const [name, setName] = useState("");
@@ -102,6 +114,7 @@ export function AlertsPanel({
       setRules(r);
       setNotes(n.notifications);
       setDigests(d.digests);
+      settingsRef.current = st;
       setSettings(st);
       onNewAlerts(n.unread + d.unread);
     } catch (e) {
@@ -245,14 +258,7 @@ export function AlertsPanel({
           <select
             value={settings.hour}
             onChange={(e) =>
-              void run(
-                () =>
-                  discoveryApi("/digest-settings", "PUT", {
-                    ...settings,
-                    hour: Number(e.target.value),
-                  }),
-                "Digest time saved.",
-              )
+              saveDigest({ hour: Number(e.target.value) }, "Digest time saved.")
             }
           >
             {Array.from({ length: 24 }, (_, h) => (
@@ -267,12 +273,8 @@ export function AlertsPanel({
           <select
             value={settings.weekday}
             onChange={(e) =>
-              void run(
-                () =>
-                  discoveryApi("/digest-settings", "PUT", {
-                    ...settings,
-                    weekday: Number(e.target.value),
-                  }),
+              saveDigest(
+                { weekday: Number(e.target.value) },
                 "Digest day saved.",
               )
             }
