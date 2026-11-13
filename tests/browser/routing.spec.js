@@ -141,7 +141,7 @@ test("application detail URL survives refresh and closes back to originating lis
   await expect(page).toHaveURL(/\/applications$/);
   await page.goto("/today");
   await page
-    .getByRole("button", { name: /Saved.*Route Engineer.*Routing Lab/ })
+    .getByRole("button", { name: /Saved.*Routing Lab.*Route Engineer/ })
     .click();
   await expect(page).toHaveURL(new RegExp(`/applications/${application.id}`));
   await page.goBack();
