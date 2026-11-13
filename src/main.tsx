@@ -876,12 +876,13 @@ function App() {
       </>
     );
     return m.href ? (
-      <a className={className} href={m.href}>
+      <a className={className} href={m.href} aria-label={m.label}>
         {inner}
       </a>
     ) : (
       <button
         className={className}
+        aria-label={m.label}
         disabled={busy}
         onClick={() => performMove(m, a)}
       >
@@ -1207,10 +1208,10 @@ function App() {
                           <button onClick={() => showDetail(a)}>
                             <GateTag stage={a.stage} />
                             <span className="tt-service">
-                              <strong>
-                                {a.company} — {a.title}
-                              </strong>
-                              <small>{a.location || "Location unknown"}</small>
+                              <strong>{a.title}</strong>
+                              <small>
+                                {a.company} · {a.location || "Location unknown"}
+                              </small>
                             </span>
                             <StatusTag status={ownerStatus(a)} />
                             <ArrowUpRight size={15} aria-hidden="true" />
