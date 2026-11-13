@@ -25,10 +25,12 @@ export function ContactDirectory({
               className="contact-identity"
               onClick={() => onEdit(contact)}
             >
-              <span className="avatar">{contact.name.charAt(0)}</span>
-              <span>
+              <span className="avatar" aria-hidden="true">
+                {contact.name.charAt(0)}
+              </span>
+              <span className="dir-name-block">
                 <h2>{contact.name}</h2>
-                <span>
+                <span className="dir-role">
                   {contact.role || "Role unknown"} ·{" "}
                   {contact.company || "Company unknown"}
                 </span>
@@ -42,13 +44,22 @@ export function ContactDirectory({
               </span>
             </button>
             <div className="contact-evidence">
-              <span>{contact.email || "Email unknown"}</span>
+              <span className="dir-email">
+                {contact.email || "Email unknown"}
+              </span>
               <small>
-                {contact.email
-                  ? contact.emailConfirmed
-                    ? "User confirmed"
-                    : "Unconfirmed"
-                  : "Identity not recorded"}
+                {contact.email ? (
+                  <span
+                    className={`dir-tag ${contact.emailConfirmed ? "is-verified" : "is-extracted"}`}
+                  >
+                    {contact.emailConfirmed ? (
+                      <span aria-hidden="true">✓ </span>
+                    ) : null}
+                    {contact.emailConfirmed ? "User confirmed" : "Unconfirmed"}
+                  </span>
+                ) : (
+                  "Identity not recorded"
+                )}
                 {source ? ` · ${source}` : ""}
               </small>
               <small>
@@ -64,14 +75,14 @@ export function ContactDirectory({
               </span>
               {linked.length ? (
                 linked.map((a: Item) => (
-                  <button
-                    key={a.id}
-                    className="text-button"
-                    onClick={() => onOpen(a)}
-                  >
-                    {a.company} · {a.title}
-                    <ArrowUpRight size={13} aria-hidden="true" />
-                  </button>
+                  <span className="dir-leader" key={a.id}>
+                    <button className="text-button" onClick={() => onOpen(a)}>
+                      {a.company} · {a.title}
+                      <ArrowUpRight size={13} aria-hidden="true" />
+                    </button>
+                    <i aria-hidden="true" />
+                    <span className="dir-gate">{a.stage}</span>
+                  </span>
                 ))
               ) : (
                 <small>No linked applications</small>

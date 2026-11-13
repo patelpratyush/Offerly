@@ -1,0 +1,229 @@
+/* Dispatch / Insights = Punctuality report. Horizontal bar rows with an explicit
+   n / denominator in mono; unknown is "No data yet", never zero. */
+
+.shell .insight-layout {
+  gap: var(--s5);
+}
+.shell .insight-pipeline,
+.shell .insight-context > .panel,
+.shell .insights-empty {
+  border: 2px solid var(--rule);
+  border-top-width: 6px;
+  border-radius: 0;
+  background: var(--sheet);
+}
+.shell .insight-pipeline h2,
+.shell .insights-empty h2,
+.shell .ir-section h2,
+.shell .insight-data-note h2 {
+  font-family: var(--font-sign);
+  font-stretch: 70%;
+  font-weight: 800;
+  font-size: 28px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: -0.005em;
+}
+.shell .insight-pipeline .tiny-label,
+.shell .insight-data-note .tiny-label,
+.shell .ir-section .tiny-label,
+.shell .insights-empty .tiny-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+
+/* bar rows */
+.shell .insights {
+  padding-block: var(--s2);
+}
+.shell .bar-row,
+.shell .insight-pipeline .bar-row {
+  display: grid;
+  grid-template-columns: 8rem minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: center;
+  margin-block: 0;
+  padding: var(--s2) 0;
+  border-bottom: 1px dotted var(--ink-2);
+}
+.shell .bar-row > span {
+  font-family: var(--font-sign);
+  font-stretch: 75%;
+  font-weight: 700;
+  font-size: 15px;
+  text-transform: uppercase;
+  overflow-wrap: anywhere;
+}
+.shell .bar-row > div {
+  height: 18px;
+  border: 2px solid var(--rule);
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(
+      90deg,
+      transparent 0 calc(10% - 1px),
+      var(--hair) calc(10% - 1px) 10%
+    ),
+    var(--sheet);
+}
+.shell .bar-row i {
+  display: block;
+  height: 100%;
+  border-radius: 0;
+  background: var(--ink);
+  transition: width 150ms linear;
+}
+.shell .bar-row > b,
+.shell .insight-pipeline .bar-row > b {
+  font-family: var(--font-mono);
+  font-size: 15px;
+  font-weight: 600;
+  text-align: right;
+  white-space: nowrap;
+  min-width: 5.5rem;
+}
+.shell .insight-pipeline .bar-row > b small,
+.shell .source-breakdown small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.shell .source-breakdown > div {
+  border-bottom: 1px dotted var(--ink-2);
+  font-size: 14px;
+}
+.shell .source-breakdown dd {
+  font-family: var(--font-mono);
+}
+.shell .insight-data-note {
+  border-top: 2px solid var(--rule);
+  padding-inline: 0;
+}
+
+/* honest empty states */
+.pr-nodata {
+  display: inline-block;
+  margin: var(--s2) 0;
+  padding: 2px 8px;
+  border: 1px dashed var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* cohort metrics: stat strip, tables as printed report */
+.shell .ir-note {
+  border-left: 4px solid var(--rule);
+  background: var(--paper-2);
+  border-radius: 0;
+  font-size: 14px;
+}
+.shell .ir-stats {
+  gap: 0;
+  border: 2px solid var(--rule);
+  background: var(--sheet);
+}
+.shell .ir-stat {
+  border: 0;
+  border-right: 1px solid var(--rule);
+  border-bottom: 1px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+}
+.shell .ir-stat dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.shell .ir-stat dd {
+  font-family: var(--font-mono);
+  font-size: 26px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.shell .ir-stat dd small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.pr-bar {
+  display: block;
+  height: 14px;
+  margin-top: var(--s2);
+  border: 2px solid var(--rule);
+  background: var(--sheet);
+}
+.pr-bar i {
+  display: block;
+  height: 100%;
+  background: var(--ink);
+}
+.pr-bar em {
+  display: block;
+  padding-inline: var(--s1);
+  font: normal 400 11px/10px var(--font-mono);
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  background: repeating-linear-gradient(
+    -45deg,
+    transparent 0 4px,
+    var(--hair) 4px 5px
+  );
+}
+.shell .ir-table-wrap {
+  border: 2px solid var(--rule);
+  border-radius: 0;
+  background: var(--sheet);
+}
+.shell .ir-table caption {
+  font-family: var(--font-sign);
+  font-stretch: 75%;
+  font-weight: 800;
+  font-size: 17px;
+  text-transform: uppercase;
+}
+.shell .ir-table thead th {
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.shell .ir-table td {
+  font-family: var(--font-mono);
+  font-size: 13px;
+}
+.shell .ir-tag {
+  border: 1px dashed var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .shell .bar-row,
+  .shell .insight-pipeline .bar-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .shell .bar-row > div {
+    grid-column: 1 / -1;
+    grid-row: 2;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell .bar-row i {
+    transition: none;
+  }
+}

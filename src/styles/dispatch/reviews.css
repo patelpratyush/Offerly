@@ -1,0 +1,348 @@
+/* Dispatch / Reviews = Telegrams. Each proposal is a two-column wire:
+   source evidence (left) and current -> proposed (right), decision at the foot.
+   Tokens: ./tokens.css. Global primitives (buttons, inputs, tags) live in core.css. */
+
+.shell .recruiting-review > .section-head {
+  border-bottom: 2px solid var(--rule);
+  padding-bottom: var(--s4);
+  margin-bottom: var(--s4);
+}
+.shell .recruiting-review > .section-head h2 {
+  font-family: var(--font-sign);
+  font-stretch: 70%;
+  font-weight: 800;
+  font-size: 30px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  margin: 0 0 var(--s1);
+}
+.shell .recruiting-review > section > h2 {
+  font-family: var(--font-sign);
+  font-stretch: 70%;
+  font-weight: 800;
+  font-size: 22px;
+  text-transform: uppercase;
+  margin: var(--s5) 0 var(--s3);
+}
+
+/* Non-wire panels in this page (evidence form, jobs, locks) */
+.shell .recruiting-review > section.panel {
+  background: var(--sheet);
+  border: 2px solid var(--rule);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+/* ---- the wire ---- */
+.shell .recruiting-review .wire {
+  --wire-accent: var(--amber);
+  background: var(--sheet);
+  border: 2px solid var(--rule);
+  border-left: 2px solid var(--rule);
+  border-radius: 0;
+  padding: 0;
+  margin: 0 0 var(--s6);
+  overflow: visible;
+}
+.shell .recruiting-review .wire[data-status="pending"] {
+  box-shadow: var(--stamp);
+}
+.shell .recruiting-review .wire[data-status="accepted"],
+.shell .recruiting-review .wire[data-status="corrected"] {
+  --wire-accent: var(--green);
+}
+.shell .recruiting-review .wire[data-status="rejected"],
+.shell .recruiting-review .wire[data-status="undone"] {
+  --wire-accent: var(--ink-2);
+}
+
+.wire-head {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  padding: var(--s2) var(--s4);
+  background: var(--board);
+  color: var(--paper);
+  border-bottom: 2px solid var(--rule);
+}
+.wire-code {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--amber-ink);
+  background: var(--amber);
+  padding: 2px 8px;
+}
+.shell .wire-head h3 {
+  flex: 1 1 12rem;
+  min-width: 0;
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--paper);
+  overflow-wrap: anywhere;
+}
+.shell .wire-head .wire-status {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--paper);
+  background: transparent;
+  border: 1px solid var(--paper);
+  border-radius: 0;
+  padding: 2px 8px;
+}
+.wire[data-status="pending"] .wire-status::before {
+  content: "HOLD · ";
+  color: var(--amber);
+}
+
+.wire-body {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+}
+.wire-source {
+  padding: var(--s4);
+  background: var(--paper-2);
+  border-right: 2px dashed var(--rule);
+  min-width: 0;
+}
+.wire-change {
+  padding: var(--s4);
+  min-width: 0;
+}
+.shell .wire-label {
+  margin: 0 0 var(--s2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.shell .recruiting-review .wire blockquote {
+  margin: 0 0 var(--s3);
+  padding: var(--s3) var(--s3) var(--s3) var(--s4);
+  background: var(--sheet);
+  border: 0;
+  border-left: 4px solid var(--rule);
+  border-top: 1px dashed var(--ink-2);
+  border-bottom: 1px dashed var(--ink-2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.65;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  position: relative;
+}
+.shell .recruiting-review .wire blockquote::before {
+  content: "QUOTED";
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+  margin-bottom: var(--s1);
+}
+.shell .wire .wire-meta,
+.shell .recruiting-review .wire .wire-meta {
+  margin: 0 0 var(--s2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+  max-width: none;
+}
+.wire-pad {
+  padding: 0 var(--s4);
+}
+
+/* ---- current -> proposed ---- */
+.shell .wire .review-comparison {
+  display: block;
+  background: none;
+  border: 0;
+  border-radius: 0;
+  margin: 0 0 var(--s3);
+  overflow: visible;
+}
+.wire-cols,
+.wire-row {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr) 1.5rem minmax(0, 1.2fr);
+  gap: var(--s2);
+  align-items: baseline;
+}
+.shell .wire .review-comparison > .wire-cols {
+  grid-template-columns: minmax(0, 1fr) 1.5rem minmax(0, 1.2fr);
+  margin-left: calc(6.5rem + var(--s2));
+  padding: 0 0 var(--s1);
+  background: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.shell .wire .review-comparison > .wire-row {
+  padding: var(--s2) 0;
+  background: none;
+  border-top: 1px solid var(--hair);
+}
+.shell .wire .review-comparison dt {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.shell .wire .review-comparison dd {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.wire-arrow {
+  font-family: var(--font-mono);
+  text-align: center;
+  color: var(--ink-2);
+}
+.wire-current del {
+  color: var(--ink-2);
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+  text-decoration-color: var(--red);
+}
+.wire-proposed ins {
+  text-decoration: underline;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--green);
+  font-weight: 700;
+  background: none;
+}
+.wire-lock {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: var(--s2);
+  padding: 1px 6px;
+  border: 1px solid var(--rule);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--paper-2);
+  color: var(--ink);
+}
+.wire-row[data-locked="true"] .wire-proposed {
+  color: var(--ink-2);
+}
+
+/* ---- banners: ambiguity, locks, chronology/override errors ---- */
+.shell .wire .wire-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--s2);
+  margin: 0;
+  padding: var(--s2) var(--s4);
+  border: 0;
+  border-bottom: 2px solid var(--rule);
+  border-left: 10px solid var(--rule);
+  border-radius: 0;
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: none;
+  background: var(--paper-2);
+  color: var(--ink);
+}
+.shell .wire .wire-change .wire-banner {
+  margin: 0 0 var(--s3);
+  border: 2px solid var(--rule);
+  border-left-width: 10px;
+}
+.shell .wire .wire-banner[data-kind="ambiguity"] {
+  background: var(--amber);
+  color: var(--amber-ink);
+}
+.shell .wire .wire-banner[data-kind="error"] {
+  background: var(--sheet);
+  color: var(--red);
+  border-left-color: var(--red);
+  border-top: 2px solid var(--red);
+  font-weight: 600;
+}
+.wire-banner svg {
+  flex: none;
+  margin-top: 3px;
+}
+
+/* ---- controls and decisions ---- */
+.wire-controls {
+  margin-top: var(--s3);
+  padding-top: var(--s3);
+  border-top: 1px dashed var(--ink-2);
+}
+.wire-contacts,
+.wire-action {
+  padding: var(--s3) var(--s4);
+  border-top: 1px dashed var(--ink-2);
+}
+.wire-action summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+.shell .wire .wire-decide {
+  display: flex;
+  justify-content: flex-start;
+  margin: 0;
+  max-width: none;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  padding: var(--s3) var(--s4);
+  background: var(--paper-2);
+  border-top: 2px solid var(--rule);
+  font-size: inherit;
+  color: var(--ink);
+}
+.wire-decide .wire-label {
+  margin: 0 var(--s2) 0 0;
+  color: var(--ink);
+}
+
+@media (max-width: 800px) {
+  .wire-body {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .wire-source {
+    border-right: 0;
+    border-bottom: 2px dashed var(--rule);
+  }
+}
+@media (max-width: 520px) {
+  .shell .wire .review-comparison > .wire-cols {
+    display: none;
+  }
+  .wire-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s1);
+  }
+  .wire-arrow {
+    display: none;
+  }
+  .wire-proposed::before {
+    content: "→ ";
+    font-family: var(--font-mono);
+  }
+  .wire-decide > button {
+    flex: 1 1 100%;
+  }
+}

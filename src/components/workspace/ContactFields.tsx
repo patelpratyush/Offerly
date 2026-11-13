@@ -127,7 +127,9 @@ export function ContactFields({
             </label>
             {!!data[key] &&
               !(key === "relationshipType" && data[key] === "Unknown") && (
-                <details>
+                <details
+                  className={`prov-entry ${(key === "email" ? data.emailConfirmed : entry.confirmed) ? "is-verified" : "is-extracted"}`}
+                >
                   <summary>
                     {label} source · {entry.source}
                     {(key === "email" ? data.emailConfirmed : entry.confirmed)

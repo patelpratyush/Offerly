@@ -74,7 +74,7 @@ export function DocumentLibrary({
             aria-label={latest.title + " versions"}
           >
             <header className="document-family-heading">
-              <span className="file-icon">
+              <span className="file-icon" aria-hidden="true">
                 <Files size={24} aria-hidden="true" />
               </span>
               <div>
@@ -104,12 +104,18 @@ export function DocumentLibrary({
                   .map((key) => byId.get(key))
                   .filter((a): a is Item => !!a);
                 return (
-                  <article className="document-version" key={d.id}>
+                  <article
+                    className={`document-version${submitted.length ? " is-submitted" : ""}`}
+                    key={d.id}
+                  >
                     <div className="version-identity">
                       <strong>
                         {d.versionNumber
                           ? `Version ${d.versionNumber}`
                           : "Legacy version"}
+                        {submitted.length > 0 && (
+                          <span className="manifest-stamp">Submitted</span>
+                        )}
                       </strong>
                       <span>{d.title}</span>
                       <small>

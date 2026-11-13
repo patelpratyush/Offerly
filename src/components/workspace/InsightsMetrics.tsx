@@ -16,6 +16,18 @@ const pct = (v: number | null) =>
 const days = (v: number | null) =>
   v === null ? "n/a" : `${Math.round(v * 10) / 10} d`;
 
+function Bar({ value }: { value: number | null }) {
+  return (
+    <span className="pr-bar" aria-hidden="true">
+      {value === null ? (
+        <em>No data yet</em>
+      ) : (
+        <i style={{ width: `${Math.max(0, Math.min(1, value)) * 100}%` }} />
+      )}
+    </span>
+  );
+}
+
 function GroupTable({
   caption,
   label,
@@ -162,6 +174,7 @@ export function InsightsMetrics({ request }: { request: Request }) {
                 <small>
                   {pct(c.interviewRate)} · verified round records only
                 </small>
+                <Bar value={c.interviewRate} />
               </dd>
             </div>
             <div className="ir-stat">
@@ -169,6 +182,7 @@ export function InsightsMetrics({ request }: { request: Request }) {
               <dd>
                 {c.offer} / {c.submitted}
                 <small>{pct(c.offerRate)} · unique applications</small>
+                <Bar value={c.offerRate} />
               </dd>
             </div>
             <div className="ir-stat">

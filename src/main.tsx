@@ -74,6 +74,12 @@ import "@fontsource-variable/martian-mono/wdth.css";
 import "./styles/dispatch/tokens.css";
 import "./styles/dispatch/discover.css";
 import "./styles/dispatch/prepare.css";
+import "./styles/dispatch/reviews.css";
+import "./styles/dispatch/people.css";
+import "./styles/dispatch/documents.css";
+import "./styles/dispatch/insights.css";
+import "./styles/dispatch/settings.css";
+import "./styles/discover.css";
 import { DiscoverPage } from "./components/discover/DiscoverPage";
 import { CompaniesPage } from "./components/discover/CompaniesPage";
 const APPLICATION_PAGE_SIZE = 25;
@@ -3124,6 +3130,46 @@ function RecoveryCodes({
     </section>
   );
 }
+const settingsSections: [string, string][] = [
+  ["settings-preferences", "Preferences"],
+  ["settings-security", "Account and security"],
+  ["settings-gmail", "Gmail import"],
+  ["settings-ai", "AI extraction"],
+  ["settings-reminders", "Reminder rules"],
+  ["settings-calendar", "Calendar export"],
+  ["settings-data", "Data export"],
+  ["settings-delete", "Delete account"],
+];
+function SettingsIndex() {
+  return (
+    <nav className="control-index" aria-label="Settings sections">
+      <span className="control-index-title">Sections</span>
+      <ol>
+        {settingsSections.map(([id, label]) => (
+          <li key={id}>
+            <a
+              href={`#${id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                const target = document.getElementById(id);
+                const calm = window.matchMedia(
+                  "(prefers-reduced-motion: reduce)",
+                ).matches;
+                target?.scrollIntoView({
+                  behavior: calm ? "auto" : "smooth",
+                  block: "start",
+                });
+                target?.focus({ preventScroll: true });
+              }}
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
 function SettingsPage({
   w,
   busy,
@@ -3143,8 +3189,13 @@ function SettingsPage({
     [deletePassword, setDeletePassword] = useState(""),
     [saved, setSaved] = useState(false);
   return (
-    <div className="settings-grid">
-      <section className="panel settings-panel">
+    <div className="control-room">
+      <SettingsIndex />
+      <section
+        id="settings-preferences"
+        tabIndex={-1}
+        className="panel settings-panel"
+      >
         <h2>Workspace preferences</h2>
         <form
           onSubmit={(e) => {
@@ -3187,8 +3238,12 @@ function SettingsPage({
           {saved && <p role="status">Preferences saved.</p>}
         </form>
       </section>
-      <div>
-        <section className="panel settings-panel">
+      <div className="control-panels">
+        <section
+          id="settings-security"
+          tabIndex={-1}
+          className="panel settings-panel"
+        >
           <h2>Account</h2>
           <p>{w.user.email}</p>
           <button
@@ -3244,11 +3299,23 @@ function SettingsPage({
           </form>
           <RecoveryCodes run={run} busy={busy} />
         </section>
-        <GmailSettings request={api} />
-        <ReminderRulesSettings request={api} />
-        <CalendarExport />
-        <RecruitingAISettings request={api} />
-        <section className="panel settings-panel space-top">
+        <div id="settings-gmail" tabIndex={-1}>
+          <GmailSettings request={api} />
+        </div>
+        <div id="settings-reminders" tabIndex={-1}>
+          <ReminderRulesSettings request={api} />
+        </div>
+        <div id="settings-calendar" tabIndex={-1}>
+          <CalendarExport />
+        </div>
+        <div id="settings-ai" tabIndex={-1}>
+          <RecruitingAISettings request={api} />
+        </div>
+        <section
+          id="settings-data"
+          tabIndex={-1}
+          className="panel settings-panel space-top"
+        >
           <h2>Your data belongs to you</h2>
           <p>
             {w.filePolicy?.exportIncludesFiles === false
@@ -3265,7 +3332,11 @@ function SettingsPage({
             Download application CSV
           </a>
         </section>
-        <section className="panel settings-panel space-top">
+        <section
+          id="settings-delete"
+          tabIndex={-1}
+          className="panel settings-panel hazard-zone space-top"
+        >
           <h2>Delete account</h2>
           <p>
             Deletes your live workspace, sessions, records, and uploaded files.

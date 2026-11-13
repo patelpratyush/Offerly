@@ -1,0 +1,201 @@
+/* Dispatch / Connections = Directory. Phone-book entries, dotted leaders to
+   linked applications. Verified = solid tick tag, unconfirmed = hollow dashed. */
+
+.shell .contact-directory {
+  border-top: 2px solid var(--rule);
+  columns: 2 26rem;
+  column-gap: var(--s7);
+  column-rule: 1px solid var(--hair);
+}
+.shell .contact-directory-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--s2) var(--s3);
+  padding: var(--s4) 0;
+  border-bottom: 1px solid var(--rule);
+  break-inside: avoid;
+  align-items: start;
+  position: relative;
+}
+.shell .contact-directory-row:hover {
+  box-shadow: inset 4px 0 0 var(--amber);
+  padding-left: var(--s3);
+}
+.shell .contact-identity {
+  grid-column: 1;
+  grid-row: 1;
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+  text-align: left;
+  padding: 0;
+  min-width: 0;
+  background: none;
+}
+.shell .contact-identity .avatar {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-sign);
+  font-stretch: 75%;
+  font-weight: 800;
+  font-size: 22px;
+}
+.shell .contact-identity h2 {
+  margin: 0 0 var(--s1);
+  font-family: var(--font-sign);
+  font-stretch: 70%;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  letter-spacing: -0.005em;
+  overflow-wrap: anywhere;
+}
+.shell .contact-identity .dir-name-block {
+  min-width: 0;
+}
+.shell .contact-identity span > span,
+.shell .contact-identity .dir-role {
+  display: block;
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+.shell .contact-identity small {
+  display: block;
+  margin-top: var(--s1);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.02em;
+  line-height: 1.5;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.shell .contact-edit {
+  grid-column: 2;
+  grid-row: 1;
+  font-size: 13px;
+  min-height: 36px;
+}
+.shell .contact-evidence,
+.shell .contact-linked {
+  grid-column: 1 / -1;
+  min-width: 0;
+  padding-left: calc(40px + var(--s3));
+}
+.shell .contact-evidence {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.shell .contact-evidence > .dir-email {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--ink);
+}
+.shell .contact-evidence small,
+.shell .contact-linked small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+.shell .contact-linked {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s1);
+}
+.shell .contact-linked .tiny-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+
+/* identity tags */
+.dir-tag {
+  display: inline-block;
+  padding: 0 6px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  line-height: 1.6;
+}
+.dir-tag.is-verified {
+  background: var(--ink);
+  color: var(--paper);
+  border: 1px solid var(--ink);
+}
+.dir-tag.is-extracted {
+  background: transparent;
+  color: var(--ink);
+  border: 1px dashed var(--ink);
+}
+
+/* dotted leaders to linked applications */
+.dir-leader {
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+  min-width: 0;
+}
+.dir-leader > i {
+  flex: 1 1 1.5rem;
+  min-width: 1rem;
+  border-bottom: 2px dotted var(--ink-2);
+  transform: translateY(-4px);
+}
+.dir-leader .text-button {
+  flex: 0 1 auto;
+  text-align: left;
+  white-space: normal;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+.dir-gate {
+  flex: none;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+
+/* editor: provenance disclosure rows */
+.prov-entry {
+  margin-top: var(--s1);
+  padding-left: var(--s2);
+  border-left: 3px solid var(--ink);
+}
+.prov-entry.is-extracted {
+  border-left: 3px dashed var(--ink-2);
+}
+.prov-entry > summary {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .shell .contact-directory {
+    columns: 1;
+  }
+  .shell .contact-evidence,
+  .shell .contact-linked {
+    padding-left: 0;
+  }
+  .shell .contact-directory-row:hover {
+    padding-left: 0;
+  }
+}

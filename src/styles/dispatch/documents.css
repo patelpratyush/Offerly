@@ -1,0 +1,144 @@
+/* Dispatch / Documents = Manifest. Families as manifest entries, versions as
+   ledger lines, SUBMITTED as a rectangular stamp. */
+
+.shell .library-toolbar > span {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.shell .document-library > .subtle-info {
+  background: var(--paper-2);
+  border: 0;
+  border-left: 4px solid var(--rule);
+  border-radius: 0;
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.shell .document-family {
+  border: 2px solid var(--rule);
+  border-radius: 0;
+  background: var(--sheet);
+  margin-bottom: var(--s5);
+}
+.shell .document-family-heading {
+  background: var(--paper-2);
+  border-bottom: 2px solid var(--rule);
+  padding: var(--s3) var(--s4);
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+.shell .document-family-heading .file-icon {
+  color: var(--ink);
+  width: 32px;
+  height: 36px;
+}
+.shell .document-family-heading h2 {
+  font-family: var(--font-sign);
+  font-stretch: 70%;
+  font-weight: 800;
+  font-size: 24px;
+  line-height: 1.05;
+  text-transform: uppercase;
+  margin: var(--s1) 0;
+}
+.shell .document-family-heading .tiny-label {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink);
+}
+.shell .document-family-heading p {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+/* ledger lines */
+.shell .document-version {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
+  padding: var(--s3) var(--s4);
+  gap: var(--s4);
+  border-bottom: 1px dotted var(--ink-2);
+  background: var(--sheet);
+}
+.shell .document-version.is-submitted {
+  box-shadow: inset 5px 0 0 var(--blue);
+}
+.shell .version-identity strong {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.shell .version-identity span {
+  color: var(--ink);
+  font-size: 14px;
+}
+.shell .version-identity small,
+.shell .version-usage small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--ink-2);
+}
+.shell .version-usage strong {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+/* the stamp */
+.manifest-stamp {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 2px solid var(--blue);
+  color: var(--blue);
+  background: transparent;
+  font-family: var(--font-sign);
+  font-stretch: 80%;
+  font-weight: 800;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.5;
+  transform: rotate(-2deg);
+  outline: 1px solid var(--blue);
+  outline-offset: 2px;
+  white-space: nowrap;
+}
+
+/* submitted usage records in the application detail */
+.shell .submitted-entry {
+  border: 2px solid var(--rule);
+  border-left: 6px solid var(--blue);
+  border-radius: 0;
+  background: var(--sheet);
+}
+.shell .submitted-entry.is-retracted {
+  border-left-color: var(--ink-2);
+  border-style: dashed;
+  border-left-style: solid;
+}
+.shell .submitted-entry.is-retracted > .section-head strong {
+  text-decoration: line-through;
+  text-decoration-color: var(--ink-2);
+}
+
+@media (max-width: 760px) {
+  .shell .document-version {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--s2);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .manifest-stamp {
+    transform: none;
+  }
+}
