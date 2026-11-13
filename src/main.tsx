@@ -15,12 +15,8 @@ import {
   Search,
   LayoutGrid,
   List,
-  Sun,
-  BriefcaseBusiness,
   Users,
-  Files,
   Settings,
-  ChartNoAxesCombined,
   ArrowRight,
   X,
   Check,
@@ -28,13 +24,8 @@ import {
   Download,
   LogOut,
   Leaf,
-  ChevronRight,
   Clock,
   Archive,
-  Menu,
-  Compass,
-  Building2,
-  ClipboardList,
 } from "lucide-react";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
@@ -71,6 +62,9 @@ import { useDialogViewport } from "./useDialogViewport";
 import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/martian-mono/wdth.css";
 import "./styles/dispatch/tokens.css";
+import "./styles/dispatch/core.css";
+import { ShellRail, ShellTopbar } from "./components/shell/ShellRail";
+import { ShellOverlays, type Overlay } from "./components/shell/ShellOverlays";
 import "./styles/discover.css";
 import { DiscoverPage } from "./components/discover/DiscoverPage";
 import { CompaniesPage } from "./components/discover/CompaniesPage";
@@ -299,6 +293,7 @@ function App() {
   const [w, setW] = useState<Workspace | null>(null),
     [loading, setLoading] = useState(true),
     [navigationOpen, setNavigationOpen] = useState(false),
+    [overlay, setOverlay] = useState<Overlay>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [modal, setModal] = useState<{ kind: string; data: any } | null>(null),
@@ -851,18 +846,6 @@ function App() {
       ? `${due.title} · ${due.date || "No date"}`
       : "No task or deadline set";
   };
-  const nav = [
-    ["Today", Sun],
-    ["Applications", BriefcaseBusiness],
-    ["Discover", Compass],
-    ["Companies", Building2],
-    ["Reviews", Check],
-    ["Connections", Users],
-    ["Documents", Files],
-    ["Prepare", ClipboardList],
-    ["Insights", ChartNoAxesCombined],
-    ["Settings", Settings],
-  ] as const;
   const cards = (apps: Item[]) =>
     apps.map((a) => (
       <div key={a.id} className="selectable-card">
@@ -912,6 +895,13 @@ function App() {
       </div>
     ));
   const checkingSession = verifiedPath !== location.pathname;
+  const goToPage = (name: string) => {
+    navigate(pagePaths[name] || "/today");
+    setQuery("");
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>("#workspace-content h1")?.focus(),
+    );
+  };
   return (
     <>
       {checkingSession && (
@@ -950,96 +940,32 @@ function App() {
         <a className="skip-link" href="#workspace-content">
           Skip to workspace
         </a>
-        <aside className="sidebar" inert={!!detail || !!modal}>
-          <Link className="brand" to="/today">
-            <span className="brand-mark">
-              <Leaf size={23} />
-            </span>
-            offerly<span className="brand-dot">.</span>
-          </Link>
-          <button
-            className="mobile-menu secondary"
-            aria-expanded={navigationOpen}
-            aria-controls="workspace-navigation"
-            onClick={() => setNavigationOpen(!navigationOpen)}
-          >
-            {navigationOpen ? <X size={18} /> : <Menu size={18} />}{" "}
-            {navigationOpen ? "Close menu" : page}
-          </button>
-          <div className="workspace-label">PERSONAL WORKSPACE</div>
-          <nav
-            id="workspace-navigation"
-            aria-label="Workspace"
-            className={navigationOpen ? "is-open" : ""}
-          >
-            {nav.map(([name, Icon], index) => (
-              <Link
-                key={name}
-                to={pagePaths[name]}
-                aria-current={page === name ? "page" : undefined}
-                className={page === name ? "active" : ""}
-                onClick={() => {
-                  setNavigationOpen(false);
-                  setQuery("");
-                  requestAnimationFrame(() =>
-                    document
-                      .querySelector<HTMLElement>("#workspace-content h1")
-                      ?.focus(),
-                  );
-                }}
-              >
-                <span className="nav-index" aria-hidden="true">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <Icon size={18} />
-                {name}
-                {name === "Applications" && (
-                  <span className="nav-count">{active.length}</span>
-                )}
-              </Link>
-            ))}
-          </nav>
-          <div className="sidebar-note">
-            <span className="tiny-label">YOUR SEARCH, YOUR RECORD</span>
-            <p>
-              Every move.
-              <br />
-              On record.
-            </p>
-            <span>
-              Applications, conversations and the details that connect them.
-            </span>
-          </div>
-          <div className={"account" + (navigationOpen ? " is-open" : "")}>
-            <span className="avatar">
-              {w.user.name.charAt(0).toUpperCase()}
-            </span>
-            <div>
-              <strong>{w.user.name}</strong>
-              <small>Personal workspace</small>
-            </div>
-            <button
-              aria-label="Sign out"
-              onClick={() =>
-                run(async () => {
-                  await api("/logout", "POST");
-                  resetSession();
-                })
-              }
-            >
-              <LogOut size={17} />
-            </button>
-          </div>
-        </aside>
+        <ShellRail
+          page={page}
+          applicationCount={active.length}
+          userName={w.user.name}
+          navigationOpen={navigationOpen}
+          inert={!!detail || !!modal}
+          onToggleMenu={() => setNavigationOpen(!navigationOpen)}
+          onNavigate={() => {
+            setNavigationOpen(false);
+            setQuery("");
+            requestAnimationFrame(() =>
+              document
+                .querySelector<HTMLElement>("#workspace-content h1")
+                ?.focus(),
+            );
+          }}
+          onSearch={() => setOverlay("palette")}
+          onSignOut={() =>
+            run(async () => {
+              await api("/logout", "POST");
+              resetSession();
+            })
+          }
+        />
         <main id="workspace-content" tabIndex={-1} inert={!!detail || !!modal}>
-          <header className="topbar">
-            <span>
-              Workspace <ChevronRight size={13} /> <b>{page}</b>
-            </span>
-            <span className="private-tag">
-              <span /> Private workspace
-            </span>
-          </header>
+          <ShellTopbar page={page} timezone={w.user.timezone} />
           <div className={`content page-${page.toLowerCase()}`}>
             {error && (
               <div role="alert" className="alert">
@@ -2402,6 +2328,19 @@ function App() {
           />
         )}{" "}
       </div>
+      <ShellOverlays
+        overlay={overlay}
+        setOverlay={setOverlay}
+        blocked={!!detail || !!modal}
+        applications={w.applications}
+        onGoPage={goToPage}
+        onOpenApplication={(id) => {
+          const target = w.applications.find((a) => a.id === id);
+          if (target) void showDetail(target);
+        }}
+        onAddApplication={() => newRecord("application")}
+        onAddTask={() => newRecord("task")}
+      />
     </>
   );
 }
