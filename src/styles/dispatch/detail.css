@@ -1,0 +1,412 @@
+/* Dispatch / Application detail: the itinerary. */
+.overlay .drawer {
+  width: 700px;
+  background: var(--sheet);
+  color: var(--ink);
+  border-left: 2px solid var(--rule);
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--s5);
+  counter-reset: chapter;
+}
+.drawer .drawer-top {
+  margin-bottom: var(--s4);
+}
+.drawer .drawer-top .eyebrow {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+.drawer .drawer-top button {
+  min-width: 40px;
+  min-height: 40px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  display: inline-grid;
+  place-items: center;
+}
+.drawer .drawer-top button:hover {
+  background: var(--ink);
+  color: var(--paper);
+}
+
+/* ---------- ticket header ---------- */
+.drawer .ticket {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 230px;
+  background: var(--paper);
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  position: relative;
+}
+.drawer .ticket-main {
+  padding: var(--s4) var(--s4) var(--s4) var(--s5);
+  min-width: 0;
+}
+.drawer .ticket-company {
+  margin: 0;
+  font-family: var(--font-sign);
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: clamp(34px, 6vw, 56px);
+  line-height: 0.95;
+  text-transform: uppercase;
+  letter-spacing: -0.005em;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.drawer .ticket h1 {
+  margin: var(--s2) 0 0;
+  font-family: var(--font-body);
+  font-size: 20px;
+  font-weight: 600;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+.drawer .ticket .muted {
+  margin: 4px 0 0;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.drawer .ticket-stub {
+  margin: 0;
+  padding: var(--s3) var(--s4);
+  display: grid;
+  gap: var(--s3);
+  align-content: start;
+  border-left: 3px dashed var(--ink);
+  position: relative;
+  background: var(--sheet);
+}
+/* punched notches on the perforation */
+.drawer .ticket-stub::before,
+.drawer .ticket-stub::after {
+  content: "";
+  position: absolute;
+  left: -12px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--sheet);
+  border: 2px solid var(--ink);
+  clip-path: inset(0 0 0 50%);
+}
+.drawer .ticket-stub::before {
+  top: -12px;
+  clip-path: inset(50% 0 0 50%);
+}
+.drawer .ticket-stub::after {
+  bottom: -12px;
+  clip-path: inset(0 0 50% 50%);
+}
+.drawer .ticket-stub dt {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+.drawer .ticket-stub dd {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.drawer .ticket-stub .detail-next-action {
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  border: 0;
+}
+.drawer .ticket-stub .detail-next-action dd {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 500;
+}
+.drawer .ticket-move {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--s3);
+  margin: var(--s4) 0 0;
+  padding-top: var(--s4);
+  border-top: 3px dashed var(--ink);
+}
+.drawer .ticket-move .tiny-label {
+  font-family: var(--font-mono);
+  color: var(--ink-2);
+  letter-spacing: 0.08em;
+}
+.drawer .primary-move {
+  flex: 1 1 280px;
+  justify-content: space-between;
+  padding: 12px 16px;
+  min-height: 52px;
+  font-size: 16px;
+  background: var(--amber);
+  color: var(--amber-ink);
+  box-shadow: var(--stamp);
+}
+.drawer .primary-move small {
+  color: var(--amber-ink);
+  font-size: 13px;
+  white-space: normal;
+}
+.drawer .primary-move:hover:not(:disabled) {
+  background: var(--brand-hover);
+}
+.drawer .detail-actions {
+  margin: var(--s4) 0 var(--s5);
+  gap: var(--s2);
+}
+.drawer .detail-actions :is(.primary, .secondary) {
+  border-radius: 0;
+}
+
+/* ---------- tabs ---------- */
+.drawer .detail-tabs {
+  background: var(--sheet);
+  border-bottom: 2px solid var(--rule);
+  gap: 0;
+  margin-bottom: var(--s5);
+}
+.drawer .detail-tabs button {
+  padding: 12px 16px 9px;
+  min-height: 44px;
+  border: 0;
+  border-bottom: 5px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 14px;
+}
+.drawer .detail-tabs button.selected {
+  border-bottom-color: var(--amber);
+  color: var(--ink);
+  font-weight: 700;
+}
+.drawer .detail-tabs button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+
+/* ---------- summary as a fare ledger ---------- */
+.drawer .detail-summary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 0;
+  padding: 0;
+  margin: 0 0 var(--s5);
+  border: 1px solid var(--ink);
+}
+.drawer .detail-summary > div {
+  padding: var(--s3);
+  border-left: 1px solid var(--hair);
+}
+.drawer .detail-summary > div:first-child {
+  border-left: 0;
+}
+.drawer .detail-summary small {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+}
+.drawer .detail-summary strong {
+  font-size: 15px;
+  color: var(--ink);
+}
+.drawer .detail-summary .badge {
+  border-radius: 0;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+/* ---------- ruled chapters ---------- */
+.drawer :is(.detail-section, .offer-summary, .compensation-summary) {
+  margin: 0 0 var(--s5);
+  padding: var(--s3) 0 0;
+  border: 0;
+  border-top: 2px solid var(--rule);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  counter-increment: chapter;
+}
+.drawer :is(.detail-section, .offer-summary, .compensation-summary) > :is(h2, .section-head) h2,
+.drawer :is(.offer-summary, .compensation-summary) > h2,
+.drawer .detail-section .section-head h2 {
+  margin: 0;
+  font-family: var(--font-sign);
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: 24px;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.drawer .detail-section .section-head h2::before,
+.drawer :is(.offer-summary, .compensation-summary) > h2::before {
+  content: counter(chapter, upper-roman) ". ";
+  font-family: var(--font-mono);
+  font-stretch: 100%;
+  font-weight: 600;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+.drawer > h2 {
+  margin: var(--s5) 0 var(--s2);
+  padding-top: var(--s3);
+  border-top: 2px solid var(--rule);
+  font-family: var(--font-sign);
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: 24px;
+  text-transform: uppercase;
+}
+.drawer .detail-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+  width: 100%;
+  padding: var(--s3) var(--s3);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px dotted var(--ink-2);
+  border-left: 4px solid transparent;
+  border-radius: 0;
+  color: var(--ink);
+  text-align: left;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.drawer .detail-item small {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.drawer .detail-item:hover {
+  background: var(--brand-soft);
+  border-left-color: var(--amber);
+}
+.drawer .detail-item:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+.drawer .detail-item .badge {
+  border-radius: 0;
+  background: transparent;
+  border: 1px solid var(--ink);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+.drawer .notes {
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+/* ---------- journey line ---------- */
+.drawer .timeline {
+  position: relative;
+  margin: var(--s4) 0 0 8px;
+  padding: 0 0 0 var(--s5);
+  border: 0;
+  border-left: 2px solid var(--ink);
+}
+.drawer .timeline article {
+  position: relative;
+  padding: 0 0 var(--s5);
+}
+.drawer .timeline .timeline-dot {
+  position: absolute;
+  left: calc(-1 * var(--s5) - 8px);
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  background: var(--sheet);
+}
+.drawer .timeline article:first-child .timeline-dot {
+  background: var(--amber);
+}
+.drawer .timeline .timeline-kind {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-2);
+  margin-bottom: 4px;
+}
+.drawer .timeline strong {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.drawer .timeline small,
+.drawer .timeline .event-title {
+  color: var(--ink-2);
+}
+
+@media (max-width: 640px) {
+  .overlay .drawer {
+    padding: var(--s4) var(--s3);
+  }
+  .drawer .ticket {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .drawer .ticket-main {
+    padding: var(--s3) var(--s4);
+  }
+  .drawer .ticket-stub {
+    border-left: 0;
+    border-top: 3px dashed var(--ink);
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  }
+  .drawer .ticket-stub::before {
+    top: -12px;
+    left: -12px;
+    clip-path: inset(0 50% 50% 0);
+  }
+  .drawer .ticket-stub::after {
+    top: -12px;
+    bottom: auto;
+    left: auto;
+    right: -12px;
+    clip-path: inset(0 0 50% 50%);
+  }
+  .drawer .detail-actions :is(.primary, .secondary) {
+    flex: 1 1 140px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .drawer * {
+    transition: none;
+    animation: none;
+  }
+}
+
+.drawer .drawer-top {
+  background: transparent;
+  padding: 0;
+}
