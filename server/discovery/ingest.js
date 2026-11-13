@@ -16,6 +16,36 @@ const iso = (ms) => new Date(ms).toISOString();
 export function collectionEnabled(env = process.env) {
   return env.DISCOVERY_COLLECTION_ENABLED === "true";
 }
+/** Newest content snapshots kept per listing (older ones are pruned). */
+export const DEFAULT_SNAPSHOT_KEEP = 20;
+export function snapshotKeep(env = process.env) {
+  const n = Number(env.DISCOVERY_SNAPSHOT_KEEP);
+  return Number.isInteger(n) && n >= 1 && n <= 1000 ? n : DEFAULT_SNAPSHOT_KEEP;
+}
+/** Keeps the newest `keep` snapshots of one listing. Works on SQLite and PostgreSQL. */
+export async function pruneListingSnapshots(store, listingId, keep) {
+  const r = await store.db
+    .prepare(
+      "DELETE FROM discovery_snapshots WHERE listing_id=? AND id NOT IN (SELECT id FROM discovery_snapshots WHERE listing_id=? ORDER BY captured_at DESC,id DESC LIMIT ?)",
+    )
+    .run(listingId, listingId, keep);
+  return r.changes || 0;
+}
+/** Bounded sweep for listings over the cap (e.g. after lowering it). */
+export async function pruneSnapshots(
+  store,
+  { keep = snapshotKeep(), batch = 50 } = {},
+) {
+  const rows = await store.db
+    .prepare(
+      "SELECT listing_id FROM discovery_snapshots GROUP BY listing_id HAVING COUNT(*)>? ORDER BY listing_id LIMIT ?",
+    )
+    .all(keep, batch);
+  let pruned = 0;
+  for (const { listing_id: id } of rows)
+    pruned += await pruneListingSnapshots(store, id, keep);
+  return { listings: rows.length, pruned };
+}
 async function record(
   store,
   source,
@@ -127,7 +157,7 @@ const snapshotFields = (l) =>
     postedAt: l.postedAt,
     compensation: l.compensation,
   });
-async function applyListings(store, source, listings, now) {
+async function applyListings(store, source, listings, now, keep) {
   const stamp = iso(now);
   const touched = new Set();
   const reopened = new Set();
@@ -170,6 +200,7 @@ async function applyListings(store, source, listings, now) {
           "INSERT INTO discovery_snapshots(id,listing_id,captured_at,content_hash,fields) VALUES(?,?,?,?,?)",
         )
         .run(randomUUID(), existing.id, stamp, hash, snapshotFields(listing));
+      await pruneListingSnapshots(store, existing.id, keep);
       // A content update never resets employer_posted_at or first_discovered_at.
       await store.db
         .prepare(
@@ -266,6 +297,7 @@ async function applyListings(store, source, listings, now) {
         "INSERT INTO discovery_snapshots(id,listing_id,captured_at,content_hash,fields) VALUES(?,?,?,?,?)",
       )
       .run(randomUUID(), listingId, stamp, hash, snapshotFields(listing));
+    await pruneListingSnapshots(store, listingId, keep);
   }
   // Only after a validated, complete response may a missing listing be
   // recorded as "no longer listed by this source".
@@ -343,7 +375,7 @@ export async function ingestSource(store, sourceId, options = {}) {
     return { outcome: "rejected", reason: "suspicious_drop" };
   }
   await store.atomic(async () => {
-    await applyListings(store, source, result.listings, now);
+    await applyListings(store, source, result.listings, now, snapshotKeep(env));
     await store.db
       .prepare(
         "UPDATE discovery_sources SET health='healthy',consecutive_failures=0,last_error_code='',last_success_at=?,last_attempt_at=?,next_fetch_at=?,listed_count=? WHERE id=?",
@@ -371,19 +403,27 @@ export async function ingestSource(store, sourceId, options = {}) {
     skippedInvalid: result.invalid,
   };
 }
-/** Run every approved source that is due. Sequential to respect providers. */
+/**
+ * Run approved sources that are due, oldest first. Sequential to respect
+ * providers, and bounded by `limit` sources and an optional `deadline` (epoch
+ * ms). A failing source backs off on its own (see recordFailure) and never
+ * blocks the others.
+ */
 export async function ingestDue(store, options = {}) {
   const now = options.now ?? Date.now();
+  const limit = options.limit ?? 25;
   const sources = await store.db
     .prepare(
-      "SELECT id FROM discovery_sources WHERE enabled=1 AND permission_status='confirmed' ORDER BY next_fetch_at,id",
+      "SELECT id FROM discovery_sources WHERE enabled=1 AND permission_status='confirmed' AND (next_fetch_at IS NULL OR next_fetch_at<=?) ORDER BY COALESCE(next_fetch_at,''),id LIMIT ?",
     )
-    .all();
+    .all(iso(now), limit);
   const results = [];
-  for (const { id } of sources)
+  for (const { id } of sources) {
+    if (options.deadline && Date.now() >= options.deadline) break;
     results.push({
       id,
       ...(await ingestSource(store, id, { ...options, now })),
     });
+  }
   return results;
 }

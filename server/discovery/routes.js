@@ -17,6 +17,13 @@ import {
   deleteSearch,
 } from "./actions.js";
 import {
+  getDigestSettings,
+  saveDigestSettings,
+  processDigests,
+  listDigests,
+  markDigestRead,
+} from "./digests.js";
+import {
   listRules,
   createRule,
   updateRule,
@@ -54,7 +61,7 @@ export function mountDiscovery(app, store) {
     const paging = z
       .object({
         limit: z.coerce.number().int().min(1).max(100).default(50),
-        offset: z.coerce.number().int().min(0).max(100000).default(0),
+        cursor: z.string().max(500).default(""),
       })
       .parse(req.query);
     res.json(await listView(store, uid(req), view, filters, paging));
@@ -126,7 +133,26 @@ export function mountDiscovery(app, store) {
   });
   // Evaluate only the caller's own rules; in-app delivery, nothing external.
   app.post("/api/discovery/alerts/process", async (req, res) => {
-    res.json(await processAlerts(store, { userId: uid(req) }));
+    const alerts = await processAlerts(store, { userId: uid(req) });
+    // Digests only send at their scheduled time; this never sends one early.
+    res.json({
+      ...alerts,
+      ...(await processDigests(store, { userId: uid(req) })),
+    });
+  });
+  app.get("/api/discovery/digest-settings", async (req, res) => {
+    res.json(await getDigestSettings(store, uid(req)));
+  });
+  app.put("/api/discovery/digest-settings", async (req, res) => {
+    res.json(await saveDigestSettings(store, uid(req), req.body));
+  });
+  app.get("/api/discovery/digests", async (req, res) => {
+    res.json(await listDigests(store, uid(req)));
+  });
+  app.post("/api/discovery/digests/read", async (req, res) => {
+    const body = z.object({ id: id.optional() }).strict().parse(req.body);
+    await markDigestRead(store, uid(req), body.id);
+    res.json({ ok: true });
   });
   app.get("/api/discovery/notifications", async (req, res) => {
     res.json(await listNotifications(store, uid(req)));

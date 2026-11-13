@@ -43,7 +43,8 @@ export function DiscoverPage() {
   const view = VIEWS.some(([v]) => v === requested) ? requested : "best";
   const [filters, setFilters] = useState<Filters>(defaultFilters);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [total, setTotal] = useState(0);
+  const [nextCursor, setNextCursor] = useState<string | null>(null);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [approved, setApproved] = useState(true);
   const [state, setState] = useState<"loading" | "ready" | "error">("loading");
   const [message, setMessage] = useState("");
@@ -64,7 +65,7 @@ export function DiscoverPage() {
       const data = await discoveryApi(`/feed?${query}`);
       if (id !== request.current) return; // A newer request owns the screen.
       setJobs(data.jobs);
-      setTotal(data.total);
+      setNextCursor(data.nextCursor || null);
       setApproved(data.profileApproved);
       setGeneratedAt(data.generatedAt);
       setState("ready");
@@ -77,6 +78,29 @@ export function DiscoverPage() {
   useEffect(() => {
     void load();
   }, [load]);
+  const loadMore = async () => {
+    if (!nextCursor || loadingMore) return;
+    const id = request.current;
+    setLoadingMore(true);
+    try {
+      const query = new URLSearchParams({
+        view,
+        filters: JSON.stringify(filters),
+        cursor: nextCursor,
+      });
+      const data = await discoveryApi(`/feed?${query}`);
+      if (id !== request.current) return;
+      setJobs((current) => {
+        const seen = new Set(current.map((j) => j.id));
+        return [...current, ...data.jobs.filter((j: Job) => !seen.has(j.id))];
+      });
+      setNextCursor(data.nextCursor || null);
+    } catch (e) {
+      setMessage(e instanceof Error ? e.message : "Could not load more jobs");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
   const loadSearches = useCallback(async () => {
     try {
       setSearches(await discoveryApi("/searches"));
@@ -192,8 +216,9 @@ export function DiscoverPage() {
         ) : jobs.length ? (
           <>
             <p className="muted discover-count">
-              {total} {total === 1 ? "job" : "jobs"} · as of {when(generatedAt)}
-              {total > jobs.length ? ` · showing first ${jobs.length}` : ""}
+              {jobs.length} {jobs.length === 1 ? "job" : "jobs"} shown · as of{" "}
+              {when(generatedAt)}
+              {nextCursor ? " · more available" : ""}
             </p>
             <div className="discover-list">
               {jobs.map((job) => (
@@ -205,11 +230,29 @@ export function DiscoverPage() {
                 />
               ))}
             </div>
+            {nextCursor && (
+              <button
+                className="secondary discover-more"
+                disabled={loadingMore}
+                onClick={() => void loadMore()}
+              >
+                {loadingMore ? "Loading…" : "Load more jobs"}
+              </button>
+            )}
           </>
         ) : (
           <div className="panel discover-empty">
             <h2>{current[1]}: nothing to show</h2>
             <p>{empty}</p>
+            {nextCursor && (
+              <button
+                className="secondary discover-more"
+                disabled={loadingMore}
+                onClick={() => void loadMore()}
+              >
+                {loadingMore ? "Loading…" : "Keep searching older jobs"}
+              </button>
+            )}
           </div>
         )}
       </section>
