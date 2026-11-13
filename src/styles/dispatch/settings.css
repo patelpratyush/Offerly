@@ -1,0 +1,262 @@
+/* Dispatch / Settings = Control room. Sticky section index on the left, ruled
+   panels on the right, destructive zone fenced by a hazard stripe. */
+
+.shell .control-room {
+  display: grid;
+  grid-template-columns: 14rem minmax(0, 1fr);
+  column-gap: var(--s6);
+  align-items: start;
+}
+.shell .control-room > .control-index {
+  grid-column: 1;
+  grid-row: 1 / span 2;
+  position: sticky;
+  top: var(--s4);
+  align-self: start;
+  border: 2px solid var(--rule);
+  background: var(--sheet);
+}
+.control-index-title {
+  display: block;
+  padding: var(--s2) var(--s3);
+  background: var(--board);
+  color: var(--amber);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.control-index ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  counter-reset: sec;
+}
+.control-index li {
+  counter-increment: sec;
+  border-top: 1px solid var(--hair);
+}
+.control-index li:first-child {
+  border-top: 0;
+}
+.control-index a {
+  display: flex;
+  gap: var(--s2);
+  align-items: baseline;
+  min-height: 40px;
+  padding: var(--s2) var(--s3);
+  color: var(--ink);
+  text-decoration: none;
+  font-family: var(--font-sign);
+  font-stretch: 80%;
+  font-weight: 700;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  transition: background-color 120ms linear;
+}
+.control-index a::before {
+  content: counter(sec, decimal-leading-zero);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--ink-2);
+}
+.control-index a:hover {
+  background: var(--amber);
+  color: var(--amber-ink);
+}
+.control-index a:hover::before {
+  color: var(--amber-ink);
+}
+.control-index li:last-child a {
+  color: var(--red);
+}
+.control-index li:last-child a:hover {
+  color: var(--amber-ink);
+}
+
+.shell .control-room > .settings-panel,
+.shell .control-room > .control-panels {
+  grid-column: 2;
+  min-width: 0;
+}
+.shell .control-room > .control-panels {
+  display: block;
+}
+
+/* ruled panels */
+.shell .control-room .settings-panel {
+  max-width: none;
+  margin: 0 0 var(--s5);
+  padding: var(--s4) var(--s5) var(--s5);
+  border: 2px solid var(--rule);
+  border-radius: 0;
+  background: var(--sheet);
+}
+.shell .control-room .settings-panel.space-top {
+  margin-top: 0;
+}
+.shell .control-room .settings-panel > h2,
+.shell .control-room .settings-panel > h2.space-top {
+  margin: 0 calc(-1 * var(--s5)) var(--s3);
+  padding: var(--s2) var(--s5);
+  background: var(--paper-2);
+  border-top: 0;
+  border-bottom: 2px solid var(--rule);
+  font-family: var(--font-sign);
+  font-stretch: 70%;
+  font-weight: 800;
+  font-size: 22px;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: var(--ink);
+}
+.shell .control-room .settings-panel > h2.space-top {
+  margin-top: var(--s5);
+  border-top: 2px solid var(--rule);
+}
+.shell .control-room .settings-panel > p,
+.shell .control-room .settings-panel form {
+  max-width: 46rem;
+}
+.shell .control-room .settings-panel p,
+.shell .control-room .settings-panel label,
+.shell .control-room .settings-panel .muted {
+  color: var(--ink);
+}
+.shell .control-room .settings-panel .muted {
+  color: var(--ink-2);
+}
+.control-room [tabindex="-1"]:focus {
+  outline: none;
+}
+.control-room [tabindex="-1"]:focus-visible {
+  outline: 3px dashed var(--blue);
+  outline-offset: 4px;
+}
+.control-room [id^="settings-"] {
+  scroll-margin-top: var(--s4);
+}
+
+/* AI: readiness vs budgets vs consent are three separate ruled blocks */
+.ai-block {
+  max-width: 46rem;
+  margin: 0 0 var(--s4);
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--rule);
+  border-left-width: 6px;
+  background: var(--paper);
+}
+.ai-block[data-kind="budgets"] {
+  border-style: dashed;
+  border-left-style: solid;
+}
+.ai-block[data-kind="consent"] {
+  border-left-color: var(--amber);
+  border-left-width: 10px;
+  background: var(--sheet);
+  border-color: var(--rule);
+}
+.shell .ai-block > h3 {
+  margin: 0 0 var(--s2);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.shell .ai-block p:last-child {
+  margin-bottom: 0;
+}
+.shell .ai-readiness {
+  gap: 0;
+  border: 1px solid var(--rule);
+  margin-block: var(--s3);
+}
+.shell .ai-readiness li {
+  background: var(--sheet);
+  border: 0;
+  border-right: 1px solid var(--rule);
+  padding: var(--s3);
+  font-size: 13px;
+}
+.shell .ai-readiness li:last-child {
+  border-right: 0;
+}
+.shell .ai-readiness li strong {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  color: var(--ink-2);
+}
+
+/* hazard zone: account deletion */
+.shell .control-room .settings-panel.hazard-zone {
+  margin-top: var(--s7);
+  padding-top: calc(var(--s4) + 16px);
+  border: 2px solid var(--rule);
+  border-left: 2px solid var(--rule);
+  background: var(--sheet);
+  position: relative;
+}
+.shell .control-room .settings-panel.hazard-zone::before {
+  content: "";
+  position: absolute;
+  inset: -2px -2px auto -2px;
+  height: 16px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--ink) 0 12px,
+    var(--amber) 12px 24px
+  );
+  border: 2px solid var(--rule);
+}
+.shell .control-room .settings-panel.hazard-zone > h2 {
+  margin-top: var(--s3);
+  background: var(--red);
+  color: #fff;
+  border-bottom-color: var(--rule);
+}
+
+@media (max-width: 900px) {
+  .shell .control-room {
+    display: block;
+  }
+  .shell .control-room > .control-index {
+    position: static;
+    margin-bottom: var(--s4);
+  }
+  .control-index ol {
+    display: flex;
+    overflow-x: auto;
+    counter-reset: sec;
+  }
+  .control-index li {
+    flex: none;
+    border-top: 0;
+    border-right: 1px solid var(--hair);
+  }
+  .shell .control-room .settings-panel {
+    padding-inline: var(--s3);
+  }
+  .shell .control-room .settings-panel > h2,
+  .shell .control-room .settings-panel > h2.space-top {
+    margin-inline: calc(-1 * var(--s3));
+    padding-inline: var(--s3);
+  }
+  .shell .ai-readiness {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shell .ai-readiness li {
+    border-right: 0;
+    border-bottom: 1px solid var(--rule);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .control-index a {
+    transition: none;
+  }
+}
