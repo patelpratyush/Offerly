@@ -20,19 +20,23 @@ Follow-ups built after this phase:
 - Scheduler/worker wiring (`server/discovery/runner.js`), all off by default: `DISCOVERY_COLLECTION_ENABLED=true` collects (bounded sources per tick, per-source backoff) and `DISCOVERY_ALERTS_ENABLED=true` processes alerts and digests (bounded users per tick, persisted cursor). Worker cadence: `DISCOVERY_TICK_INTERVAL_MS` (default 60000, minimum 10000).
 - Scale: SQL pre-filtering and keyset/cursor paging for the feed (fit-ranked views scan a bounded set, `scanCap` 5000), alert queueing and delivery read only the rows they need. Snapshot retention keeps the newest `DISCOVERY_SNAPSHOT_KEEP` (default 20) per listing.
 
-Open: email/browser channels and unsubscribe (not built; email must use `server/notification-provider.js`), rubric validation against human-reviewed examples (required by PRD), live-response verification of connectors.
+Evaluation harness: `npm run discovery:evaluate` scores labeled examples (eligibility agreement, rank correlation, top-10 relevance against the 70% target, coverage, Wilson intervals). Formats and reviewer instructions are in `reference/phase1-discovery/`. The bundled 16-example seed is synthetic and prints "NOT VALIDATION"; its top-10 relevance was 8/15 (53%), below target. Building the harness exposed and fixed 13 scorer/eligibility/normalization bugs (rubric `fit-2026-11-v2`) and one Ashby mapping error; twelve connector assumptions remain unverified (`reference/phase1-discovery/CONNECTOR_NOTES.md`).
+
+Open: email/browser channels and unsubscribe (not built; email must use `server/notification-provider.js`), rubric validation against real human-reviewed examples (required by PRD; a listing with a matching title and no description still scores 100 because of the 35-point evidence floor: owner decision), live-response verification of connectors, `salaryMin` filter ignores pay period and basis.
 
 ## Phase 4: preparation and communication
 
 - Reusable answers with provenance and confirmation rules; interview prep per round; template-based drafts (copy / `mailto:` only, no send route); resume-vs-listing coverage comparison with new immutable "Tailored" document versions; contact CSV import (verified-email matches only). Page `/prepare`.
-- Not built: sending (COM 02), PDF export, PDF resume text extraction, draft tone selector, address-book imports, relationship tags.
+- Tailored text exports to DOCX, plain text and PDF (built-in text-only writer, 120-page cap, non-Latin-1 characters become `?`). PDF resume text extraction works only for simple text-based PDFs; encrypted, scanned and embedded-font PDFs report "unavailable, paste the text", which is common for real resumes. Drafts have a deterministic tone selector (standard, concise, warm, formal), no model.
+- Not built: sending (COM 02), address-book imports, relationship tags.
 
 ## Insights, reminders, calendar
 
 - `/api/insights` and CSV with numerators, denominators and sample sizes; unknown dates excluded and counted. Response and stage durations use the date recorded in Offerly, not real-world event time.
 - Configurable reminder rules, delivery states, bounded retries, rechecks before dispatch. Email is a disabled provider abstraction with no transport.
-- `.ics` export of scheduled rounds and open assessment deadlines. No external calendar OAuth.
-- Open: reminders not surfaced in Today; no calendar duplicate matching.
+- `.ics` export of scheduled and cancelled rounds and open assessment deadlines, plus a Settings agenda showing original and local time, meeting links, cancellations and overlap conflicts (60-minute window assumed because no end times are stored). Exact-UID duplicates are removed. No external calendar OAuth.
+- Today shows reminder deliveries with real source links and no invented timestamps.
+- Open: calendar conflicts not shown in Today; two different round records for the same interview are not matched.
 
 ## Verification (merged branch)
 
@@ -40,11 +44,11 @@ Open: email/browser channels and unsubscribe (not built; email must use `server/
 | --- | --- |
 | ESLint | clean |
 | TypeScript and Vite build | pass |
-| Server tests | 271/271 |
-| Playwright e2e | desktop 35/35, mobile 35/35 |
+| Server tests | 318/318 |
+| Playwright e2e | desktop 36/36, mobile 36/36 |
 | Device suite | 18/18 |
 | `npm audit` | 0 vulnerabilities (lockfile bump of `fast-xml-parser` via `npm audit fix`) |
-| PostgreSQL 18 (local throwaway instance) | existing `test:postgres` suite 73/73; new discovery, preparation, insights, reminder-rule and calendar tests 45/45, run with all migrations applied |
+| PostgreSQL 18 (local throwaway instance) | full `test:postgres` script 144/144 (includes all new suites), run with all migrations applied |
 
 Not run: hosted Supabase Postgres, any live provider, any production check. The new test files are now in the `test:postgres` script.
 
