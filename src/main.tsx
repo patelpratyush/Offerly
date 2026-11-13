@@ -67,6 +67,7 @@ import { CalendarExport } from "./components/workspace/CalendarExport";
 import { TodayFocus } from "./components/workspace/TodayFocus";
 import { PrepareHub } from "./components/workspace/prepare/PrepareHub";
 import { Landing } from "./pages/Landing";
+import { NotFound } from "./pages/NotFound";
 import { useDialogViewport } from "./useDialogViewport";
 import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/martian-mono/wdth.css";
@@ -622,13 +623,7 @@ function App() {
     (w && page === "Not found" && !knownPublic)
   )
     return (
-      <div className="loading">
-        <h1>Page not found</h1>
-        <p>This address does not match an Offerly page.</p>
-        <Link to={w ? "/today" : "/"}>
-          Return to {w ? "workspace" : "home"}
-        </Link>
-      </div>
+      <NotFound signedIn={!!w} />
     );
   if (w && knownPublic)
     return (
@@ -2471,25 +2466,29 @@ function Auth({
     <div className="auth">
       <section className="auth-story">
         <Link className="brand" to="/" aria-label="Offerly home">
-          <Leaf />
-          offerly.
+          <span className="auth-mark" aria-hidden="true">
+            O
+          </span>
+          offerly
         </Link>
         <div>
           <span className="tiny-label">KEEP YOUR SEARCH IN ORDER.</span>
-          <h1>
-            Your next chapter
+          <h2>
+            Your search,
             <br />
-            starts here.
-          </h1>
+            on the board.
+          </h2>
           <p>
-            Track applications, prepare for interviews,
-            <br />
-            and keep your next action in view.
+            Track applications, prepare for interviews, and keep your next
+            action in view.
           </p>
         </div>
         <span>Applications · Tasks · Interviews · Documents</span>
       </section>
       <section className="auth-form">
+        <span className="auth-stub" aria-hidden="true">
+          {recovery ? "RECOVERY" : register ? "NEW SERVICE" : "BOARDING PASS"}
+        </span>
         <span className="eyebrow">YOUR PERSONAL JOB SEARCH WORKSPACE</span>
         <h1 tabIndex={-1}>
           {recovery
