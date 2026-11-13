@@ -1360,6 +1360,16 @@ fieldset {
   }
 }
 
+/* ---------- AA floor for legacy sage greys on paper ---------- */
+.shell .insight-data-note p,
+.shell .ir-table td,
+.shell td[colspan],
+.shell footer,
+.shell footer > span,
+.shell .library-toolbar > span {
+  color: var(--ink-2);
+}
+
 /* ---------- shared label colour: legacy eyebrows were below AA ---------- */
 .tiny-label,
 .eyebrow,
