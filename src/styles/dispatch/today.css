@@ -559,3 +559,31 @@
   padding-top: var(--s3);
   border-top: 2px solid var(--rule);
 }
+
+/* Legacy in-app reminders panel on paper, same rule-and-ledger treatment. */
+.shell .reminders-panel {
+  background: transparent;
+  border: 0;
+  border-top: 2px solid var(--rule);
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--s3) 0 var(--s5);
+  margin: 0 0 var(--s5);
+}
+.shell .reminders-panel h2 {
+  font-size: 20px;
+  text-transform: uppercase;
+  margin: 0 0 var(--s2);
+}
+.shell .reminders-panel > p {
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+.shell .reminders-panel details > summary {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--ink);
+}

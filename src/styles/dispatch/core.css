@@ -1398,3 +1398,32 @@ fieldset {
     font-size: 16px;
   }
 }
+
+/* Page titles: heavy condensed signage, uppercase, like the rest of the board. */
+.shell .page-heading h1 {
+  font-family: var(--font-sign);
+  font-stretch: 75%;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--ink);
+}
+.shell .page-heading p {
+  color: var(--ink-2);
+}
+/* Rail badge sits on its own, never over the station label. */
+@media (min-width: 901px) {
+  .shell .sidebar .rail-nav a.station {
+    gap: 6px;
+  }
+  .shell .sidebar .station-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .shell .sidebar .nav-count {
+    flex: none;
+    margin-left: 4px;
+  }
+}
