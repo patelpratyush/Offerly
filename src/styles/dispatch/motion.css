@@ -1,0 +1,139 @@
+/*
+ * Dispatch motion layer. Loaded last. Transform + opacity only.
+ * Curves: --ease-out (entrances, press), --ease-drawer (side drawer).
+ * Never animated: command palette and keyboard-driven toggles (used constantly).
+ * Reduced motion keeps fades, drops all movement.
+ */
+:root {
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+@keyframes m-rise {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
+}
+/* Rows slide only; no opacity so text is always at full contrast. */
+@keyframes m-slide {
+  from { transform: translateY(6px); }
+  to { transform: none; }
+}
+@keyframes m-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes m-pop {
+  from { opacity: 0; transform: scale(0.96) translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes m-drawer {
+  from { transform: translateX(32px); opacity: 0; }
+  to { transform: none; opacity: 1; }
+}
+@keyframes m-drop {
+  from { opacity: 0; transform: translateY(-6px); }
+  to { opacity: 1; transform: none; }
+}
+
+/* Route change: header, then blocks cascade in. Capped so long pages never lag. */
+.shell .content > .page-heading {
+  animation: m-rise 240ms var(--ease-out) both;
+}
+.shell .content > *:not(.page-heading):not(.alert):not(.notice):not(footer) {
+  animation: m-rise 280ms var(--ease-out) both;
+}
+.shell .content > *:nth-child(3) { animation-delay: 40ms; }
+.shell .content > *:nth-child(4) { animation-delay: 80ms; }
+.shell .content > *:nth-child(5) { animation-delay: 120ms; }
+.shell .content > *:nth-child(n + 6) { animation-delay: 150ms; }
+
+/* Rows and cards settle in with a short stagger (first 10 only). */
+.shell .application-table tbody tr,
+.shell .dep-row,
+.shell .today-grid > * {
+  animation: m-slide 260ms var(--ease-out) both;
+}
+.shell .application-table tbody tr:nth-child(2),
+.shell .dep-row:nth-child(2) { animation-delay: 30ms; }
+.shell .application-table tbody tr:nth-child(3),
+.shell .dep-row:nth-child(3) { animation-delay: 60ms; }
+.shell .application-table tbody tr:nth-child(4),
+.shell .dep-row:nth-child(4) { animation-delay: 90ms; }
+.shell .application-table tbody tr:nth-child(5),
+.shell .dep-row:nth-child(5) { animation-delay: 120ms; }
+.shell .application-table tbody tr:nth-child(n + 6),
+.shell .dep-row:nth-child(n + 6) { animation-delay: 150ms; }
+
+/* Dialogs, drawer, banners. Modal stays centered (not trigger-anchored). */
+.shell .overlay { animation: m-fade 160ms var(--ease-out) both; }
+.shell .modal { animation: m-pop 200ms var(--ease-out) both; }
+.shell .drawer { animation: m-drawer 260ms var(--ease-drawer) both; }
+.shell .alert,
+.shell .notice { animation: m-drop 200ms var(--ease-out) both; }
+.shell .menu,
+.shell [role="menu"] { animation: m-drop 140ms var(--ease-out) both; transform-origin: top; }
+
+/* Press, hover and focus feedback. Named properties only. */
+.shell button,
+.shell a.station,
+.shell .code-tag,
+.shell input,
+.shell select,
+.shell textarea {
+  transition:
+    background-color 140ms ease,
+    color 140ms ease,
+    border-color 140ms ease,
+    transform 120ms var(--ease-out),
+    box-shadow 160ms ease;
+}
+.shell .application-table tbody td {
+  transition: background-color 140ms ease;
+}
+.shell button:active:not(:disabled),
+.shell a.primary:active {
+  transform: scale(0.97);
+}
+@media (hover: hover) and (pointer: fine) {
+  .shell .primary:hover:not(:disabled) {
+    transform: translate(-1px, -1px);
+  }
+  .shell .sidebar a.station:hover .station-node {
+    transform: scale(1.25);
+  }
+}
+.shell .station-node {
+  transition: transform 160ms var(--ease-out), background-color 140ms ease, border-color 140ms ease;
+}
+
+/* Smooth in-page scrolling and anchor offset. */
+html { scroll-behavior: smooth; }
+
+/* Reduced motion: fades only. */
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .shell .content > *,
+  .shell .application-table tbody tr,
+    .shell .dep-row,
+  .shell .today-grid > *,
+  .shell .modal,
+  .shell .drawer,
+  .shell .alert,
+  .shell .notice,
+  .shell .menu,
+  .shell [role="menu"] {
+    animation: m-fade 120ms ease both;
+    animation-delay: 0ms;
+  }
+  .shell .application-table tbody tr,
+  .shell .board-column .application-card,
+  .shell .dep-row,
+  .shell .today-grid > * {
+    animation: none;
+  }
+  .shell button:active:not(:disabled),
+  .shell .primary:hover:not(:disabled),
+  .shell .sidebar a.station:hover .station-node {
+    transform: none;
+  }
+}

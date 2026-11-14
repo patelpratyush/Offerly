@@ -73,6 +73,7 @@ import "./styles/dispatch/people.css";
 import "./styles/dispatch/documents.css";
 import "./styles/dispatch/insights.css";
 import "./styles/dispatch/settings.css";
+import "./styles/dispatch/motion.css";
 import "./styles/dispatch/today.css";
 import "./styles/dispatch/applications.css";
 import "./styles/dispatch/detail.css";
@@ -998,7 +999,7 @@ function App() {
         />
         <main id="workspace-content" tabIndex={-1} inert={!!detail || !!modal}>
           <ShellTopbar page={page} timezone={w.user.timezone} />
-          <div className={`content page-${page.toLowerCase()}`}>
+          <div key={page} className={`content page-${page.toLowerCase()}`}>
             {error && (
               <div role="alert" className="alert">
                 {error}
