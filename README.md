@@ -17,7 +17,7 @@ Open http://127.0.0.1:5173 and create an account. No API keys or external servic
 
 ## Implemented
 
-- Asynchronous scrypt authentication, persistent throttling, expiring/idle-limited HttpOnly sessions, CSRF/origin protection, account-scoped queries, and password change with session revocation. Password-confirmed recovery codes provide self-service password reset without an email provider.
+- Asynchronous scrypt authentication, persistent throttling, persistent HttpOnly sessions (30-day idle limit, 90-day cap), CSRF/origin protection, account-scoped queries, and password change with session revocation. Password-confirmed recovery codes provide self-service password reset without an email provider.
 - Today dashboard with open tasks and explicitly scheduled interview rounds.
 - Applications: create/edit, paginated table and progressively loaded board, shared company/source/date/work-arrangement filters, sorting, and stage/priority/response-owner filters, archive/restore, custom stage ordering, saved views, bounded atomic bulk edits, explicit compensation fields, unified application/child-record timeline with note revisions and historical link evidence, version conflict detection.
 - Contacts with multiple emails, explicit confirmation, field-level source/evidence, agency/hiring company, relationship, phone/LinkedIn and last interaction; many-to-many application links. Tasks and named interview rounds with independent status/date/timezone.

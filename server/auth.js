@@ -40,6 +40,11 @@ export async function verifyPassword(password, encoded) {
   );
   return valid && timingSafeEqual(actual, Buffer.from(expected, "hex"));
 }
+// Persistent sign-in like other consumer sites: stay signed in while used
+// (idle limit), with an absolute cap. Sign-out, password change and
+// sign-out-everywhere still revoke sessions immediately.
+export const SESSION_IDLE_MS = 30 * 24 * 3600 * 1000;
+export const SESSION_MAX_MS = 90 * 24 * 3600 * 1000;
 export function sessionCookie(req, name) {
   const values = (req.headers.cookie || "")
     .split(";")
@@ -220,7 +225,7 @@ export function mountAuth(app, store, config, limit) {
           throw new HttpError(401, "Sign in again");
         await db
           .prepare("DELETE FROM sessions WHERE expires<=? OR last_seen<=?")
-          .run(now, now - 1800000);
+          .run(now, now - SESSION_IDLE_MS);
         const old = sessionCookie(req, cookieName);
         if (old)
           await db
@@ -235,9 +240,9 @@ export function mountAuth(app, store, config, limit) {
           .prepare(
             "INSERT INTO sessions(token,user_id,expires,last_seen) VALUES(?,?,?,?)",
           )
-          .run(digest(token), user.id, now + 43200000, now);
+          .run(digest(token), user.id, now + SESSION_MAX_MS, now);
       });
-      res.cookie(cookieName, token, { ...cookieOptions, maxAge: 43200000 });
+      res.cookie(cookieName, token, { ...cookieOptions, maxAge: SESSION_MAX_MS });
       res.json({ ok: true });
     } catch (e) {
       next(e);
@@ -253,7 +258,7 @@ export function mountAuth(app, store, config, limit) {
           .prepare(
             "SELECT u.*, s.expires AS session_expires FROM users u JOIN sessions s ON s.user_id=u.id WHERE s.token=? AND s.expires>? AND s.last_seen>?",
           )
-          .get(digest(token), now, now - 1800000));
+          .get(digest(token), now, now - SESSION_IDLE_MS));
       if (!user)
         throw Object.assign(new HttpError(401, "Sign in to continue"), {
           code: "SESSION_REQUIRED",
@@ -299,7 +304,7 @@ export function mountAuth(app, store, config, limit) {
       .prepare(
         "SELECT token FROM sessions WHERE token=? AND expires>? AND last_seen>?",
       )
-      .get(req.sessionHash, Date.now(), Date.now() - 1800000);
+      .get(req.sessionHash, Date.now(), Date.now() - SESSION_IDLE_MS);
     if (!fresh || fresh.password !== req.user.password || !session)
       throw new HttpError(401, "Sign in again");
   };
@@ -317,7 +322,7 @@ export function mountAuth(app, store, config, limit) {
           .prepare(
             "SELECT token FROM sessions WHERE token=? AND user_id=? AND expires>? AND last_seen>?",
           )
-          .get(req.sessionHash, req.user.id, Date.now(), Date.now() - 1800000);
+          .get(req.sessionHash, req.user.id, Date.now(), Date.now() - SESSION_IDLE_MS);
         const fresh = await db
           .prepare("SELECT password FROM users WHERE id=?")
           .get(req.user.id);
@@ -354,7 +359,7 @@ export function mountAuth(app, store, config, limit) {
           .prepare(
             "SELECT token FROM sessions WHERE token=? AND user_id=? AND expires>? AND last_seen>?",
           )
-          .get(req.sessionHash, req.user.id, Date.now(), Date.now() - 1800000);
+          .get(req.sessionHash, req.user.id, Date.now(), Date.now() - SESSION_IDLE_MS);
         if (!session)
           throw Object.assign(new HttpError(401, "Sign in again"), {
             code: "SESSION_REQUIRED",
@@ -393,7 +398,7 @@ export function mountAuth(app, store, config, limit) {
           .prepare(
             "SELECT token FROM sessions WHERE token=? AND user_id=? AND expires>? AND last_seen>?",
           )
-          .get(req.sessionHash, req.user.id, Date.now(), Date.now() - 1800000);
+          .get(req.sessionHash, req.user.id, Date.now(), Date.now() - SESSION_IDLE_MS);
         if (!session) throw new HttpError(401, "Sign in again");
         await queueAccountFileDeletion(store, req.user.id);
         const result = await db

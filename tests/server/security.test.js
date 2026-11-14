@@ -10,6 +10,7 @@ import { createApp } from "../../server/app.js";
 import { createStore } from "../../server/store.js";
 import { securityConfig, digest } from "../../server/security.js";
 import { validateDocument, scanWithClamav } from "../../server/files.js";
+import { SESSION_IDLE_MS } from "../../server/auth.js";
 const password = "test-security-password-123";
 const pdf = Buffer.from("%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\n%%EOF");
 async function setup(t, options = {}) {
@@ -197,7 +198,7 @@ test("auth cookies, idle timeout, absolute expiry, logout and password changes r
   ).cookie;
   await store.db
     .prepare("UPDATE sessions SET last_seen=?")
-    .run(Date.now() - 1800001);
+    .run(Date.now() - SESSION_IDLE_MS - 1);
   assert.equal((await request("/workspace", "GET", undefined, c)).status, 401);
   c = (
     await request("/auth/login", "POST", {

@@ -4,6 +4,7 @@ import { createConnection } from "node:net";
 import { randomUUID } from "node:crypto";
 import { z } from "zod";
 import { HttpError, digest } from "./security.js";
+import { SESSION_IDLE_MS } from "./auth.js";
 import {
   reserveFileObject,
   attachFileObject,
@@ -265,7 +266,7 @@ export function mountFiles(app, store, config, limit) {
             .prepare(
               "SELECT token FROM sessions WHERE token=? AND user_id=? AND expires>? AND last_seen>?",
             )
-            .get(sessionHash, user, Date.now(), Date.now() - 1800000))
+            .get(sessionHash, user, Date.now(), Date.now() - SESSION_IDLE_MS))
         )
           throw new HttpError(401, "Sign in again");
         const used = await db
