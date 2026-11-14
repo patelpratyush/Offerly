@@ -196,9 +196,12 @@ export function openDatabase(
         } catch (error) {
           await execute("ROLLBACK", [], "exec").catch(() => {});
           if (["40001", "40P01"].includes(error.code))
-            throw new HttpError(
-              409,
-              "Concurrent change detected. Refresh and retry.",
+            throw Object.assign(
+              new HttpError(
+                409,
+                "Concurrent change detected. Refresh and retry.",
+              ),
+              { serialization: true },
             );
           throw error;
         } finally {
@@ -206,7 +209,22 @@ export function openDatabase(
         }
       });
     };
-    return hosted ? transaction() : exclusive(transaction);
+    // Serializable conflicts are expected when the app loads many panels at
+    // once. The failed transaction was rolled back, so retry it a few times
+    // with jitter before surfacing a 409.
+    const withRetry = async () => {
+      for (let attempt = 1; ; attempt++) {
+        try {
+          return await transaction();
+        } catch (error) {
+          if (!error.serialization || attempt >= 5) throw error;
+          await new Promise((r) =>
+            setTimeout(r, 15 * attempt + Math.random() * 40),
+          );
+        }
+      }
+    };
+    return hosted ? withRetry() : exclusive(transaction);
   }
   return {
     hosted,
