@@ -30,7 +30,7 @@ export function RecruitingAction({
   ).filter((item) => item.applicationId === review.applicationId);
   const target = targets.find((item) => item.id === targetId);
   return (
-    <details>
+    <details className="wire-action">
       <summary>Add or update a follow-up action</summary>
       <p>
         Check dates against the source. The message received time is not an

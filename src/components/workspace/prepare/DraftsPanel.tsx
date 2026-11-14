@@ -351,6 +351,18 @@ export function DraftsPanel({
             />
           </label>
           {!!open.length && (
+            <div className="prepare-preview wide" aria-label="Open placeholders">
+              <span className="prepare-code">TO FILL</span>
+              <pre>
+                {(form.subject + "\n\n" + form.body)
+                  .split(/(\[\[[^\]\n]{1,200}\]\])/g)
+                  .map((part, i) =>
+                    i % 2 ? <mark key={i}>{part}</mark> : part,
+                  )}
+              </pre>
+            </div>
+          )}
+          {!!open.length && (
             <p className="prepare-error wide" role="status">
               {open.length} placeholder{open.length === 1 ? "" : "s"} still to
               replace: {open.join(" ")}

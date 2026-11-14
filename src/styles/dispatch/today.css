@@ -1,0 +1,589 @@
+/* Dispatch / Today: departures board, hold, checklist, ledger. Page-scoped. */
+.shell {
+  --board-dim: #b9b39b; /* 9:1 on --board */
+  --board-text: #f5efd8;
+}
+
+/* ---------- Departures board (black signage) ---------- */
+.shell .departures {
+  background: var(--board);
+  color: var(--board-text);
+  border-top: 6px solid var(--amber);
+  padding: var(--s5) var(--s5) var(--s4);
+  margin: 0 0 var(--s6);
+  border-radius: 0;
+  position: relative;
+}
+.shell .departures::before {
+  /* static scan-lines: texture only, no motion */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent 0 3px,
+    rgba(255, 255, 255, 0.025) 3px 4px
+  );
+}
+.shell .departures > * {
+  position: relative;
+}
+.shell .dep-top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s4) var(--s5);
+  margin-bottom: var(--s4);
+}
+.shell .departures .tiny-label {
+  color: var(--board-dim);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+.shell .dep-title {
+  margin: 4px 0 0;
+  font-family: var(--font-sign);
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: clamp(44px, 9vw, 96px);
+  line-height: 0.9;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  color: var(--amber);
+}
+.shell .brief-signals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+}
+.shell .brief-signal {
+  display: grid;
+  gap: 6px;
+  justify-items: start;
+  min-width: 112px;
+  padding: var(--s2) var(--s3) var(--s3);
+  background: var(--board-2);
+  border: 1px solid #34342b;
+  border-bottom: 3px solid var(--amber);
+  border-radius: 0;
+  color: var(--board-text);
+  text-decoration: none;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.shell .brief-signal:hover {
+  background: #26261f;
+}
+.shell .brief-signal:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: 2px;
+}
+.shell .brief-signal > span:last-child {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--board-dim);
+}
+.shell .brief-signal .flap {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 34px;
+  line-height: 1;
+  color: var(--amber);
+}
+.shell .flap > [aria-hidden] > span {
+  display: inline-block;
+  padding: 3px 5px;
+  margin-right: 2px;
+  background: linear-gradient(
+    to bottom,
+    #25251e 0 49%,
+    #0e0f0c 49% 51%,
+    #1b1c17 51% 100%
+  );
+}
+.shell .flap-run > span {
+  animation: dispatch-flip var(--flip) calc(var(--i, 0) * 30ms) both;
+  transform-origin: 50% 50%;
+}
+@keyframes dispatch-flip {
+  from {
+    transform: rotateX(-90deg);
+    opacity: 0.2;
+  }
+  to {
+    transform: rotateX(0);
+    opacity: 1;
+  }
+}
+
+.shell .dep-board {
+  border-top: 2px solid var(--amber);
+}
+.shell .dep-head,
+.shell .dep-row {
+  display: grid;
+  grid-template-columns: 138px minmax(0, 1fr) 210px 190px;
+  gap: var(--s4);
+  align-items: center;
+}
+.shell .dep-head {
+  padding: var(--s2) var(--s3);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--board-dim);
+  border-bottom: 1px solid #34342b;
+}
+.shell .dep-rows {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.shell .dep-rows li {
+  border-bottom: 1px solid #2a2a23;
+}
+.shell .dep-row {
+  width: 100%;
+  padding: var(--s3);
+  background: transparent;
+  border: 0;
+  border-left: 4px solid transparent;
+  border-radius: 0;
+  color: var(--board-text);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition:
+    background 120ms,
+    border-color 120ms;
+}
+.shell .dep-row:hover {
+  background: var(--board-2);
+  border-left-color: var(--amber);
+}
+.shell .dep-row:focus-visible {
+  outline: 2px solid var(--amber);
+  outline-offset: -2px;
+  background: var(--board-2);
+}
+.shell .dep-time {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--amber);
+  white-space: nowrap;
+}
+.shell .dep-service {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+.shell .dep-service strong {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--board-text);
+  overflow-wrap: anywhere;
+}
+.shell .dep-service small {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--board-dim);
+  overflow-wrap: anywhere;
+}
+.shell .dep-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s2);
+  color: var(--board-dim);
+}
+.shell .dep-overdue .dep-time {
+  color: #ff8f86;
+}
+.shell .dep-empty {
+  padding: var(--s5) var(--s3);
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  color: var(--board-dim);
+}
+.shell .dep-more {
+  margin-top: var(--s3);
+  padding: var(--s2) var(--s3);
+  background: transparent;
+  color: var(--amber);
+  border: 1px solid var(--amber);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  cursor: pointer;
+}
+.shell .dep-more:hover {
+  background: var(--amber);
+  color: var(--amber-ink);
+}
+.shell .dep-more:focus-visible {
+  outline: 2px solid var(--board-text);
+  outline-offset: 2px;
+}
+.shell .dep-note {
+  margin: var(--s4) 0 0;
+  font-size: 13px;
+  color: var(--board-dim);
+}
+
+/* board-context tags */
+.shell .departures .gate-tag {
+  color: var(--board-text);
+}
+.shell .departures .gate-tag b {
+  background: var(--amber);
+  color: var(--amber-ink);
+}
+.shell .departures .status-word {
+  color: var(--board-text);
+  border-color: #6b6858;
+}
+.shell .departures .status-move {
+  background: var(--amber);
+  color: var(--amber-ink);
+  border-color: var(--amber);
+}
+.shell .departures .status-wait {
+  color: var(--amber);
+  border-color: var(--amber);
+}
+.shell .departures .status-over {
+  background: #e0362d;
+  color: #fff;
+  border-color: #e0362d;
+}
+
+/* ---------- Hold, checklist, ledger on paper ---------- */
+.shell .hold,
+.shell .today-grid > .panel,
+.shell .today-reminders {
+  background: transparent;
+  border: 0;
+  border-top: 2px solid var(--rule);
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--s3) 0 var(--s5);
+  margin: 0 0 var(--s5);
+}
+.shell .hold .section-head h2,
+.shell .today-grid > .panel .section-head h2,
+.shell .today-reminders .section-head h2,
+.shell .today-recent h2 {
+  font-family: var(--font-sign);
+  font-stretch: 62%;
+  font-weight: 900;
+  font-size: 30px;
+  line-height: 1;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: var(--ink);
+  display: flex;
+  align-items: baseline;
+  gap: var(--s2);
+}
+.shell .hold .count,
+.shell .today-grid > .panel .count,
+.shell .today-reminders .count {
+  font-family: var(--font-mono);
+  font-size: 13px;
+  background: var(--ink);
+  color: var(--paper);
+  padding: 2px 6px;
+  border-radius: 0;
+}
+.shell .hold-list,
+.shell .tt-recent {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.shell .hold-list li,
+.shell .tt-recent li {
+  border-bottom: 1px solid var(--hair);
+}
+.shell .hold-list button,
+.shell .tt-recent button {
+  display: grid;
+  align-items: center;
+  gap: var(--s4);
+  width: 100%;
+  padding: var(--s3) var(--s3);
+  background: transparent;
+  border: 0;
+  border-left: 4px solid transparent;
+  border-radius: 0;
+  color: var(--ink);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+.shell .hold-list button {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+}
+.shell .tt-recent button {
+  grid-template-columns: 210px minmax(0, 1fr) auto auto;
+}
+.shell .hold-list button:hover,
+.shell .tt-recent button:hover {
+  border-left-color: var(--amber);
+  background: var(--paper-2);
+}
+.shell .hold-list button:focus-visible,
+.shell .tt-recent button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: -3px;
+}
+.shell .hold-list strong,
+.shell .tt-recent strong {
+  display: block;
+  font-weight: 600;
+}
+.shell .hold-list small,
+.shell .tt-recent small {
+  display: block;
+  color: var(--ink-2);
+  font-size: 13px;
+}
+.shell .hold-empty {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin: var(--s3) 0 0;
+  color: var(--ink-2);
+}
+
+/* tasks as a printed checklist */
+.shell .today-grid {
+  display: block;
+}
+.shell .today-grid .task {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+  gap: var(--s3);
+  align-items: center;
+  padding: var(--s3) 0;
+  border: 0;
+  border-bottom: 1px dotted var(--ink-2);
+  background: transparent;
+}
+.shell .today-grid .check-button {
+  width: 26px;
+  height: 26px;
+  display: inline-grid;
+  place-items: center;
+  background: var(--sheet);
+  color: transparent;
+  border: 2px solid var(--ink);
+  border-radius: 0;
+  padding: 0;
+}
+.shell .today-grid .check-button:hover {
+  background: var(--amber);
+  color: var(--ink);
+}
+.shell .today-grid .check-button:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  color: var(--ink);
+}
+.shell .today-grid .task-title {
+  font-weight: 600;
+  text-align: left;
+  color: var(--ink);
+}
+.shell .today-grid .task small {
+  display: block;
+  color: var(--ink-2);
+}
+.shell .today-grid .task .overdue {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--red);
+  text-transform: uppercase;
+}
+.shell .today-grid .task .muted {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+/* reminder deliveries as a ledger */
+.shell .today-reminder-list {
+  list-style: none;
+  margin: var(--s3) 0 0;
+  padding: 0;
+}
+.shell .today-reminder-list li {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr) auto;
+  gap: var(--s4);
+  padding: var(--s3) 0;
+  border-bottom: 1px dotted var(--ink-2);
+  align-items: start;
+}
+.shell .today-reminders .badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: transparent;
+  color: var(--ink);
+  border: 1px solid var(--ink);
+  border-radius: 0;
+  padding: 2px 6px;
+  text-align: center;
+}
+.shell .today-reminder-list li[data-state="failed"] .badge {
+  background: var(--red);
+  border-color: var(--red);
+  color: #fff;
+}
+.shell .today-reminder-list small {
+  display: block;
+  color: var(--ink-2);
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.shell .today-reminder-links {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+
+@media (max-width: 900px) {
+  .shell .dep-head {
+    display: none;
+  }
+  .shell .dep-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-areas:
+      "time status"
+      "service service"
+      "gate gate";
+    gap: var(--s2) var(--s3);
+  }
+  .shell .dep-time {
+    grid-area: time;
+  }
+  .shell .dep-status {
+    grid-area: status;
+  }
+  .shell .dep-service {
+    grid-area: service;
+  }
+  .shell .dep-gate {
+    grid-area: gate;
+  }
+  .shell .tt-recent button {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .shell .tt-recent .gate-tag {
+    grid-column: 1 / -1;
+  }
+}
+@media (max-width: 560px) {
+  .shell .departures {
+    padding: var(--s4) var(--s3);
+  }
+  .shell .brief-signal {
+    min-width: 0;
+    flex: 1 1 96px;
+  }
+  .shell .brief-signal .flap {
+    font-size: 28px;
+  }
+  .shell .today-reminder-list li {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shell .today-reminder-links {
+    justify-items: start;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .shell .flap-run > span {
+    animation: none;
+  }
+  .shell .dep-row {
+    transition: none;
+  }
+}
+
+/* alignment of legacy panel chrome inside the paper sections */
+.shell .today-grid > .panel > .section-head,
+.shell .today-reminders > .section-head,
+.shell .hold > .section-head {
+  padding: 0 0 var(--s2);
+  margin: 0;
+  border: 0;
+  background: transparent;
+  align-items: center;
+}
+.shell .today-grid .task {
+  padding-left: 0;
+  padding-right: 0;
+  margin: 0;
+}
+.shell .today-grid .task-title {
+  padding: 0;
+  text-decoration: none;
+  border: 0;
+  background: transparent;
+}
+.shell .today-grid .task-title:hover {
+  text-decoration: underline;
+}
+.shell .today-grid .task .overdue {
+  background: transparent;
+  padding: 0;
+}
+.shell .today-reminders h2 svg {
+  align-self: center;
+}
+.shell .today-recent {
+  padding-top: var(--s3);
+  border-top: 2px solid var(--rule);
+}
+
+/* Legacy in-app reminders panel on paper, same rule-and-ledger treatment. */
+.shell .reminders-panel {
+  background: transparent;
+  border: 0;
+  border-top: 2px solid var(--rule);
+  border-radius: 0;
+  box-shadow: none;
+  padding: var(--s3) 0 var(--s5);
+  margin: 0 0 var(--s5);
+}
+.shell .reminders-panel h2 {
+  font-size: 20px;
+  text-transform: uppercase;
+  margin: 0 0 var(--s2);
+}
+.shell .reminders-panel > p {
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+.shell .reminders-panel details > summary {
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  color: var(--ink);
+}

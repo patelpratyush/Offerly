@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import { Lock } from "lucide-react";
 
 import { RecruitingAction } from "./RecruitingAction";
 
@@ -173,7 +174,7 @@ export function RecruitingReview(props: Props) {
           {refreshError}
         </p>
       )}
-      <section aria-label="Proposed updates">
+      <section className="wire-list" aria-label="Proposed updates">
         <h2>Proposed updates</h2>
         {!reviews.length && (
           <p className="muted">
@@ -520,180 +521,219 @@ function ReviewCard({
         : {}),
     });
   }
+  const candidates: string[] = review.candidateApplicationIds || [];
+  const lockedFor = (field: string) =>
+    locks.find((lock) => String(lock.field).toLowerCase().includes(field));
+  const rows = [
+    {
+      key: "stage",
+      label: "Stage",
+      current: application?.stage,
+      proposed: review.proposedChanges?.stage,
+      empty: "Choose an application",
+    },
+    {
+      key: "owner",
+      label: "Next response",
+      current: application?.owner,
+      proposed: review.proposedChanges?.owner,
+      empty: "Not selected",
+    },
+  ];
+  const decided = ["accepted", "corrected", "rejected"].includes(review.status);
   return (
     <article
-      className="panel"
-      style={panelStyle}
+      className="panel wire"
+      data-status={review.status}
       aria-label={`Review ${evidence?.sourceId || review.id}`}
     >
-      <div className="section-head">
+      <header className="wire-head">
+        <span className="wire-code">Wire</span>
         <h3>{evidence?.sourceId || "Evidence review"}</h3>
-        <span className="badge">{review.status}</span>
-      </div>
-      <blockquote
-        style={{
-          margin: "12px 0",
-          whiteSpace: "pre-wrap",
-          overflowWrap: "anywhere",
-        }}
-      >
-        {evidence?.excerpt || "Evidence unavailable"}
-      </blockquote>
-      {(evidence?.parserVersion ||
-        evidence?.model ||
-        evidence?.promptVersion) && (
-        <p className="muted">
-          Extraction provenance: {evidence.parserVersion || "Unknown parser"}
-          {evidence.model && ` · Model: ${evidence.model}`}
-          {evidence.promptVersion && ` · Prompt: ${evidence.promptVersion}`}.
-          The excerpt above is the retained source evidence; verify it before
-          accepting.
+        <span className="badge wire-status">{review.status}</span>
+      </header>
+      {candidates.length > 1 && (
+        <p className="wire-banner" data-kind="ambiguity">
+          <strong>Ambiguous match.</strong> {candidates.length} applications
+          could fit this evidence. Choose the target explicitly before deciding.
         </p>
       )}
-      <p>
-        Evidence time:{" "}
-        {review.effectiveAt || evidence?.effectiveAt || "Unknown"}
-      </p>
-      {link && (
-        <a href={link} target="_blank" rel="noopener noreferrer">
-          Open evidence source
-        </a>
+      {candidates.length === 0 && !application && pending && (
+        <p className="wire-banner" data-kind="ambiguity">
+          <strong>No match found.</strong> Select the application yourself.
+        </p>
       )}
-      <p>{review.matchingRationale}</p>
-      <p>
-        Candidate applications:{" "}
-        {(review.candidateApplicationIds || [])
-          .map((id: string) => {
-            const a = applications.find((item) => item.id === id);
-            return a ? `${a.company} · ${a.title}` : "Unavailable application";
-          })
-          .join("; ") || "No match — select the application explicitly."}
-      </p>
-      <dl
-        className="review-comparison"
-        aria-label="Current and proposed values"
-      >
-        <div>
-          <dt>Current record</dt>
-          <dd>Stage: {application?.stage || "Choose an application"}</dd>
-          <dd>Next response: {application?.owner || "Not selected"}</dd>
-        </div>
-        <div>
-          <dt>Proposed update · requires your decision</dt>
-          <dd>
-            Stage: {review.proposedChanges?.stage || "No change proposed"}
-          </dd>
-          <dd>
-            Next response:{" "}
-            {review.proposedChanges?.owner || "No change proposed"}
-          </dd>
-        </div>
-      </dl>
-      {pending && (
-        <div className="form-fields">
-          <label>
-            Review target application
-            <select
-              aria-label="Review target application"
-              value={applicationId}
-              disabled={operation.busy}
-              onChange={(event) => {
-                setApplicationId(event.target.value);
-                setOverride(false);
-              }}
-            >
-              <option value="">Choose the target application</option>
-              {applications
-                .filter((item) => !item.archived)
-                .map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.company} · {item.title}
-                  </option>
-                ))}
-            </select>
-          </label>
-          {application && (
-            <p>
-              Current stage: {application.stage} · Response owner:{" "}
-              {application.owner}
+      <div className="wire-body">
+        <section className="wire-source" aria-label="Source evidence">
+          <h4 className="wire-label">Source evidence</h4>
+          <blockquote>{evidence?.excerpt || "Evidence unavailable"}</blockquote>
+          <p className="wire-meta">
+            Evidence time:{" "}
+            {review.effectiveAt || evidence?.effectiveAt || "Unknown"}
+          </p>
+          {evidence?.parserVersion ||
+          evidence?.model ||
+          evidence?.promptVersion ? (
+            <p className="wire-meta">
+              Extraction provenance:{" "}
+              {evidence.parserVersion || "Unknown parser"}
+              {evidence.model && ` · Model: ${evidence.model}`}
+              {evidence.promptVersion && ` · Prompt: ${evidence.promptVersion}`}
+              . The excerpt above is the retained source evidence; verify it
+              before accepting.
+            </p>
+          ) : (
+            <p className="wire-meta">
+              Extraction provenance not recorded. Verify the excerpt before
+              accepting.
             </p>
           )}
+          {link && (
+            <a href={link} target="_blank" rel="noopener noreferrer">
+              Open evidence source
+            </a>
+          )}
+          <p className="wire-meta">{review.matchingRationale}</p>
+          <p className="wire-meta">
+            Candidate applications:{" "}
+            {candidates
+              .map((id: string) => {
+                const a = applications.find((item) => item.id === id);
+                return a
+                  ? `${a.company} · ${a.title}`
+                  : "Unavailable application";
+              })
+              .join("; ") || "No match — select the application explicitly."}
+          </p>
+        </section>
+        <section className="wire-change" aria-label="Proposed change">
+          <h4 className="wire-label">Current record to proposed update</h4>
+          <dl
+            className="review-comparison"
+            aria-label="Current and proposed values"
+          >
+            <div className="wire-cols" aria-hidden="true">
+              <span>Current record</span>
+              <span />
+              <span>Proposed update · requires your decision</span>
+            </div>
+            {rows.map((row) => {
+              const lock = lockedFor(row.key);
+              return (
+                <div className="wire-row" key={row.key} data-locked={!!lock}>
+                  <dt>{row.label}</dt>
+                  <dd className="wire-current">
+                    <span className="sr-only">Current: </span>
+                    {row.current && row.proposed ? (
+                      <del>{row.current}</del>
+                    ) : (
+                      row.current || row.empty
+                    )}
+                  </dd>
+                  <dd className="wire-arrow" aria-hidden="true">
+                    →
+                  </dd>
+                  <dd className="wire-proposed">
+                    <span className="sr-only">Proposed: </span>
+                    {row.proposed ? (
+                      <ins>{row.proposed}</ins>
+                    ) : (
+                      "No change proposed"
+                    )}
+                    {lock && (
+                      <span className="wire-lock">
+                        <Lock size={12} aria-hidden="true" /> Locked by you
+                      </span>
+                    )}
+                  </dd>
+                </div>
+              );
+            })}
+          </dl>
           {!!locks.length && (
-            <p className="notice">
-              Protected fields: {locks.map((lock) => lock.field).join(", ")}.
-              Applying changes may require explicit override.
+            <p className="wire-banner" data-kind="lock">
+              <Lock size={14} aria-hidden="true" />
+              <span>
+                Protected fields: {locks.map((lock) => lock.field).join(", ")}.
+                Applying changes may require explicit override.
+              </span>
             </p>
           )}
-          <div className="filter-grid">
-            <label>
-              Corrected stage
-              <select
-                aria-label="Corrected stage"
-                value={stage}
-                disabled={operation.busy}
-                onChange={(event) => setStage(event.target.value)}
-              >
-                <option value="">No stage update</option>
-                {stages.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Corrected response owner
-              <select
-                aria-label="Corrected response owner"
-                value={owner}
-                disabled={operation.busy}
-                onChange={(event) => setOwner(event.target.value)}
-              >
-                <option value="">No owner update</option>
-                {owners.map((value) => (
-                  <option key={value}>{value}</option>
-                ))}
-              </select>
-            </label>
-          </div>
-          <label className="checkbox-label">
-            <input
-              type="checkbox"
-              checked={override}
-              disabled={operation.busy}
-              onChange={(event) => setOverride(event.target.checked)}
-            />
-            Explicitly override protected fields, older evidence, or
-            terminal-stage safeguards for this decision
-          </label>
-          <div className="section-head" style={{ flexWrap: "wrap", gap: 12 }}>
-            <button
-              type="button"
-              className="primary"
-              disabled={operation.busy || !application}
-              onClick={() => void decide("accept")}
-            >
-              Accept proposed update
-            </button>
-            <button
-              type="button"
-              className="secondary"
-              disabled={operation.busy || !application || (!stage && !owner)}
-              onClick={() => void decide("correct")}
-            >
-              Apply corrected update
-            </button>
-            <button
-              type="button"
-              className="text-button"
-              disabled={operation.busy}
-              onClick={() => void decide("reject")}
-            >
-              Reject update
-            </button>
-          </div>
-        </div>
-      )}
+          {pending && (
+            <div className="form-fields wire-controls">
+              <label>
+                Review target application
+                <select
+                  aria-label="Review target application"
+                  value={applicationId}
+                  disabled={operation.busy}
+                  onChange={(event) => {
+                    setApplicationId(event.target.value);
+                    setOverride(false);
+                  }}
+                >
+                  <option value="">Choose the target application</option>
+                  {applications
+                    .filter((item) => !item.archived)
+                    .map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.company} · {item.title}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              {application && (
+                <p className="wire-meta">
+                  Current stage: {application.stage} · Response owner:{" "}
+                  {application.owner}
+                </p>
+              )}
+              <div className="filter-grid">
+                <label>
+                  Corrected stage
+                  <select
+                    aria-label="Corrected stage"
+                    value={stage}
+                    disabled={operation.busy}
+                    onChange={(event) => setStage(event.target.value)}
+                  >
+                    <option value="">No stage update</option>
+                    {stages.map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
+                <label>
+                  Corrected response owner
+                  <select
+                    aria-label="Corrected response owner"
+                    value={owner}
+                    disabled={operation.busy}
+                    onChange={(event) => setOwner(event.target.value)}
+                  >
+                    <option value="">No owner update</option>
+                    {owners.map((value) => (
+                      <option key={value}>{value}</option>
+                    ))}
+                  </select>
+                </label>
+              </div>
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  checked={override}
+                  disabled={operation.busy}
+                  onChange={(event) => setOverride(event.target.checked)}
+                />
+                Explicitly override protected fields, older evidence, or
+                terminal-stage safeguards for this decision
+              </label>
+            </div>
+          )}
+        </section>
+      </div>
       {evidence?.eventType && (
-        <p>
+        <p className="wire-meta wire-pad">
           Proposed event: {evidence.eventType}. Confirm details from source
           evidence.
         </p>
@@ -711,8 +751,8 @@ function ReviewCard({
         />
       )}
       {evidence?.proposedContacts?.length > 0 && (
-        <section>
-          <h4>Proposed contacts</h4>
+        <section className="wire-contacts">
+          <h4 className="wire-label">Proposed contacts</h4>
           <p>
             Unverified identities from message participants. Save only after
             checking the source.
@@ -741,24 +781,59 @@ function ReviewCard({
           )}
         </section>
       )}
-      {["accepted", "corrected", "rejected"].includes(review.status) && (
-        <button
-          type="button"
-          className="secondary"
-          disabled={operation.busy}
-          onClick={() =>
-            void operation.run(`/recruiting/reviews/${review.id}/undo`, {
-              version: review.version,
-            })
-          }
-        >
-          Undo review decision
-        </button>
-      )}
       {operation.error && (
-        <p role="alert" className="form-error">
+        <p role="alert" className="form-error wire-banner" data-kind="error">
           {operation.error}
         </p>
+      )}
+      {(pending || decided) && (
+        <footer className="wire-decide">
+          <span className="wire-label">
+            {pending ? "Your decision" : "Decision recorded"}
+          </span>
+          {pending && (
+            <>
+              <button
+                type="button"
+                className="primary"
+                disabled={operation.busy || !application}
+                onClick={() => void decide("accept")}
+              >
+                Accept proposed update
+              </button>
+              <button
+                type="button"
+                className="secondary"
+                disabled={operation.busy || !application || (!stage && !owner)}
+                onClick={() => void decide("correct")}
+              >
+                Apply corrected update
+              </button>
+              <button
+                type="button"
+                className="text-button"
+                disabled={operation.busy}
+                onClick={() => void decide("reject")}
+              >
+                Reject update
+              </button>
+            </>
+          )}
+          {decided && (
+            <button
+              type="button"
+              className="secondary"
+              disabled={operation.busy}
+              onClick={() =>
+                void operation.run(`/recruiting/reviews/${review.id}/undo`, {
+                  version: review.version,
+                })
+              }
+            >
+              Undo review decision
+            </button>
+          )}
+        </footer>
       )}
     </article>
   );

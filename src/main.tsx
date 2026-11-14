@@ -15,12 +15,8 @@ import {
   Search,
   LayoutGrid,
   List,
-  Sun,
-  BriefcaseBusiness,
   Users,
-  Files,
   Settings,
-  ChartNoAxesCombined,
   ArrowRight,
   X,
   Check,
@@ -28,13 +24,8 @@ import {
   Download,
   LogOut,
   Leaf,
-  ChevronRight,
   Clock,
   Archive,
-  Menu,
-  Compass,
-  Building2,
-  ClipboardList,
 } from "lucide-react";
 import "@fontsource/dm-sans/400.css";
 import "@fontsource/dm-sans/500.css";
@@ -67,9 +58,34 @@ import { CalendarExport } from "./components/workspace/CalendarExport";
 import { TodayFocus } from "./components/workspace/TodayFocus";
 import { PrepareHub } from "./components/workspace/prepare/PrepareHub";
 import { Landing } from "./pages/Landing";
+import { NotFound } from "./pages/NotFound";
 import { useDialogViewport } from "./useDialogViewport";
-import "./styles/flavor.css";
-import "./styles/discover.css";
+import "@fontsource-variable/archivo/wdth.css";
+import "@fontsource-variable/martian-mono/wdth.css";
+import "./styles/dispatch/tokens.css";
+import "./styles/dispatch/core.css";
+import { ShellRail, ShellTopbar } from "./components/shell/ShellRail";
+import { ShellOverlays, type Overlay } from "./components/shell/ShellOverlays";
+import "./styles/dispatch/discover.css";
+import "./styles/dispatch/prepare.css";
+import "./styles/dispatch/reviews.css";
+import "./styles/dispatch/people.css";
+import "./styles/dispatch/documents.css";
+import "./styles/dispatch/insights.css";
+import "./styles/dispatch/settings.css";
+import "./styles/dispatch/today.css";
+import "./styles/dispatch/applications.css";
+import "./styles/dispatch/detail.css";
+import {
+  GateTag,
+  gateCode,
+  StatusTag,
+  OverdueTag,
+  ownerStatus,
+  appHasOverdue,
+  deriveNextMove,
+  type NextMove,
+} from "./components/applications/dispatch";
 import { DiscoverPage } from "./components/discover/DiscoverPage";
 import { CompaniesPage } from "./components/discover/CompaniesPage";
 const APPLICATION_PAGE_SIZE = 25;
@@ -297,6 +313,7 @@ function App() {
   const [w, setW] = useState<Workspace | null>(null),
     [loading, setLoading] = useState(true),
     [navigationOpen, setNavigationOpen] = useState(false),
+    [overlay, setOverlay] = useState<Overlay>(null),
     [error, setError] = useState(""),
     [notice, setNotice] = useState(""),
     [modal, setModal] = useState<{ kind: string; data: any } | null>(null),
@@ -619,15 +636,7 @@ function App() {
     (!w && !knownPublic && page === "Not found") ||
     (w && page === "Not found" && !knownPublic)
   )
-    return (
-      <div className="loading">
-        <h1>Page not found</h1>
-        <p>This address does not match an Offerly page.</p>
-        <Link to={w ? "/today" : "/"}>
-          Return to {w ? "workspace" : "home"}
-        </Link>
-      </div>
-    );
+    return <NotFound signedIn={!!w} />;
   if (w && knownPublic)
     return (
       <Navigate
@@ -849,18 +858,38 @@ function App() {
       ? `${due.title} · ${due.date || "No date"}`
       : "No task or deadline set";
   };
-  const nav = [
-    ["Today", Sun],
-    ["Applications", BriefcaseBusiness],
-    ["Discover", Compass],
-    ["Companies", Building2],
-    ["Reviews", Check],
-    ["Connections", Users],
-    ["Documents", Files],
-    ["Prepare", ClipboardList],
-    ["Insights", ChartNoAxesCombined],
-    ["Settings", Settings],
-  ] as const;
+  const performMove = (m: NextMove, a: Item) => {
+    if (m.kind === "task" && m.record && m.label === "Complete task")
+      return run(() => saveRecord("task", { ...m.record, done: true }));
+    if (m.kind === "task" && m.record)
+      return setModal({ kind: "task", data: m.record });
+    if (m.kind === "prepare") return navigate("/prepare");
+    return newRecord("task", a.id);
+  };
+  /** The single primary next move for an application, from recorded data. */
+  const moveButton = (a: Item, className = "next-move-btn") => {
+    const m = deriveNextMove(a, w, today);
+    const inner = (
+      <>
+        <span>{m.label}</span>
+        <small>{m.detail}</small> <ArrowRight size={14} aria-hidden="true" />
+      </>
+    );
+    return m.href ? (
+      <a className={className} href={m.href} aria-label={m.label}>
+        {inner}
+      </a>
+    ) : (
+      <button
+        className={className}
+        aria-label={m.label}
+        disabled={busy}
+        onClick={() => performMove(m, a)}
+      >
+        {inner}
+      </button>
+    );
+  };
   const cards = (apps: Item[]) =>
     apps.map((a) => (
       <div key={a.id} className="selectable-card">
@@ -871,14 +900,8 @@ function App() {
         )}
         <button className="job-card" onClick={() => showDetail(a)}>
           <div className="card-top">
-            <span className="company-icon">
-              {a.company.slice(0, 2).toUpperCase()}
-            </span>
-            <span
-              className={"badge " + a.stage.toLowerCase().replaceAll(" ", "-")}
-            >
-              {a.stage}
-            </span>
+            <GateTag stage={a.stage} />
+            {appHasOverdue(a, w, today) && <OverdueTag />}
           </div>
           <strong>{a.title}</strong>
           <span>{a.company}</span>
@@ -889,14 +912,7 @@ function App() {
             </span>
           </div>
           <div className="response-line">
-            <Clock size={13} />
-            {a.owner === "You"
-              ? "Your reply is next"
-              : a.owner === "Employer"
-                ? `Waiting for employer${a.ownerEffectiveAt ? ` · ${Math.max(0, Math.floor((Date.now() - Date.parse(a.ownerEffectiveAt)) / 86400000))} days` : ""}`
-                : a.owner === "Nobody"
-                  ? "No reply needed"
-                  : "Response owner unclear"}
+            <StatusTag status={ownerStatus(a)} />
           </div>
           <div className="next-action">
             <small>Next action</small>
@@ -907,9 +923,17 @@ function App() {
             <ArrowUpRight size={16} />
           </div>
         </button>
+        {page === "Applications" && moveButton(a)}
       </div>
     ));
   const checkingSession = verifiedPath !== location.pathname;
+  const goToPage = (name: string) => {
+    navigate(pagePaths[name] || "/today");
+    setQuery("");
+    requestAnimationFrame(() =>
+      document.querySelector<HTMLElement>("#workspace-content h1")?.focus(),
+    );
+  };
   return (
     <>
       {checkingSession && (
@@ -948,96 +972,32 @@ function App() {
         <a className="skip-link" href="#workspace-content">
           Skip to workspace
         </a>
-        <aside className="sidebar" inert={!!detail || !!modal}>
-          <Link className="brand" to="/today">
-            <span className="brand-mark">
-              <Leaf size={23} />
-            </span>
-            offerly<span className="brand-dot">.</span>
-          </Link>
-          <button
-            className="mobile-menu secondary"
-            aria-expanded={navigationOpen}
-            aria-controls="workspace-navigation"
-            onClick={() => setNavigationOpen(!navigationOpen)}
-          >
-            {navigationOpen ? <X size={18} /> : <Menu size={18} />}{" "}
-            {navigationOpen ? "Close menu" : page}
-          </button>
-          <div className="workspace-label">PERSONAL WORKSPACE</div>
-          <nav
-            id="workspace-navigation"
-            aria-label="Workspace"
-            className={navigationOpen ? "is-open" : ""}
-          >
-            {nav.map(([name, Icon], index) => (
-              <Link
-                key={name}
-                to={pagePaths[name]}
-                aria-current={page === name ? "page" : undefined}
-                className={page === name ? "active" : ""}
-                onClick={() => {
-                  setNavigationOpen(false);
-                  setQuery("");
-                  requestAnimationFrame(() =>
-                    document
-                      .querySelector<HTMLElement>("#workspace-content h1")
-                      ?.focus(),
-                  );
-                }}
-              >
-                <span className="nav-index" aria-hidden="true">
-                  {String(index + 1).padStart(2, "0")}
-                </span>
-                <Icon size={18} />
-                {name}
-                {name === "Applications" && (
-                  <span className="nav-count">{active.length}</span>
-                )}
-              </Link>
-            ))}
-          </nav>
-          <div className="sidebar-note">
-            <span className="tiny-label">YOUR SEARCH, YOUR RECORD</span>
-            <p>
-              Every move.
-              <br />
-              On record.
-            </p>
-            <span>
-              Applications, conversations and the details that connect them.
-            </span>
-          </div>
-          <div className={"account" + (navigationOpen ? " is-open" : "")}>
-            <span className="avatar">
-              {w.user.name.charAt(0).toUpperCase()}
-            </span>
-            <div>
-              <strong>{w.user.name}</strong>
-              <small>Personal workspace</small>
-            </div>
-            <button
-              aria-label="Sign out"
-              onClick={() =>
-                run(async () => {
-                  await api("/logout", "POST");
-                  resetSession();
-                })
-              }
-            >
-              <LogOut size={17} />
-            </button>
-          </div>
-        </aside>
+        <ShellRail
+          page={page}
+          applicationCount={active.length}
+          userName={w.user.name}
+          navigationOpen={navigationOpen}
+          inert={!!detail || !!modal}
+          onToggleMenu={() => setNavigationOpen(!navigationOpen)}
+          onNavigate={() => {
+            setNavigationOpen(false);
+            setQuery("");
+            requestAnimationFrame(() =>
+              document
+                .querySelector<HTMLElement>("#workspace-content h1")
+                ?.focus(),
+            );
+          }}
+          onSearch={() => setOverlay("palette")}
+          onSignOut={() =>
+            run(async () => {
+              await api("/logout", "POST");
+              resetSession();
+            })
+          }
+        />
         <main id="workspace-content" tabIndex={-1} inert={!!detail || !!modal}>
-          <header className="topbar">
-            <span>
-              Workspace <ChevronRight size={13} /> <b>{page}</b>
-            </span>
-            <span className="private-tag">
-              <span /> Private workspace
-            </span>
-          </header>
+          <ShellTopbar page={page} timezone={w.user.timezone} />
           <div className={`content page-${page.toLowerCase()}`}>
             {error && (
               <div role="alert" className="alert">
@@ -1149,195 +1109,75 @@ function App() {
                   workspace={w}
                   today={today}
                   onOpen={showDetail}
+                  onSource={(kind, data) => setModal({ kind, data })}
                   onReviews={() => setPage("Reviews")}
                   request={api}
-                />
-                <div className="today-grid" id="today-actions">
-                  <section className="panel">
-                    <div className="section-head">
-                      <h2>
-                        Your next steps{" "}
-                        <span className="count">{tasks.length}</span>
-                      </h2>
-                      <button
-                        className="text-button"
-                        onClick={() => newRecord("task")}
-                      >
-                        <Plus size={16} /> Add task
-                      </button>
-                    </div>
-                    {tasks.length ? (
-                      tasks.map((t) => (
-                        <div className="task" key={t.id}>
-                          <button
-                            aria-label={"Complete " + t.title}
-                            className="check-button"
-                            disabled={busy}
-                            onClick={() =>
-                              run(() =>
-                                saveRecord("task", { ...t, done: true }),
-                              )
-                            }
-                          >
-                            <Check size={14} />
-                          </button>
-                          <div>
-                            <button
-                              className="task-title"
-                              onClick={() =>
-                                setModal({ kind: "task", data: t })
-                              }
-                            >
-                              {t.title}
-                              <span className="sr-only"> · Edit task</span>
-                            </button>
-                            <small>{appName(t.applicationId)}</small>
-                          </div>
-                          <span
-                            className={
-                              t.due && t.due < today ? "overdue" : "muted"
-                            }
-                          >
-                            {t.due
-                              ? t.due < today
-                                ? "Overdue · " + t.due
-                                : t.due
-                              : "No deadline"}
-                          </span>
-                        </div>
-                      ))
-                    ) : (
-                      <Empty
-                        title="No open tasks."
-                        text="Add a follow-up, a deadline, or one small next step."
-                        action="Add your first task"
-                        onClick={() => newRecord("task")}
-                      />
-                    )}
-                  </section>
-                  <section className="focus-panel deadlines-panel">
-                    <div className="section-head">
-                      <span className="tiny-label">UP NEXT</span>
-                      <Clock size={18} />
-                    </div>
-                    <h2>
-                      Deadlines to watch
-                      <span className="count">
-                        {assessmentDeadlines.length}
-                      </span>
-                    </h2>
-                    {assessmentDeadlines.length ? (
-                      assessmentDeadlines.slice(0, 3).map((a) => (
+                >
+                  <div className="today-grid" id="today-actions">
+                    <section className="panel">
+                      <div className="section-head">
+                        <h2>
+                          Your next steps{" "}
+                          <span className="count">{tasks.length}</span>
+                        </h2>
                         <button
-                          className="deadline-item"
-                          key={a.id}
-                          onClick={() =>
-                            setModal({ kind: "assessment", data: a })
-                          }
+                          className="text-button"
+                          onClick={() => newRecord("task")}
                         >
-                          <span
-                            className={
-                              "deadline-date " +
-                              (a.due && a.due < today ? "late" : "")
-                            }
-                          >
-                            <strong>{a.due ? a.due.slice(8) : "—"}</strong>
-                            <small>
-                              {a.due
-                                ? new Date(a.due + "T12:00:00Z").toLocaleString(
-                                    "en-US",
-                                    { month: "short", timeZone: "UTC" },
-                                  )
-                                : "No date"}
-                            </small>
-                          </span>
-                          <span>
-                            <strong>{a.title}</strong>
-                            <small>{appName(a.applicationId)}</small>
-                          </span>
-                          <ArrowUpRight size={16} />
+                          <Plus size={16} /> Add task
                         </button>
-                      ))
-                    ) : (
-                      <div className="deadline-empty">
-                        <Check size={26} />
-                        <strong>No assessment deadlines.</strong>
-                        <p>
-                          Add an assessment from any application. Its deadline
-                          appears here.
-                        </p>
                       </div>
-                    )}
-                    <button
-                      className="light-button"
-                      onClick={() => setPage("Applications")}
-                    >
-                      Open your applications <ArrowRight size={16} />
-                    </button>
-                  </section>
-                </div>
-                <section className="panel space-top interviews-panel">
-                  <div className="section-head">
-                    <h2>Upcoming conversations</h2>
-                    <Clock size={18} />
-                  </div>
-                  {w.rounds.filter(
-                    (r) =>
-                      ["Scheduled", "Rescheduled"].includes(r.status) &&
-                      r.date >= today,
-                  ).length ? (
-                    w.rounds
-                      .filter(
-                        (r) =>
-                          ["Scheduled", "Rescheduled"].includes(r.status) &&
-                          r.date >= today,
-                      )
-                      .sort((a, b) => a.date.localeCompare(b.date))
-                      .map((r) => (
-                        <div className="task" key={r.id}>
-                          <span className="company-icon">
-                            <Users size={18} />
-                          </span>
-                          <div>
+                      {tasks.length ? (
+                        tasks.map((t) => (
+                          <div className="task" key={t.id}>
                             <button
-                              className="task-title"
+                              aria-label={"Complete " + t.title}
+                              className="check-button"
+                              disabled={busy}
                               onClick={() =>
-                                setModal({ kind: "round", data: r })
+                                run(() =>
+                                  saveRecord("task", { ...t, done: true }),
+                                )
                               }
                             >
-                              {r.title}
-                              <span className="sr-only"> · Edit interview</span>
+                              <Check size={14} />
                             </button>
-                            <small>{appName(r.applicationId)}</small>
+                            <div>
+                              <button
+                                className="task-title"
+                                onClick={() =>
+                                  setModal({ kind: "task", data: t })
+                                }
+                              >
+                                {t.title}
+                                <span className="sr-only"> · Edit task</span>
+                              </button>
+                              <small>{appName(t.applicationId)}</small>
+                            </div>
+                            <span
+                              className={
+                                t.due && t.due < today ? "overdue" : "muted"
+                              }
+                            >
+                              {t.due
+                                ? t.due < today
+                                  ? "Overdue · " + t.due
+                                  : t.due
+                                : "No deadline"}
+                            </span>
                           </div>
-                          <span>
-                            {r.date} {r.time} · {r.timezone}
-                          </span>
-                        </div>
-                      ))
-                  ) : (
-                    <p className="muted panel-copy">
-                      No upcoming interviews scheduled. Add rounds from an
-                      application.
-                    </p>
-                  )}
-                </section>
-                <section className="panel review-shortcut">
-                  <div>
-                    <h2>Updates to review</h2>
-                    <p>
-                      {w.reviews.filter((r) => r.status === "pending").length}{" "}
-                      pending · Evidence never changes applications without your
-                      decision.
-                    </p>
+                        ))
+                      ) : (
+                        <Empty
+                          title="No open tasks."
+                          text="Add a follow-up, a deadline, or one small next step."
+                          action="Add your first task"
+                          onClick={() => newRecord("task")}
+                        />
+                      )}
+                    </section>
                   </div>
-                  <button
-                    className="secondary"
-                    onClick={() => setPage("Reviews")}
-                  >
-                    Open reviews
-                  </button>
-                </section>
+                </TodayFocus>
                 <Reminders
                   applications={w.applications}
                   rounds={w.rounds}
@@ -1349,7 +1189,7 @@ function App() {
                     await refresh();
                   }}
                 />
-                <div className="section-head space-top">
+                <div className="section-head space-top today-recent">
                   <h2>Recent applications</h2>
                   <button
                     className="text-button"
@@ -1359,9 +1199,26 @@ function App() {
                   </button>
                 </div>
                 {active.length ? (
-                  <div className="card-grid">
-                    {cards(active.slice(-3).reverse())}
-                  </div>
+                  <ul className="tt-recent" aria-label="Recent applications">
+                    {active
+                      .slice(-3)
+                      .reverse()
+                      .map((a) => (
+                        <li key={a.id}>
+                          <button onClick={() => showDetail(a)}>
+                            <GateTag stage={a.stage} />
+                            <span className="tt-service">
+                              <strong>{a.title}</strong>
+                              <small>
+                                {a.company} · {a.location || "Location unknown"}
+                              </small>
+                            </span>
+                            <StatusTag status={ownerStatus(a)} />
+                            <ArrowUpRight size={15} aria-hidden="true" />
+                          </button>
+                        </li>
+                      ))}
+                  </ul>
                 ) : (
                   <section className="panel">
                     <Empty
@@ -1743,8 +1600,13 @@ function App() {
                           return (
                             <section className="board-column" key={s}>
                               <h3>
-                                <span className="stage-dot" />
-                                {s} <span>{column.length}</span>
+                                <b className="platform-code" aria-hidden="true">
+                                  {gateCode(s)}
+                                </b>
+                                <span className="platform-name">{s}</span>{" "}
+                                <span className="platform-count">
+                                  {column.length}
+                                </span>
                               </h3>
                               {cards(column.slice(0, limit))}
                               {!column.length && (
@@ -1811,59 +1673,53 @@ function App() {
                           <thead>
                             <tr>
                               <th scope="col">Select</th>
-                              <th>Company & role</th>
-                              <th>Stage</th>
-                              <th>Location</th>
-                              <th>Next response / action</th>
-                              <th>Priority</th>
-                              <th>Applied</th>
-                              <th />
+                              <th scope="col">Service</th>
+                              <th scope="col">Gate</th>
+                              <th scope="col">Status / next move</th>
+                              <th scope="col">Location</th>
+                              <th scope="col">Priority</th>
+                              <th scope="col">Applied</th>
+                              <th scope="col">
+                                <span className="sr-only">Actions</span>
+                              </th>
                             </tr>
                           </thead>
                           <tbody>
                             {tableApplications.map((a) => (
-                              <tr key={a.id}>
+                              <tr
+                                key={a.id}
+                                className={
+                                  appHasOverdue(a, w, today)
+                                    ? "row-overdue"
+                                    : ""
+                                }
+                              >
                                 <td data-label="Select">{selectionBox(a)}</td>
                                 <td className="role-cell">
                                   <button
                                     className="table-role"
                                     onClick={() => showDetail(a)}
                                   >
-                                    <span className="company-icon">
-                                      {a.company.slice(0, 2).toUpperCase()}
-                                    </span>
-                                    <span>
-                                      <strong>{a.title}</strong>
-                                      <small>{a.company}</small>
-                                    </span>
+                                    <strong>{a.title}</strong>
+                                    <small>{a.company}</small>
                                   </button>
                                 </td>
-                                <td data-label="Stage">
-                                  <span
-                                    className={
-                                      "badge " +
-                                      a.stage.toLowerCase().replaceAll(" ", "-")
-                                    }
-                                  >
-                                    {a.stage}
+                                <td data-label="Gate">
+                                  <GateTag stage={a.stage} />
+                                </td>
+                                <td data-label="Status / next move">
+                                  <span className="response-owner">
+                                    <StatusTag status={ownerStatus(a)} />
+                                    {appHasOverdue(a, w, today) && (
+                                      <OverdueTag />
+                                    )}
                                   </span>
-                                </td>
-                                <td data-label="Location">
-                                  {a.location || "Unknown"}
-                                </td>
-                                <td data-label="Next response / action">
-                                  <strong className="response-owner">
-                                    {a.owner === "Employer"
-                                      ? `Waiting for employer${a.ownerEffectiveAt ? ` · ${Math.max(0, Math.floor((Date.now() - Date.parse(a.ownerEffectiveAt)) / 86400000))} days` : ""}`
-                                      : a.owner === "You"
-                                        ? "Your reply is next"
-                                        : a.owner === "Nobody"
-                                          ? "No reply needed"
-                                          : "Response owner unclear"}
-                                  </strong>
                                   <small className="table-next-action">
                                     {nextAction(a.id)}
                                   </small>
+                                </td>
+                                <td data-label="Location">
+                                  {a.location || "Unknown"}
                                 </td>
                                 <td data-label="Priority">
                                   <span
@@ -1879,6 +1735,7 @@ function App() {
                                   {a.appliedDate || "Unknown"}
                                 </td>
                                 <td className="open-cell">
+                                  {moveButton(a)}
                                   <button
                                     aria-label={"Open " + a.title}
                                     onClick={() => showDetail(a)}
@@ -2079,17 +1936,38 @@ function App() {
                   <X />
                 </button>
               </div>
-              <span className="company-icon large">
-                {detail.company.slice(0, 2).toUpperCase()}
-              </span>
-              <h1>{detail.title}</h1>
-              <p className="muted">
-                {detail.company} · {detail.location || "Location unknown"}
-              </p>
-              <p className="detail-next-action">
-                <strong>Next action</strong>
-                <span>{nextAction(detail.id)}</span>
-              </p>
+              <header className="ticket">
+                <div className="ticket-main">
+                  <p className="ticket-company">{detail.company}</p>
+                  <h1>{detail.title}</h1>
+                  <p className="muted">
+                    {detail.location || "Location unknown"}
+                  </p>
+                </div>
+                <dl className="ticket-stub">
+                  <div>
+                    <dt>Gate</dt>
+                    <dd>
+                      <GateTag stage={detail.stage} />
+                    </dd>
+                  </div>
+                  <div>
+                    <dt>Status</dt>
+                    <dd>
+                      <StatusTag status={ownerStatus(detail)} />
+                      {appHasOverdue(detail, w, today) && <OverdueTag />}
+                    </dd>
+                  </div>
+                  <div className="detail-next-action">
+                    <dt>Next action</dt>
+                    <dd>{nextAction(detail.id)}</dd>
+                  </div>
+                </dl>
+              </header>
+              <div className="ticket-move">
+                <span className="tiny-label">NEXT MOVE</span>
+                {moveButton(detail, "next-move-btn primary-move")}
+              </div>
               <div className="detail-actions">
                 <button
                   className="primary"
@@ -2400,6 +2278,19 @@ function App() {
           />
         )}{" "}
       </div>
+      <ShellOverlays
+        overlay={overlay}
+        setOverlay={setOverlay}
+        blocked={!!detail || !!modal}
+        applications={w.applications}
+        onGoPage={goToPage}
+        onOpenApplication={(id) => {
+          const target = w.applications.find((a) => a.id === id);
+          if (target) void showDetail(target);
+        }}
+        onAddApplication={() => newRecord("application")}
+        onAddTask={() => newRecord("task")}
+      />
     </>
   );
 }
@@ -2469,25 +2360,29 @@ function Auth({
     <div className="auth">
       <section className="auth-story">
         <Link className="brand" to="/" aria-label="Offerly home">
-          <Leaf />
-          offerly.
+          <span className="auth-mark" aria-hidden="true">
+            O
+          </span>
+          offerly
         </Link>
         <div>
           <span className="tiny-label">KEEP YOUR SEARCH IN ORDER.</span>
-          <h1>
-            Your next chapter
+          <h2>
+            Your search,
             <br />
-            starts here.
-          </h1>
+            on the board.
+          </h2>
           <p>
-            Track applications, prepare for interviews,
-            <br />
-            and keep your next action in view.
+            Track applications, prepare for interviews, and keep your next
+            action in view.
           </p>
         </div>
         <span>Applications · Tasks · Interviews · Documents</span>
       </section>
       <section className="auth-form">
+        <span className="auth-stub" aria-hidden="true">
+          {recovery ? "RECOVERY" : register ? "NEW SERVICE" : "BOARDING PASS"}
+        </span>
         <span className="eyebrow">YOUR PERSONAL JOB SEARCH WORKSPACE</span>
         <h1 tabIndex={-1}>
           {recovery
@@ -3122,6 +3017,46 @@ function RecoveryCodes({
     </section>
   );
 }
+const settingsSections: [string, string][] = [
+  ["settings-preferences", "Preferences"],
+  ["settings-security", "Account and security"],
+  ["settings-gmail", "Gmail import"],
+  ["settings-ai", "AI extraction"],
+  ["settings-reminders", "Reminder rules"],
+  ["settings-calendar", "Calendar export"],
+  ["settings-data", "Data export"],
+  ["settings-delete", "Delete account"],
+];
+function SettingsIndex() {
+  return (
+    <nav className="control-index" aria-label="Settings sections">
+      <span className="control-index-title">Sections</span>
+      <ol>
+        {settingsSections.map(([id, label]) => (
+          <li key={id}>
+            <a
+              href={`#${id}`}
+              onClick={(e) => {
+                e.preventDefault();
+                const target = document.getElementById(id);
+                const calm = window.matchMedia(
+                  "(prefers-reduced-motion: reduce)",
+                ).matches;
+                target?.scrollIntoView({
+                  behavior: calm ? "auto" : "smooth",
+                  block: "start",
+                });
+                target?.focus({ preventScroll: true });
+              }}
+            >
+              {label}
+            </a>
+          </li>
+        ))}
+      </ol>
+    </nav>
+  );
+}
 function SettingsPage({
   w,
   busy,
@@ -3141,8 +3076,13 @@ function SettingsPage({
     [deletePassword, setDeletePassword] = useState(""),
     [saved, setSaved] = useState(false);
   return (
-    <div className="settings-grid">
-      <section className="panel settings-panel">
+    <div className="control-room">
+      <SettingsIndex />
+      <section
+        id="settings-preferences"
+        tabIndex={-1}
+        className="panel settings-panel"
+      >
         <h2>Workspace preferences</h2>
         <form
           onSubmit={(e) => {
@@ -3185,8 +3125,12 @@ function SettingsPage({
           {saved && <p role="status">Preferences saved.</p>}
         </form>
       </section>
-      <div>
-        <section className="panel settings-panel">
+      <div className="control-panels">
+        <section
+          id="settings-security"
+          tabIndex={-1}
+          className="panel settings-panel"
+        >
           <h2>Account</h2>
           <p>{w.user.email}</p>
           <button
@@ -3242,11 +3186,23 @@ function SettingsPage({
           </form>
           <RecoveryCodes run={run} busy={busy} />
         </section>
-        <GmailSettings request={api} />
-        <ReminderRulesSettings request={api} />
-        <CalendarExport />
-        <RecruitingAISettings request={api} />
-        <section className="panel settings-panel space-top">
+        <div id="settings-gmail" tabIndex={-1}>
+          <GmailSettings request={api} />
+        </div>
+        <div id="settings-reminders" tabIndex={-1}>
+          <ReminderRulesSettings request={api} />
+        </div>
+        <div id="settings-calendar" tabIndex={-1}>
+          <CalendarExport />
+        </div>
+        <div id="settings-ai" tabIndex={-1}>
+          <RecruitingAISettings request={api} />
+        </div>
+        <section
+          id="settings-data"
+          tabIndex={-1}
+          className="panel settings-panel space-top"
+        >
           <h2>Your data belongs to you</h2>
           <p>
             {w.filePolicy?.exportIncludesFiles === false
@@ -3263,7 +3219,11 @@ function SettingsPage({
             Download application CSV
           </a>
         </section>
-        <section className="panel settings-panel space-top">
+        <section
+          id="settings-delete"
+          tabIndex={-1}
+          className="panel settings-panel hazard-zone space-top"
+        >
           <h2>Delete account</h2>
           <p>
             Deletes your live workspace, sessions, records, and uploaded files.

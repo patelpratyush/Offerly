@@ -58,7 +58,7 @@ export function CompaniesPage() {
   if (!data) return <p className="loading-copy">Loading coverage…</p>;
   const companies: Company[] = data.companies;
   return (
-    <div className="discover">
+    <div className="discover discover-companies">
       <section
         className="panel discover-coverage"
         aria-label="Coverage summary"
@@ -112,6 +112,9 @@ export function CompaniesPage() {
                   </li>
                 )}
                 <li>{c.openJobs} open in catalog</li>
+                <li>
+                  {c.sources.length} {c.sources.length === 1 ? "board" : "boards"}
+                </li>
               </ul>
               {c.size.estimate && (
                 <p className="muted">

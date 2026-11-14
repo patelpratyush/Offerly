@@ -23,6 +23,11 @@ const ELIGIBILITY: Record<string, string> = {
   needs_verification: "Needs verification",
   does_not_meet: "Does not meet a stated requirement",
 };
+const ELIG_CODE: Record<string, string> = {
+  meets: "MEETS",
+  needs_verification: "VERIFY",
+  does_not_meet: "NO",
+};
 const PLATFORM: Record<string, string> = {
   greenhouse: "Greenhouse",
   lever: "Lever",
@@ -86,11 +91,13 @@ export function JobCard({
             className="discover-fit"
             aria-label={`Fit ${job.fit.score} out of 100. Not an interview probability.`}
           >
+            <em aria-hidden="true">FIT</em>
             <strong>{job.fit.score}</strong>
             <span>fit / 100</span>
           </div>
         ) : (
           <div className="discover-fit is-empty">
+            <em aria-hidden="true">FIT</em>
             <strong>–</strong>
             <span>{job.fit ? "not enough evidence" : "no profile"}</span>
           </div>
@@ -106,6 +113,7 @@ export function JobCard({
           </li>
         )}
         <li className={"is-" + job.eligibility.status}>
+          <em aria-hidden="true">{ELIG_CODE[job.eligibility.status]}</em>
           {ELIGIBILITY[job.eligibility.status]}
         </li>
         <li className={job.company.size.ambiguous ? "is-warn" : ""}>
@@ -122,6 +130,14 @@ export function JobCard({
         )}
         {f.reopenedCount > 0 && <li>Reposted or reopened</li>}
       </ul>
+      <p className="discover-basis">
+        <em>{f.postedPrecision === "unknown" ? "FIRST SEEN" : "EMPLOYER DATE"}</em>{" "}
+        {f.postedPrecision === "unknown"
+          ? `Found ${when(f.firstDiscoveredAt)}`
+          : dateOnly
+            ? when(f.employerPostedAt, true)
+            : when(f.employerPostedAt)}
+      </p>
       <dl className="discover-dates">
         <div>
           <dt>Posted</dt>

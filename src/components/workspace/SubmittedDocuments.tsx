@@ -201,7 +201,10 @@ export function SubmittedDocuments({
         <p className="muted">No submitted versions recorded.</p>
       )}
       {items.map((item) => (
-        <article className="document-card" key={item.id}>
+        <article
+          className={`document-card submitted-entry${item.retracted ? " is-retracted" : ""}`}
+          key={item.id}
+        >
           <div className="section-head">
             <strong>
               {item.title} ·{" "}
@@ -209,7 +212,11 @@ export function SubmittedDocuments({
                 ? `v${item.documentVersionNumber}`
                 : "Legacy version"}
             </strong>
-            {item.retracted && <span className="badge">Retracted</span>}
+            {item.retracted ? (
+              <span className="badge">Retracted</span>
+            ) : (
+              <span className="manifest-stamp">Submitted</span>
+            )}
           </div>
           <p>
             {item.purpose} · Submitted {item.submittedDate}

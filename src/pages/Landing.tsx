@@ -1,396 +1,476 @@
 import { Link } from "react-router";
-import { useState } from "react";
-import {
-  ArrowDown,
-  ArrowRight,
-  ArrowUpRight,
-  BriefcaseBusiness,
-  Check,
-  ChevronDown,
-  Clock3,
-  LayoutGrid,
-  Leaf,
-  LockKeyhole,
-  MoreHorizontal,
-  Plus,
-  Pause,
-  Play,
-  Search,
-  Users,
-} from "lucide-react";
-import "../styles/landing.css";
-import "../styles/flavor-public.css";
+import { useEffect, useState } from "react";
+import { ArrowRight, ChevronDown, Pause, Play } from "lucide-react";
+import "../styles/dispatch/public.css";
 
-const examples = {
-  Saved: {
-    company: "Forma",
-    role: "Product Designer",
-    initial: "f",
-    className: "forma",
-    task: "Tailor your application",
-    detail: "A role worth making time for.",
-    count: "03",
-  },
-  Interviewing: {
-    company: "Northstar",
-    role: "Design Engineer",
-    initial: "n",
-    className: "northstar",
-    task: "Prepare for your conversation",
-    detail: "Next conversation · Thursday",
-    count: "02",
-  },
-  Offer: {
-    company: "Evergreen",
-    role: "Senior Designer",
-    initial: "e",
-    className: "evergreen",
-    task: "Consider your next chapter",
-    detail: "An exciting possibility, on paper.",
-    count: "01",
-  },
+/* Illustrative sample data only: fictional employers, invented times. The
+   board is labeled as a sample on screen and never reads real records. */
+type Tone = "move" | "wait" | "late" | "hold" | "ok";
+type Row = {
+  departs: string;
+  company: string;
+  role: string;
+  gate: string;
+  gateWord: string;
+  status: string;
+  tone: Tone;
 };
-type ExampleStage = keyof typeof examples;
+const scenarios: Record<"Saved" | "Interviewing" | "Offer", Row[]> = {
+  Saved: [
+    {
+      departs: "—",
+      company: "Forma",
+      role: "Product Designer",
+      gate: "SAV",
+      gateWord: "Saved",
+      status: "YOUR MOVE",
+      tone: "move",
+    },
+    {
+      departs: "—",
+      company: "Harbor & Vane",
+      role: "Design Engineer",
+      gate: "SAV",
+      gateWord: "Saved",
+      status: "YOUR MOVE",
+      tone: "move",
+    },
+    {
+      departs: "FRI 17:00",
+      company: "Evergreen",
+      role: "Senior Designer",
+      gate: "PRE",
+      gateWord: "Preparing",
+      status: "DEADLINE",
+      tone: "hold",
+    },
+    {
+      departs: "—",
+      company: "Lumen Works",
+      role: "UX Researcher",
+      gate: "SUB",
+      gateWord: "Submitted",
+      status: "WAITING 6 D",
+      tone: "wait",
+    },
+  ],
+  Interviewing: [
+    {
+      departs: "THU 10:30",
+      company: "Northstar",
+      role: "Design Engineer",
+      gate: "INT",
+      gateWord: "Interviewing",
+      status: "YOUR MOVE",
+      tone: "move",
+    },
+    {
+      departs: "—",
+      company: "Forma",
+      role: "Product Designer",
+      gate: "ASM",
+      gateWord: "Assessment",
+      status: "OVERDUE",
+      tone: "late",
+    },
+    {
+      departs: "—",
+      company: "Lumen Works",
+      role: "UX Researcher",
+      gate: "REV",
+      gateWord: "Under review",
+      status: "WAITING 9 D",
+      tone: "wait",
+    },
+    {
+      departs: "—",
+      company: "Harbor & Vane",
+      role: "Design Engineer",
+      gate: "SUB",
+      gateWord: "Submitted",
+      status: "HOLD · 1 REVIEW",
+      tone: "hold",
+    },
+  ],
+  Offer: [
+    {
+      departs: "MON 12:00",
+      company: "Evergreen",
+      role: "Senior Designer",
+      gate: "OFR",
+      gateWord: "Offer",
+      status: "YOUR MOVE",
+      tone: "move",
+    },
+    {
+      departs: "—",
+      company: "Northstar",
+      role: "Design Engineer",
+      gate: "INT",
+      gateWord: "Interviewing",
+      status: "WAITING 3 D",
+      tone: "wait",
+    },
+    {
+      departs: "—",
+      company: "Forma",
+      role: "Product Designer",
+      gate: "REJ",
+      gateWord: "Rejected",
+      status: "CLOSED",
+      tone: "ok",
+    },
+    {
+      departs: "—",
+      company: "Lumen Works",
+      role: "UX Researcher",
+      gate: "WDR",
+      gateWord: "Withdrawn",
+      status: "CLOSED",
+      tone: "ok",
+    },
+  ],
+};
+type Scenario = keyof typeof scenarios;
+const scenarioOrder = Object.keys(scenarios) as Scenario[];
 
-function WorkspacePreview() {
-  const [stage, setStage] = useState<ExampleStage>("Interviewing");
-  const example = examples[stage];
+/** Split-flap text: each character flips in with a 30ms stagger when it changes. */
+function Flap({ text }: { text: string }) {
   return (
-    <div className="lp-preview" id="workspace-preview">
-      <div className="lp-preview-top">
-        <span>
-          <span className="lp-window-dot" />
-          <span className="lp-window-dot" />
-          <span className="lp-window-dot" />
-        </span>
-        <span>SAMPLE WORKSPACE · ILLUSTRATIVE DATA</span>
-        <LockKeyhole size={12} />
-      </div>
-      <div className="lp-demo">
-        <div className="lp-demo-sidebar" aria-hidden="true">
-          <span className="lp-demo-leaf">
-            <Leaf size={18} />
-          </span>
-          <LayoutGrid size={17} />
-          <BriefcaseBusiness size={17} />
-          <Users size={17} />
-          <span className="lp-demo-avatar">J</span>
-        </div>
-        <div className="lp-demo-content">
-          <div className="lp-demo-breadcrumb">
-            My workspace <span>/</span> Applications <Search size={13} />
-          </div>
-          <div className="lp-demo-title">
-            <div>
-              <span className="lp-mini-label">ONE STEP AT A TIME</span>
-              <h3>Good things ahead.</h3>
-            </div>
-            <span className="lp-demo-add" aria-hidden="true">
-              <Plus size={16} />
-            </span>
-          </div>
-          <div
-            className="lp-demo-tabs"
-            role="group"
-            aria-label="Explore sample application stages"
+    <span className="dp-flap" key={text}>
+      <span className="dp-sr">{text}</span>
+      <span aria-hidden="true">
+        {[...text].map((char, i) => (
+          <span
+            key={i}
+            className={char === " " ? "dp-ch dp-ch-gap" : "dp-ch"}
+            style={{ "--i": i } as React.CSSProperties}
           >
-            {(Object.keys(examples) as ExampleStage[]).map((item) => (
-              <button
-                key={item}
-                type="button"
-                aria-pressed={stage === item}
-                onClick={() => setStage(item)}
-              >
-                {item}
-                <span>{examples[item].count}</span>
-              </button>
-            ))}
-          </div>
-          <article className="lp-job-card" key={stage}>
-            <div className="lp-job-top">
-              <span className={`lp-company-logo ${example.className}`}>
-                {example.initial}
-                <span>✳</span>
-              </span>
-              <MoreHorizontal size={19} aria-hidden="true" />
-            </div>
-            <span className="lp-job-company">{example.company}</span>
-            <h4>{example.role}</h4>
-            <p>
-              Remote <span>·</span> Full-time
-            </p>
-            <div className="lp-job-bottom">
-              <span className="lp-stage">
-                <span />
-                {stage}
-              </span>
-              <span
-                className="lp-mini-avatars"
-                aria-label="Two linked contacts"
-              >
-                <i>AL</i>
-                <i>MK</i>
-              </span>
-            </div>
-          </article>
-          <div className="lp-next-step">
-            <span className="lp-task-check">
-              <Check size={12} />
-            </span>
-            <div>
-              <strong>{example.task}</strong>
-              <span>{example.detail}</span>
-            </div>
-            <ArrowUpRight size={15} aria-hidden="true" />
-          </div>
-        </div>
+            {char === " " ? " " : char}
+          </span>
+        ))}
+      </span>
+    </span>
+  );
+}
+
+function reducedMotion() {
+  return (
+    typeof window !== "undefined" &&
+    typeof window.matchMedia === "function" &&
+    window.matchMedia("(prefers-reduced-motion: reduce)").matches
+  );
+}
+
+function DeparturesBoard() {
+  const [scenario, setScenario] = useState<Scenario>("Interviewing");
+  const [paused, setPaused] = useState(false);
+  const [reduced, setReduced] = useState(reducedMotion);
+  useEffect(() => {
+    if (typeof window.matchMedia !== "function") return;
+    const query = window.matchMedia("(prefers-reduced-motion: reduce)");
+    const update = () => setReduced(query.matches);
+    query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    if (paused || reduced) return;
+    const timer = window.setInterval(
+      () =>
+        setScenario(
+          (current) =>
+            scenarioOrder[
+              (scenarioOrder.indexOf(current) + 1) % scenarioOrder.length
+            ],
+        ),
+      4800,
+    );
+    return () => window.clearInterval(timer);
+  }, [paused, reduced]);
+  const rows = scenarios[scenario];
+  return (
+    <div className="dp-board" id="workspace-preview">
+      <div className="dp-board-bar">
+        <span className="dp-board-title">DEPARTURES</span>
+        <span className="dp-board-sample">
+          SAMPLE · ILLUSTRATIVE DATA · FICTIONAL EMPLOYERS
+        </span>
       </div>
-      <div className="lp-preview-caption">
-        <span className="lp-status-dot" /> Sample workspace{" "}
-        <span>Try a stage above ↗</span>
+      <table className="dp-table">
+        <caption className="dp-sr">
+          Sample departures board with fictional applications. Your own board
+          shows only your records.
+        </caption>
+        <thead>
+          <tr>
+            <th scope="col">Departs</th>
+            <th scope="col">Service</th>
+            <th scope="col">Gate</th>
+            <th scope="col">Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={index} className={`dp-row dp-tone-${row.tone}`}>
+              <td className="dp-departs">
+                {row.departs === "—" ? (
+                  <>
+                    <span aria-hidden="true">—</span>
+                    <span className="dp-sr">No date</span>
+                  </>
+                ) : (
+                  <Flap text={row.departs} />
+                )}
+              </td>
+              <td className="dp-service">
+                <Flap text={row.company.toUpperCase()} />
+                <span className="dp-role">{row.role}</span>
+              </td>
+              <td className="dp-gate">
+                <span className="dp-gate-code">
+                  <Flap text={row.gate} />
+                </span>
+                <span className="dp-gate-word">{row.gateWord}</span>
+              </td>
+              <td className="dp-status">
+                <Flap text={row.status} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="dp-board-foot">
+        <div role="group" aria-label="Explore sample application stages">
+          {scenarioOrder.map((item) => (
+            <button
+              key={item}
+              type="button"
+              aria-pressed={scenario === item}
+              onClick={() => {
+                setScenario(item);
+                setPaused(true);
+              }}
+            >
+              {item}
+            </button>
+          ))}
+        </div>
+        <button
+          className="dp-motion"
+          type="button"
+          aria-label={paused ? "Play page motion" : "Pause page motion"}
+          aria-pressed={paused}
+          onClick={() => setPaused((value) => !value)}
+        >
+          {paused ? <Play size={13} /> : <Pause size={13} />}{" "}
+          {paused ? "Play board" : "Pause board"}
+        </button>
       </div>
     </div>
   );
 }
 
+const lines: [string, string, string, string][] = [
+  [
+    "APP",
+    "Applications",
+    "A table or a board of every role. Filters and saved views. Distinct applications stay distinct, even at the same company.",
+    "Imports from CSV show a preview before anything is saved.",
+  ],
+  [
+    "PPL",
+    "People",
+    "Who you met, what you discussed and which application brought you together. Sources and corrections stay visible.",
+    "A verified identity is marked differently from one extracted from text.",
+  ],
+  [
+    "DOC",
+    "Documents",
+    "Original files and immutable versions. The version you submitted is stamped SUBMITTED.",
+    "A new upload never replaces your submission history.",
+  ],
+  [
+    "NXT",
+    "Next moves",
+    "Tasks, interviews, deadlines and who owns the reply, so you can see what needs you and what is with the employer.",
+    "Reminders appear in the app. Offerly sends no email on your behalf.",
+  ],
+  [
+    "REV",
+    "Review",
+    "Proposed changes arrive with the source evidence beside them. You accept or reject each one.",
+    "No automatic stage updates. Any AI-assisted extraction is off by default and needs your consent.",
+  ],
+  [
+    "GML",
+    "Gmail, optional",
+    "Read-only, and only where it has been configured for your account. Manual tracking works without it.",
+    "Imports become proposals for your review.",
+  ],
+  [
+    "DSC",
+    "Discover and Prepare",
+    "Browse jobs collected from a limited, disclosed set of employer boards, then prepare interview notes, drafts and answers.",
+    "Coverage is not the whole market. Nothing here is sample data once you sign in.",
+  ],
+];
+
+const gates: [string, string][] = [
+  ["SAV", "Saved"],
+  ["PRE", "Preparing"],
+  ["SUB", "Submitted"],
+  ["REV", "Under review"],
+  ["ASM", "Assessment"],
+  ["INT", "Interviewing"],
+  ["OFR", "Offer"],
+  ["REJ", "Rejected"],
+  ["WDR", "Withdrawn"],
+];
+
+const legend: [string, Tone, string][] = [
+  ["YOUR MOVE", "move", "The next reply, task or step is yours."],
+  ["WAITING N D", "wait", "Waiting on the employer, for N days."],
+  ["OVERDUE", "late", "A task or follow-up has passed its date."],
+  ["HOLD", "hold", "A proposed change is waiting for your review."],
+];
+
 export function Landing() {
-  const [motionPaused, setMotionPaused] = useState(false);
   return (
-    <div
-      className={`landing lp-editorial${motionPaused ? " lp-motion-paused" : ""}`}
-    >
-      <a className="lp-skip" href="#landing-content">
+    <div className="landing dp-landing">
+      <a className="dp-skip" href="#landing-content">
         Skip to content
       </a>
-      <header className="lp-header">
-        <Link className="lp-brand" to="/" aria-label="Offerly home">
-          <span>
-            <ArrowUpRight size={25} />
+      <header className="dp-header">
+        <Link className="dp-brand" to="/" aria-label="Offerly home">
+          <span className="dp-brand-mark" aria-hidden="true">
+            O
           </span>
-          offerly<span className="lp-brand-period">.</span>
+          offerly
         </Link>
-        <nav className="lp-nav" aria-label="Main navigation">
-          <a href="#a-little-clarity">The workspace</a>
-          <a href="#your-pace">How it works</a>
+        <nav className="dp-nav" aria-label="Main navigation">
+          <a href="#a-little-clarity">What it keeps</a>
+          <a href="#your-pace">How to read it</a>
+          <a href="#faq">Questions</a>
         </nav>
-        <div className="lp-header-actions">
-          <Link className="lp-signin" to="/signin">
-            Sign in <ArrowUpRight size={15} />
+        <div className="dp-header-actions">
+          <Link className="dp-signin" to="/signin">
+            Sign in
           </Link>
-          <Link className="lp-button lp-button-small" to="/signup">
-            Get started <ArrowRight size={16} />
+          <Link className="dp-button dp-button-small" to="/signup">
+            Get started <ArrowRight size={16} aria-hidden="true" />
           </Link>
         </div>
       </header>
-      <main className="lp-main" id="landing-content" tabIndex={-1}>
-        <section className="lp-editorial-hero" aria-labelledby="landing-title">
-          <div className="lp-editorial-kicker">
-            <span>PERSONAL JOB-SEARCH WORKSPACE</span>
-            <span>YOUR SEARCH. YOUR RECORD.</span>
-          </div>
-          <h1 id="landing-title">
-            <span>Your next move.</span>
-            <span>All the details.</span>
-            <span>
-              One <i>workspace.</i>
+      <main id="landing-content" tabIndex={-1}>
+        <section className="dp-hero" aria-labelledby="landing-title">
+          <div className="dp-hero-copy">
+            <span className="dp-label">
+              Personal job-search workspace · Your search, on record
             </span>
-          </h1>
-          <div className="lp-editorial-intro">
-            <span className="lp-section-index" aria-hidden="true">
-              ↗
-            </span>
-            <p>
-              Applications, conversations, documents and next steps. A personal
-              workspace that keeps your job search moving, with you in control.
+            <h1 id="landing-title">
+              <span>Your next move.</span>
+              <span>All the details.</span>
+              <span className="dp-amber">One workspace.</span>
+            </h1>
+            <p className="dp-lead">
+              Every application is a service with a gate, a status and a next
+              departure. Offerly keeps applications, people, documents and
+              replies on one board, and every change stays in your hands.
             </p>
-            <div>
-              <Link className="lp-button" to="/signup">
-                Start your workspace <ArrowUpRight size={20} />
+            <div className="dp-cta">
+              <Link className="dp-button" to="/signup">
+                Start your workspace <ArrowRight size={18} aria-hidden="true" />
               </Link>
-              <span className="lp-invite-note">
-                <LockKeyhole size={13} /> Private by default. Invitation
-                required.
+              <span className="dp-note">
+                Private by default. Sign-up may ask for an invitation code.
               </span>
             </div>
           </div>
+          <DeparturesBoard />
         </section>
         <section
-          className="lp-product-spread"
-          aria-label="Explore the sample workspace"
-        >
-          <div className="lp-product-caption">
-            <span className="lp-section-number">01 / THE WORKSPACE</span>
-            <h2>
-              Less retracing.
-              <br />
-              More <i>forward.</i>
-            </h2>
-            <p>
-              A role is more than a row. Keep its people, history, documents and
-              next action connected.
-            </p>
-            <a className="lp-spread-link" href="#workspace-preview">
-              Try the sample <ArrowDown size={20} />
-            </a>
-            <span className="lp-product-disclaimer">
-              Illustrative data. Your actual workspace starts with your records.
-            </span>
-          </div>
-          <div className="lp-product-demo">
-            <WorkspacePreview />
-          </div>
-        </section>
-        <div className="lp-record-strip">
-          <div className="lp-record-track" aria-hidden="true">
-            {[0, 1].map((group) => (
-              <span key={group}>
-                APPLICATIONS <b>↗</b> PEOPLE <b>↗</b> EVIDENCE <b>↗</b> NEXT
-                STEPS <b>↗</b>
-              </span>
-            ))}
-          </div>
-          <button
-            className="lp-motion-control"
-            type="button"
-            aria-label={motionPaused ? "Play page motion" : "Pause page motion"}
-            aria-pressed={motionPaused}
-            onClick={() => setMotionPaused((v) => !v)}
-          >
-            {motionPaused ? <Play size={13} /> : <Pause size={13} />}{" "}
-            {motionPaused ? "Play motion" : "Pause motion"}
-          </button>
-        </div>
-        <section
-          className="lp-editorial-capabilities"
+          className="dp-section dp-index"
           id="a-little-clarity"
           aria-labelledby="features-title"
         >
-          <div className="lp-editorial-section-head">
-            <span className="lp-section-number">02 / EVERY MOVING PART</span>
-            <h2 id="features-title">
-              The whole search.
-              <br />
-              <i>Within reach.</i>
-            </h2>
-          </div>
-          <div className="lp-capability-ledger">
-            <article>
-              <span className="lp-ledger-number">01</span>
-              <BriefcaseBusiness size={25} />
-              <div>
-                <h3>A clear view of every role.</h3>
-                <p>
-                  Table or board. Filters and saved views. Distinct applications
-                  stay distinct, even at the same company.
-                </p>
-              </div>
-              <span className="lp-ledger-tag">APPLICATIONS</span>
-            </article>
-            <article>
-              <span className="lp-ledger-number">02</span>
-              <Users size={25} />
-              <div>
-                <h3>People with context.</h3>
-                <p>
-                  Remember who you met, what you discussed, and which
-                  opportunity brought you together. Keep sources and corrections
-                  visible.
-                </p>
-              </div>
-              <span className="lp-ledger-tag">CONNECTIONS</span>
-            </article>
-            <article>
-              <span className="lp-ledger-number">03</span>
-              <LayoutGrid size={25} />
-              <div>
-                <h3>The version you actually sent.</h3>
-                <p>
-                  Original files, immutable versions and submitted-document
-                  records. New uploads never replace your submission history.
-                </p>
-              </div>
-              <span className="lp-ledger-tag">DOCUMENTS</span>
-            </article>
-            <article>
-              <span className="lp-ledger-number">04</span>
-              <Clock3 size={25} />
-              <div>
-                <h3>Know your next move.</h3>
-                <p>
-                  Tasks, interviews, deadlines and response ownership. See what
-                  needs your attention and what is with the employer.
-                </p>
-              </div>
-              <span className="lp-ledger-tag">TODAY</span>
-            </article>
-          </div>
+          <header className="dp-section-head">
+            <span className="dp-label">01 · What it keeps</span>
+            <h2 id="features-title">The whole search, line by line.</h2>
+            <p>
+              Each line says what Offerly keeps, and what it will not do for
+              you.
+            </p>
+          </header>
+          <ol className="dp-lines">
+            {lines.map(([code, name, keeps, never]) => (
+              <li key={code}>
+                <span className="dp-line-code">{code}</span>
+                <h3>{name}</h3>
+                <p>{keeps}</p>
+                <p className="dp-never">{never}</p>
+              </li>
+            ))}
+          </ol>
         </section>
         <section
-          className="lp-editorial-process"
+          className="dp-section dp-route"
+          aria-labelledby="gates-title"
+        >
+          <header className="dp-section-head">
+            <span className="dp-label">02 · The line</span>
+            <h2 id="gates-title">Nine gates. You move between them.</h2>
+            <p>
+              Stages are gates. An application changes gate when you change it,
+              or when you accept a proposed change with its evidence.
+            </p>
+          </header>
+          <ol className="dp-gates">
+            {gates.map(([code, word]) => (
+              <li key={code}>
+                <span className="dp-node" aria-hidden="true" />
+                <span className="dp-gate-code">{code}</span>
+                <span className="dp-gate-name">{word}</span>
+              </li>
+            ))}
+          </ol>
+        </section>
+        <section
+          className="dp-section dp-legend-section"
           id="your-pace"
           aria-labelledby="process-title"
         >
-          <div>
-            <span className="lp-section-number">03 / START WHERE YOU ARE</span>
-            <h2 id="process-title">
-              Your search.
-              <br />
-              Your pace.
-              <br />
-              <i>Your decisions.</i>
-            </h2>
+          <header className="dp-section-head">
+            <span className="dp-label">03 · How to read the board</span>
+            <h2 id="process-title">Four words tell you what to do.</h2>
             <p>
-              Bring your search as it is. A few open tabs, an existing
-              spreadsheet, or just a possibility.
+              Start with what you have: a few open tabs, a spreadsheet, or a
+              single possibility. Add a role, or import a CSV and review the
+              preview before saving.
             </p>
-          </div>
-          <ol className="lp-editorial-steps">
-            <li>
-              <span>01</span>
-              <div>
-                <h3>Bring it all together.</h3>
-                <p>
-                  Add your first role or import your application spreadsheet.
-                  Review the preview before saving.
-                </p>
+          </header>
+          <dl className="dp-legend">
+            {legend.map(([word, tone, meaning]) => (
+              <div key={word} className={`dp-tone-${tone}`}>
+                <dt>{word}</dt>
+                <dd>{meaning}</dd>
               </div>
-            </li>
-            <li>
-              <span>02</span>
-              <div>
-                <h3>Make the picture clearer.</h3>
-                <p>
-                  Connect people, notes, documents and next steps to each
-                  opportunity. Keep the original evidence close.
-                </p>
-              </div>
-            </li>
-            <li>
-              <span>03</span>
-              <div>
-                <h3>Move forward, your way.</h3>
-                <p>
-                  Check in, follow up and review proposed updates. Every
-                  application change stays in your hands.
-                </p>
-              </div>
-            </li>
-          </ol>
+            ))}
+          </dl>
         </section>
-        <section className="lp-faq" aria-labelledby="faq-title">
-          <div>
-            <span className="lp-section-number">04 / BEFORE YOU BEGIN</span>
-            <h2 id="faq-title">
-              Good
-              <br />
-              <i>questions.</i>
-            </h2>
-          </div>
-          <div className="lp-faq-list">
+        <section
+          className="dp-section dp-faq"
+          id="faq"
+          aria-labelledby="faq-title"
+        >
+          <header className="dp-section-head">
+            <span className="dp-label">04 · Before you begin</span>
+            <h2 id="faq-title">Good questions.</h2>
+          </header>
+          <div className="dp-faq-list">
             <details>
               <summary>
                 What can I organize in Offerly?
-                <ChevronDown size={18} />
+                <ChevronDown size={18} aria-hidden="true" />
               </summary>
               <p>
                 Applications, contacts, interviews, tasks, reminders, document
@@ -401,7 +481,7 @@ export function Landing() {
             <details>
               <summary>
                 Do I need to connect my inbox?
-                <ChevronDown size={18} />
+                <ChevronDown size={18} aria-hidden="true" />
               </summary>
               <p>
                 No. Your workspace works with information you add yourself or
@@ -413,7 +493,7 @@ export function Landing() {
             <details>
               <summary>
                 Can I bring my existing spreadsheet?
-                <ChevronDown size={18} />
+                <ChevronDown size={18} aria-hidden="true" />
               </summary>
               <p>
                 Yes. Import applications from a CSV, map your columns, and
@@ -424,41 +504,40 @@ export function Landing() {
             <details>
               <summary>
                 How do I get started?
-                <ChevronDown size={18} />
+                <ChevronDown size={18} aria-hidden="true" />
               </summary>
               <p>
                 Create your workspace with your name, email, and a password.
-                Offerly currently uses invitation codes for signup, so have your
-                invitation ready. Already have an account? Sign in and pick up
-                where you left off.
+                Depending on how this copy of Offerly is set up, sign-up may ask
+                for an invitation code, so have it ready if you were given one.
+                Already have an account? Sign in and pick up where you left off.
               </p>
             </details>
           </div>
         </section>
-        <section className="lp-editorial-final" aria-labelledby="final-title">
-          <span className="lp-section-number">READY WHEN YOU ARE.</span>
-          <h2 id="final-title">
-            Make your
-            <br />
-            <i>next move.</i>
-            <ArrowUpRight aria-hidden="true" />
-          </h2>
+        <section className="dp-final" aria-labelledby="final-title">
+          <span className="dp-label">Now boarding</span>
+          <h2 id="final-title">Make your next move.</h2>
           <div>
-            <Link className="lp-button" to="/signup">
-              Start your next chapter <ArrowUpRight size={21} />
+            <Link className="dp-button" to="/signup">
+              Start your next chapter <ArrowRight size={18} aria-hidden="true" />
             </Link>
-            <p>Have an invitation? Your workspace is waiting.</p>
+            <p>
+              Already have a workspace?{" "}
+              <Link to="/signin">Return to your board</Link>
+            </p>
           </div>
         </section>
       </main>
-      <footer className="lp-footer">
-        <Link className="lp-brand" to="/" aria-label="Offerly home">
-          offerly<span className="lp-brand-period">.</span>
+      <footer className="dp-footer">
+        <Link className="dp-brand" to="/" aria-label="Offerly home">
+          <span className="dp-brand-mark" aria-hidden="true">
+            O
+          </span>
+          offerly
         </Link>
         <span>Your job search, on record.</span>
-        <Link to="/signin">
-          Back to your workspace <ArrowUpRight size={16} />
-        </Link>
+        <Link to="/signin">Back to your workspace</Link>
       </footer>
     </div>
   );

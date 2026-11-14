@@ -75,90 +75,106 @@ export function RecruitingAISettings({ request }: { request: Request }) {
         <p>Loading AI readiness…</p>
       ) : (
         <>
-          <p role="status">
-            {policy.available
-              ? "Available with your consent and within configured limits."
-              : "Unavailable: AI extraction remains gated."}
-          </p>
-          <ul className="ai-readiness">
-            <li>
-              <strong>Configuration</strong>{" "}
-              {policy.enabled ? "enabled" : "disabled"}
-            </li>
-            <li>
-              <strong>Quality approval</strong>{" "}
-              {policy.qualityApproved
-                ? "server approval recorded; not independent proof"
-                : "not approved; capability incomplete"}
-            </li>
-            <li>
-              <strong>Your consent</strong>{" "}
-              {policy.consented ? "granted" : "not granted"}
-            </li>
-          </ul>
-          {policy.evidenceVersion && (
-            <p>Quality evidence reference: {policy.evidenceVersion}</p>
-          )}
-          <p>
-            Daily request allowance: {policy.requestsUsed} /{" "}
-            {policy.dailyRequestLimit}. Reserved budget:{" "}
-            {money(policy.reservedMicroDollars)} /{" "}
-            {money(policy.dailySpendLimitMicroDollars)}. Reservations are
-            spending safeguards, not a billing statement.
-          </p>
-          <p>
-            Each request is limited to {policy.maxInputCharacters} input
-            characters and {policy.maxOutputTokens} output tokens.
-          </p>
-          <p>
-            If enabled and consented, recruiting excerpts are sent to OpenAI.
-            OpenAI may retain abuse-monitoring logs containing content for up to
-            30 days by default, with longer retention possible for legal or
-            safety reasons.{" "}
-            <a
-              href="https://developers.openai.com/api/docs/guides/your-data"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Read OpenAI data controls
-            </a>
-            .
-          </p>
-          {!policy.consented ? (
-            <>
-              <label>
-                <input
-                  type="checkbox"
-                  checked={checked}
-                  onChange={(e) => setChecked(e.target.checked)}
-                  disabled={!policy.enabled || !policy.qualityApproved || busy}
-                />{" "}
-                I consent to sending minimized recruiting excerpts to OpenAI
-                under this data policy.
-              </label>
+          <div className="ai-block" data-kind="readiness">
+            <h3>Server readiness · not your decision</h3>
+            <p role="status">
+              {policy.available
+                ? "Available with your consent and within configured limits."
+                : "Unavailable: AI extraction remains gated."}
+            </p>
+            <ul className="ai-readiness">
+              <li>
+                <strong>Configuration</strong>{" "}
+                {policy.enabled ? "enabled" : "disabled"}
+              </li>
+              <li>
+                <strong>Quality approval</strong>{" "}
+                {policy.qualityApproved
+                  ? "server approval recorded; not independent proof"
+                  : "not approved; capability incomplete"}
+              </li>
+              <li>
+                <strong>Your consent</strong>{" "}
+                {policy.consented ? "granted" : "not granted"}
+              </li>
+            </ul>
+            {policy.evidenceVersion && (
+              <p>Quality evidence reference: {policy.evidenceVersion}</p>
+            )}
+          </div>
+          <div className="ai-block" data-kind="budgets">
+            <h3>Budgets and limits · safeguards</h3>
+            <p>
+              Daily request allowance: {policy.requestsUsed} /{" "}
+              {policy.dailyRequestLimit}. Reserved budget:{" "}
+              {money(policy.reservedMicroDollars)} /{" "}
+              {money(policy.dailySpendLimitMicroDollars)}. Reservations are
+              spending safeguards, not a billing statement.
+            </p>
+            <p>
+              Each request is limited to {policy.maxInputCharacters} input
+              characters and {policy.maxOutputTokens} output tokens.
+            </p>
+          </div>
+          <div className="ai-block" data-kind="consent">
+            <h3>
+              Your consent · {policy.consented ? "granted" : "not granted"}
+            </h3>
+            <p>
+              If enabled and consented, recruiting excerpts are sent to OpenAI.
+              OpenAI may retain abuse-monitoring logs containing content for up
+              to 30 days by default, with longer retention possible for legal or
+              safety reasons.{" "}
+              <a
+                href="https://developers.openai.com/api/docs/guides/your-data"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Read OpenAI data controls
+              </a>
+              .
+            </p>
+            {!policy.consented ? (
+              <>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={(e) => setChecked(e.target.checked)}
+                    disabled={
+                      !policy.enabled || !policy.qualityApproved || busy
+                    }
+                  />{" "}
+                  I consent to sending minimized recruiting excerpts to OpenAI
+                  under this data policy.
+                </label>
+                <button
+                  className="secondary"
+                  disabled={
+                    busy ||
+                    !checked ||
+                    !policy.enabled ||
+                    !policy.qualityApproved
+                  }
+                  onClick={() => void consent(true)}
+                >
+                  Grant AI data-sharing consent
+                </button>
+                <p>
+                  Consent cannot bypass server configuration or quality review.
+                  No AI calls run while either gate is closed.
+                </p>
+              </>
+            ) : (
               <button
                 className="secondary"
-                disabled={
-                  busy || !checked || !policy.enabled || !policy.qualityApproved
-                }
-                onClick={() => void consent(true)}
+                disabled={busy}
+                onClick={() => void consent(false)}
               >
-                Grant AI data-sharing consent
+                Revoke AI data-sharing consent
               </button>
-              <p>
-                Consent cannot bypass server configuration or quality review. No
-                AI calls run while either gate is closed.
-              </p>
-            </>
-          ) : (
-            <button
-              className="secondary"
-              disabled={busy}
-              onClick={() => void consent(false)}
-            >
-              Revoke AI data-sharing consent
-            </button>
-          )}
+            )}
+          </div>
         </>
       )}
     </section>

@@ -1,0 +1,56 @@
+/* Dispatch tokens: single source of truth. See reference/dispatch-2026-11/DIRECTION.md */
+:root {
+  --board: #0e0f0c;
+  --board-2: #1b1c17;
+  --paper: #efebdd;
+  --paper-2: #e4dfcc;
+  --sheet: #f8f5ea;
+  --ink: #14130f;
+  --ink-2: #4a483f;
+  --rule: #14130f;
+  --hair: #c9c3ac;
+  --amber: #ffb000;
+  --amber-ink: #14130f;
+  --red: #c21f17;
+  --green: #1f6b43;
+  --blue: #1d4f91;
+
+  --canvas: var(--paper);
+  --surface: var(--sheet);
+  --surface-subtle: var(--paper-2);
+  --line: var(--hair);
+  --muted: var(--ink-2);
+  --nav: var(--board);
+  --focus: var(--blue);
+  --brand-hover: #e09a00;
+  --brand-soft: #fff0c7;
+  --radius: 0;
+  --radius-sm: 2px;
+
+  --font-sign: "Archivo Variable", "Archivo", "Arial Narrow", sans-serif;
+  --font-body: "Archivo Variable", "Archivo", system-ui, sans-serif;
+  --font-mono: "Martian Mono Variable", "Martian Mono", ui-monospace, monospace;
+  --heading-font: var(--font-sign);
+  --mono: var(--font-mono);
+
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 72px;
+  --stamp: 4px 4px 0 var(--ink);
+  --flip: 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+html {
+  font-family: var(--font-body);
+  background: var(--paper);
+  color: var(--ink);
+}
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --flip: 0ms;
+  }
+}

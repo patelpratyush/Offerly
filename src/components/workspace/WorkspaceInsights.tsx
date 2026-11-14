@@ -20,6 +20,7 @@ export function WorkspaceInsights({
     return (
       <section className="panel insights-empty">
         <span className="tiny-label">YOUR SEARCH, IN PERSPECTIVE</span>
+        <span className="pr-nodata">No data yet</span>
         <h2>A clearer picture starts with your first application.</h2>
         <p>
           No application data yet. Stage distribution and source counts appear
