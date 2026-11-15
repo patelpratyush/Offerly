@@ -1,0 +1,490 @@
+/*
+ * Field Office — per-page treatments for the signed-in workspace.
+ * Loaded after field.css. Each page keeps its own composition but speaks
+ * the same grammar: ink rules, forest ledger headers, mono figures,
+ * diamonds for stage marks, butter for "your move", ledges on lift.
+ */
+
+/* ---------- page heading: ink rule with a persimmon diamond ---------- */
+.shell .content > .page-heading {
+  position: relative;
+  padding-bottom: 22px;
+  border-bottom: 1.5px solid var(--text);
+}
+.shell .content > .page-heading::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -1.5px;
+  width: 72px;
+  height: 4px;
+  border-radius: 0 0 3px 3px;
+  background: var(--accent);
+  transform-origin: left;
+  animation: fo-rule 700ms 200ms var(--ease-out) both;
+}
+@keyframes fo-rule {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+.shell .page-heading h1::after {
+  content: "";
+  display: inline-block;
+  width: 0.2em;
+  height: 0.2em;
+  margin-left: 0.12em;
+  border-radius: 0.04em;
+  background: var(--accent);
+  transform: translateY(-0.05em) rotate(45deg);
+  vertical-align: baseline;
+}
+
+/* ---------- ledger tables: forest header band ---------- */
+.shell .application-table thead th,
+.shell .tt th,
+.shell .ir-table th,
+.shell .ir-table thead th,
+.shell .discover-table th,
+.shell .discover-table thead th,
+.shell .prepare-table th,
+.shell .prepare-table thead th,
+.shell .today-card thead th {
+  background: var(--panel);
+  color: var(--panel-text-2);
+  border-color: var(--panel-line);
+  font: 500 10.5px/1.2 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.shell
+  :is(
+    .application-table,
+    .tt,
+    .ir-table,
+    .discover-table,
+    .prepare-table,
+    .today-card
+  )
+  th
+  :is(button, a, span, label) {
+  color: inherit;
+}
+.shell :is(.ir-table, .discover-table, .prepare-table) td {
+  font-variant-numeric: tabular-nums;
+}
+.shell :is(.ir-table, .discover-table, .prepare-table) tbody tr {
+  transition: background-color 160ms ease;
+}
+.shell :is(.ir-table, .discover-table, .prepare-table) tbody tr:hover td {
+  background: color-mix(in srgb, var(--butter-soft) 34%, var(--surface-1));
+}
+
+/* ---------- Applications: stage track ---------- */
+.shell .pipeline-strip {
+  gap: 0;
+  padding: 4px;
+  border: 1.5px solid var(--text);
+  border-radius: 14px;
+  background: var(--surface-1);
+  box-shadow: 0 3px 0 var(--text);
+}
+.shell .pipeline-strip button {
+  position: relative;
+  min-height: 38px;
+  padding: 4px 12px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 600;
+  transition:
+    background-color 220ms var(--ease-out),
+    color 160ms ease,
+    transform 260ms var(--ease-spring);
+}
+.shell .pipeline-strip button + button::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 30%;
+  bottom: 30%;
+  width: 1px;
+  background: var(--border);
+}
+.shell .pipeline-strip button:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
+}
+.shell .pipeline-strip button:active {
+  transform: scale(0.96);
+}
+.shell .pipeline-strip button > strong {
+  min-width: 22px;
+  padding: 0 6px;
+  border-radius: 6px;
+  background: var(--bg-muted);
+  color: var(--text);
+  font: 600 11px/18px var(--font-mono);
+}
+.shell .pipeline-strip button.selected {
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+}
+.shell .pipeline-strip button.selected + button::before,
+.shell .pipeline-strip button.selected::before {
+  opacity: 0;
+}
+.shell .pipeline-strip button.selected > strong {
+  background: var(--accent);
+  color: var(--text);
+}
+
+/* Board: columns are trays, cards lift onto a ledge. */
+.shell .board {
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(
+        circle at 1px 1px,
+        var(--border-strong) 1px,
+        transparent 1.5px
+      )
+      0 0 / 18px 18px,
+    var(--bg-subtle);
+}
+.shell .board-column h3 {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 720;
+  letter-spacing: -0.015em;
+}
+.shell .board-column .application-card {
+  transition:
+    transform 300ms var(--ease-spring),
+    box-shadow 200ms var(--ease-out),
+    border-color 160ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .shell .board-column .application-card:hover {
+    transform: translateY(-3px) rotate(-0.4deg);
+    border-color: var(--text);
+    box-shadow: 0 4px 0 var(--text);
+  }
+}
+
+/* ---------- Reviews: wires ---------- */
+.shell .recruiting-review .wire {
+  border: 1.5px solid var(--text);
+  border-radius: 18px;
+  box-shadow: 0 4px 0 var(--text);
+}
+.shell .recruiting-review .wire-head {
+  background: var(--panel);
+  border-bottom-color: var(--panel-line);
+}
+.shell .recruiting-review .wire-head h3 {
+  color: var(--panel-text);
+  font: 500 13px/1.3 var(--font-mono);
+}
+.shell .recruiting-review .wire-head .code-tag {
+  border-color: var(--panel-line);
+  background: var(--panel-2);
+  color: var(--panel-text);
+}
+.shell .recruiting-review .wire-head .wire-status::before {
+  border-radius: 1.5px;
+  transform: rotate(45deg);
+  background: var(--panel-text-2);
+}
+.shell .recruiting-review .wire[data-status="pending"] .wire-status::before {
+  background: var(--accent);
+  animation: fo-blink 1.6s ease-in-out infinite;
+}
+@keyframes fo-blink {
+  50% {
+    opacity: 0.35;
+  }
+}
+.shell .recruiting-review .wire blockquote {
+  position: relative;
+  border: 0;
+  border-left: 4px solid var(--butter);
+  border-radius: 0 10px 10px 0;
+  background: var(--surface-2);
+  font-size: 13.5px;
+}
+.shell .recruiting-review .wire blockquote::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 0;
+  width: 4px;
+  height: 0;
+  background: var(--accent);
+  animation: fo-quote 900ms 300ms var(--ease-out) forwards;
+}
+@keyframes fo-quote {
+  to {
+    height: 100%;
+  }
+}
+.shell .recruiting-review .wire .wire-meta {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-2);
+}
+.shell .wire-action,
+.shell .wire .wire-decide {
+  background: var(--bg-subtle);
+}
+
+/* ---------- Insights: punctuality report ---------- */
+.shell .bar-row > div {
+  height: 10px;
+  border-radius: 3px;
+  background: repeating-linear-gradient(
+    90deg,
+    var(--bg-muted) 0 6px,
+    transparent 6px 9px
+  );
+  overflow: visible;
+}
+.shell .bar-row i {
+  position: relative;
+  border-radius: 3px;
+  background: var(--text);
+  transform-origin: left;
+  animation: fo-bar 900ms var(--ease-out) both;
+}
+.shell .bar-row i::after {
+  content: "";
+  position: absolute;
+  right: -3px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  background: var(--accent);
+  transform: translateY(-50%) rotate(45deg);
+}
+.shell .bar-row i[style*="width: 0"]::after,
+.shell .bar-row i[style*="width:0"]::after {
+  display: none;
+}
+.shell .bar-row:nth-child(2) i {
+  animation-delay: 40ms;
+}
+.shell .bar-row:nth-child(3) i {
+  animation-delay: 80ms;
+}
+.shell .bar-row:nth-child(4) i {
+  animation-delay: 120ms;
+}
+.shell .bar-row:nth-child(5) i {
+  animation-delay: 160ms;
+}
+.shell .bar-row:nth-child(n + 6) i {
+  animation-delay: 200ms;
+}
+@keyframes fo-bar {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: none;
+  }
+}
+.shell .bar-row > b,
+.shell .insight-pipeline .bar-row > b {
+  font-family: var(--font-mono);
+  font-size: 12px;
+}
+.shell .ir-stat {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-lg);
+  transition:
+    transform 320ms var(--ease-spring),
+    box-shadow 220ms var(--ease-out),
+    border-color 160ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .shell .ir-stat:hover {
+    transform: translateY(-3px);
+    border-color: var(--text);
+    box-shadow: 0 4px 0 var(--text);
+  }
+}
+.shell .ir-stat dt {
+  font: 500 10.5px/1.3 var(--font-mono);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+.shell .ir-stat dd {
+  font-family: var(--font-display);
+  font-size: 40px;
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1;
+  animation: fo-number 700ms var(--ease-spring) both;
+}
+.shell .ir-stat dd small {
+  font-family: var(--font-body);
+  font-stretch: 100%;
+  letter-spacing: 0;
+}
+.pr-bar {
+  border-radius: 3px;
+}
+.shell .insight-data-note,
+.shell .ir-note {
+  border-left: 4px solid var(--butter);
+  border-radius: 0 var(--radius) var(--radius) 0;
+}
+
+/* ---------- Settings: control room ---------- */
+.shell .control-index ol {
+  counter-reset: fo-section;
+}
+.shell .control-index li {
+  counter-increment: fo-section;
+}
+.shell .control-index a {
+  gap: 10px;
+  transition:
+    background-color 160ms ease,
+    color 160ms ease,
+    padding-left 260ms var(--ease-spring);
+}
+.shell .control-index a::before {
+  content: counter(fo-section, decimal-leading-zero);
+  color: var(--text-3);
+  font: 500 10.5px/1 var(--font-mono);
+}
+.shell .control-index a:hover {
+  padding-left: 14px;
+  background: var(--surface-1);
+  color: var(--text);
+}
+.shell .control-room .settings-panel h2 {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 720;
+}
+.shell .control-room .settings-panel.hazard-zone {
+  overflow: hidden;
+  border: 1.5px solid var(--danger);
+  box-shadow: 0 4px 0 var(--danger);
+  padding-top: 28px;
+}
+.shell .control-room .settings-panel.hazard-zone::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 8px;
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--text) 0 10px,
+    var(--butter) 10px 20px
+  );
+}
+
+/* ---------- Documents: manifest ---------- */
+.shell .document-family {
+  border-radius: 18px;
+}
+.shell .document-family-heading {
+  border-bottom: 1.5px solid var(--text);
+}
+.shell .document-family-heading h2,
+.shell .document-family-heading h3 {
+  font-family: var(--font-display);
+  font-stretch: 112%;
+  font-weight: 720;
+}
+.manifest-stamp,
+.shell .version-identity .manifest-stamp {
+  padding: 1px 8px;
+  border: 1.5px solid var(--success);
+  border-radius: 4px;
+  background: transparent;
+  color: var(--success);
+  font: 600 10.5px/16px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  transform: rotate(-3deg);
+}
+
+/* ---------- Connections: directory ---------- */
+.shell .contact-directory-row {
+  position: relative;
+  transition: background-color 180ms ease;
+}
+.shell .contact-directory-row::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+  transform: scaleY(0);
+  transition: transform 280ms var(--ease-spring);
+}
+.shell .contact-directory-row:hover {
+  background: color-mix(in srgb, var(--butter-soft) 30%, transparent);
+}
+.shell .contact-directory-row:hover::before {
+  transform: none;
+}
+
+/* ---------- Discover / Companies / Prepare ---------- */
+.shell :is(.discover-card, .prepare-card) {
+  border-radius: var(--radius-lg);
+  transition:
+    transform 300ms var(--ease-spring),
+    box-shadow 200ms var(--ease-out),
+    border-color 160ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .shell :is(.discover-card, .prepare-card, .job-card):hover {
+    transform: translateY(-2px);
+    border-color: var(--text);
+    box-shadow: 0 4px 0 var(--text);
+  }
+}
+.shell :is(.discover-pill, .discover-fit) {
+  border-radius: 6px;
+}
+.shell .prepare-tabs [aria-selected="true"],
+.shell .prepare-tabs .selected {
+  background: var(--text);
+  color: var(--bg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .shell .content > .page-heading::after,
+  .shell .bar-row i,
+  .shell .ir-stat dd,
+  .shell .recruiting-review .wire blockquote::before,
+  .shell .recruiting-review .wire[data-status="pending"] .wire-status::before {
+    animation: none;
+  }
+  .shell .recruiting-review .wire blockquote::before {
+    height: 100%;
+  }
+  .shell .ir-stat,
+  .shell .board-column .application-card,
+  .shell .contact-directory-row::before,
+  .shell .control-index a {
+    transition: none;
+  }
+}

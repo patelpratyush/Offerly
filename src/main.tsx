@@ -70,6 +70,7 @@ import "./styles/dispatch/today.css";
 import "./styles/dispatch/applications.css";
 import "./styles/dispatch/detail.css";
 import "./styles/field/field.css";
+import "./styles/field/pages.css";
 import { installInteractions } from "./lib/interactions";
 import {
   GateTag,
