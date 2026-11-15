@@ -813,3 +813,14 @@ test("Gmail connect upgrades legacy cookie SameSite without extending session ex
     expires,
   );
 });
+
+test("session check endpoint confirms the signed-in account and rejects revoked sessions", async (t) => {
+  const { request, register } = await setup(t);
+  const c = await register();
+  const ok = await request("/session", "GET", undefined, c);
+  assert.equal(ok.status, 200);
+  assert.equal(ok.data.email, "security@example.com");
+  assert.equal((await request("/session", "GET")).status, 401);
+  await request("/logout", "POST", {}, c);
+  assert.equal((await request("/session", "GET", undefined, c)).status, 401);
+});

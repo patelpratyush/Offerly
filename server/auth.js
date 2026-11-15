@@ -284,6 +284,12 @@ export function mountAuth(app, store, config, limit) {
       next(e);
     }
   });
+  // Cheap session check for client-side navigation (the auth middleware above
+  // already validated the cookie and refreshed last_seen).
+  app.get("/api/session", (req, res) => {
+    res.set("Cache-Control", "no-store");
+    res.json({ email: req.user.email });
+  });
   app.post("/api/logout", async (req, res) => {
     await db.prepare("DELETE FROM sessions WHERE token=?").run(req.sessionHash);
     clear(res);

@@ -337,6 +337,7 @@ function App() {
   }, [page]);
   const account = useRef<string | null>(null);
   const workspaceRequest = useRef(0);
+  const lastRefreshAt = useRef(0);
   const detailRequest = useRef(0);
   const detailId = useRef<string | null>(null);
   const activeOperations = useRef(0);
@@ -453,6 +454,7 @@ function App() {
       return next;
     }
     account.current = next.user.email;
+    lastRefreshAt.current = Date.now();
     setW(next);
     setVerifiedPath(currentPath.current);
     return next;
@@ -474,7 +476,9 @@ function App() {
   }, [location.pathname, location.hash, verifiedPath, !!w]);
   const refreshCurrent = useRef(refresh);
   refreshCurrent.current = refresh;
-  // Cached private records stay hidden until the destination's session check passes.
+  // Page changes render the cached workspace immediately and revalidate in the
+  // background (at most every 15s). An expired session still returns 401,
+  // which fires offerly:session-expired and clears private state.
   useEffect(() => {
     if (
       !w ||
@@ -482,16 +486,27 @@ function App() {
       verifiedPath === location.pathname
     )
       return;
+    if (Date.now() - lastRefreshAt.current < 15000) {
+      // Recent data: show the page now, confirm the session with a cheap call.
+      const path = location.pathname;
+      setVerifiedPath(path);
+      void api("/session")
+        .then((session: { email: string }) => {
+          if (account.current && session.email !== account.current)
+            resetSession();
+        })
+        .catch(() => {});
+      return;
+    }
     setError("");
     void refreshCurrent.current().catch((e) => setError(e.message));
   }, [location.pathname, w?.user.email, verifiedPath]);
   useEffect(() => {
     if (!w?.user.email) return;
+    // Returning to the tab revalidates in the background instead of hiding the page.
     const revalidate = () => {
-      if (document.visibilityState === "visible") {
-        sessionReturnFocus.current = document.activeElement as HTMLElement;
-        setVerifiedPath(null);
-      }
+      if (document.visibilityState === "visible")
+        void refreshCurrent.current().catch((e) => setError(e.message));
     };
     document.addEventListener("visibilitychange", revalidate);
     window.addEventListener("pageshow", revalidate);
@@ -934,7 +949,8 @@ function App() {
         {page === "Applications" && moveButton(a)}
       </div>
     ));
-  const checkingSession = verifiedPath !== location.pathname;
+  // Only the first load waits; later checks run in the background.
+  const checkingSession = !w;
   const goToPage = (name: string) => {
     navigate(pagePaths[name] || "/today");
     setQuery("");
