@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 import "../styles/dispatch/public.css";
 import "../styles/field/landing.css";
+import "../styles/field/showreel.css";
+import { Showreel } from "../components/landing/Showreel";
 
 /* Illustrative sample data only: fictional employers and invented dates.
    The preview is labelled as sample data and never reads real records. */
@@ -351,6 +353,8 @@ export function Landing() {
           </div>
         </div>
 
+        <Showreel />
+
         <section
           className="fo-section"
           id="features"
@@ -358,7 +362,7 @@ export function Landing() {
         >
           <header className="fo-section-head" data-reveal>
             <span className="fo-index" aria-hidden="true">
-              §1
+              §2
             </span>
             <h2 id="features-title">Built for a focused, honest search</h2>
             <p>
@@ -436,7 +440,7 @@ export function Landing() {
           <div className="fo-privacy-inner">
             <header className="fo-section-head" data-reveal>
               <span className="fo-index" aria-hidden="true">
-                §2
+                §3
               </span>
               <h2 id="privacy-title">Private by default</h2>
               <p>Your search is yours. Nothing happens without you.</p>
