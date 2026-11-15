@@ -45,12 +45,9 @@
 
 /* ---------- ledger tables: forest header band ---------- */
 .shell .application-table thead th,
-.shell .tt th,
-.shell .ir-table th,
+.shell .tt thead th,
 .shell .ir-table thead th,
-.shell .discover-table th,
 .shell .discover-table thead th,
-.shell .prepare-table th,
 .shell .prepare-table thead th,
 .shell .today-card thead th {
   background: var(--panel);
@@ -190,7 +187,8 @@
   color: var(--panel-text);
   font: 500 13px/1.3 var(--font-mono);
 }
-.shell .recruiting-review .wire-head .code-tag {
+.shell .recruiting-review .wire-head .code-tag,
+.shell .recruiting-review .wire-head .wire-status.wire-status {
   border-color: var(--panel-line);
   background: var(--panel-2);
   color: var(--panel-text);

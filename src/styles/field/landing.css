@@ -405,10 +405,9 @@
 }
 .fo-row-inner {
   display: grid;
-  grid-template-columns: minmax(0, 1.25fr) minmax(0, 0.8fr) minmax(
-      0,
-      1.4fr
-    ) 40px;
+  grid-template-columns:
+    minmax(0, 1.25fr) minmax(0, 0.8fr) minmax(0, 1.4fr)
+    40px;
   align-items: center;
   gap: 16px;
   min-height: 0;

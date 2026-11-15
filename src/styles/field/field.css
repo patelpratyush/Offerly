@@ -664,7 +664,7 @@ kbd,
 }
 
 /* ---------- tables ---------- */
-.shell .tt th,
+.shell .tt thead th,
 .shell .application-table thead th,
 .shell .today-card thead th {
   font: 500 10.5px/1.2 var(--font-mono);
@@ -1012,4 +1012,29 @@ kbd,
 }
 .shell .drawer .detail-tabs button.selected::after {
   transform: scaleX(1);
+}
+
+/* Search wrappers own the border; the input inside is bare. */
+:root .search {
+  border: 1.5px solid var(--border);
+  border-radius: 10px;
+  background: var(--surface-2);
+  transition:
+    border-color 140ms ease,
+    box-shadow 180ms var(--ease-out);
+}
+:root .search:hover {
+  border-color: var(--border-strong);
+}
+:root .search:focus-within {
+  border-color: var(--text);
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+:root .shell .search.search input:not([type="checkbox"]):not([type="radio"]),
+:root .shell .search.search input:not([type="checkbox"]):not([type="radio"]):hover,
+:root .shell .search.search input:not([type="checkbox"]):not([type="radio"]):focus-visible {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  outline: none;
 }
