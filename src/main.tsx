@@ -27,14 +27,8 @@ import {
   Clock,
   Archive,
 } from "lucide-react";
-import "@fontsource/dm-sans/400.css";
-import "@fontsource/dm-sans/500.css";
-import "@fontsource/dm-sans/600.css";
-import "@fontsource/dm-sans/700.css";
-import "@fontsource/manrope/500.css";
-import "@fontsource/manrope/600.css";
-import "@fontsource/manrope/700.css";
-import "@fontsource/manrope/800.css";
+import "@fontsource-variable/archivo/wdth.css";
+import "@fontsource-variable/martian-mono/wdth.css";
 import "./styles/style.css";
 import "./styles/workspace.css";
 import { ImportDialog } from "./components/workspace/ImportDialog";
@@ -60,7 +54,6 @@ import { PrepareHub } from "./components/workspace/prepare/PrepareHub";
 import { Landing } from "./pages/Landing";
 import { NotFound } from "./pages/NotFound";
 import { useDialogViewport } from "./useDialogViewport";
-import "@fontsource-variable/inter/wght.css";
 import "./styles/dispatch/tokens.css";
 import "./styles/dispatch/core.css";
 import { ShellRail, ShellTopbar } from "./components/shell/ShellRail";
@@ -76,6 +69,8 @@ import "./styles/dispatch/motion.css";
 import "./styles/dispatch/today.css";
 import "./styles/dispatch/applications.css";
 import "./styles/dispatch/detail.css";
+import "./styles/field/field.css";
+import { installInteractions } from "./lib/interactions";
 import {
   GateTag,
   gateCode,
@@ -3286,6 +3281,7 @@ function SessionRoot() {
   }, []);
   return <App key={generation} />;
 }
+installInteractions();
 createRoot(document.getElementById("root")!).render(
   <BrowserRouter useTransitions={false}>
     <SessionRoot />

@@ -24,7 +24,7 @@
 }
 /* Links in running text stay underlined (axe: link-in-text-block). */
 .discover a {
-  color: var(--accent);
+  color: var(--accent-deep);
   text-decoration: underline;
   text-decoration-color: rgb(79 70 229 / 0.35);
   text-underline-offset: 2px;
@@ -313,10 +313,10 @@
 .discover-fit.is-strong {
   background: var(--accent-soft);
   border-color: transparent;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .discover-fit.is-strong span {
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .discover-fit.is-empty {
   background: transparent;
@@ -391,10 +391,10 @@
 .discover-badges li.is-applied {
   background: var(--accent-soft);
   border-color: transparent;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .discover .discover-badges li.is-applied a {
-  color: var(--accent);
+  color: var(--accent-deep);
   text-decoration: underline;
   text-underline-offset: 2px;
 }

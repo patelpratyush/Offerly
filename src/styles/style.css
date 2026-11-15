@@ -1,5 +1,5 @@
 :root {
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-body);
   color: #26362f;
   background: #f8f9f5;
   font-synthesis: none;
@@ -65,7 +65,7 @@ h1,
 h2,
 h3,
 .brand {
-  font-family: "Manrope", "DM Sans", sans-serif;
+  font-family: var(--font-display);
 }
 h1 {
   font-size: 31px;
@@ -339,7 +339,7 @@ main {
   align-items: center;
   justify-content: space-between;
   font-size: 34px;
-  font-family: Manrope, sans-serif;
+  font-family: var(--font-display);
   font-weight: 500;
   margin: 10px 0 8px;
 }
@@ -375,7 +375,7 @@ main {
   margin: 0;
 }
 .count {
-  font-family: "DM Sans", sans-serif;
+  font-family: var(--font-body);
   font-size: 10px;
   border: 1px solid var(--line);
   border-radius: 5px;

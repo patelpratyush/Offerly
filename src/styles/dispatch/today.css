@@ -75,7 +75,7 @@
   transition: color 120ms ease;
 }
 .shell .brief-signal:hover .brief-label svg {
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .shell .brief-value {
   color: var(--text);
@@ -301,14 +301,14 @@
   border: 0;
   border-top: 1px solid var(--border);
   border-radius: 0;
-  color: var(--accent);
+  color: var(--accent-deep);
   font: 500 13px/1.3 var(--font-body);
   text-align: left;
   cursor: pointer;
 }
 .shell .dep-more:hover {
   background: var(--bg-subtle);
-  color: var(--accent-hover);
+  color: var(--accent-deep);
 }
 .shell .dep-more:focus-visible {
   outline: 2px solid var(--accent);
@@ -441,12 +441,12 @@
 }
 .shell .today-grid .task .check-button:hover:not(:disabled) {
   border-color: var(--accent);
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .shell .today-grid .task .check-button:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .shell .today-grid .task > div {
   min-width: 0;
@@ -466,7 +466,7 @@
   overflow-wrap: anywhere;
 }
 .shell .today-grid .task .task-title:hover {
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .shell .today-grid .task small {
   display: block;
@@ -540,7 +540,7 @@
   justify-items: end;
 }
 .shell .today-reminder-links a {
-  color: var(--accent);
+  color: var(--accent-deep);
   font-size: 13px;
   font-weight: 500;
 }

@@ -154,7 +154,7 @@ a {
 .code-tag.amber {
   background: var(--accent-soft);
   border-color: transparent;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .code-tag.red,
 .code-tag.red.solid {
@@ -170,7 +170,7 @@ a {
 .code-tag.blue {
   background: var(--accent-soft);
   border-color: transparent;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .code-tag.hollow {
   border-style: dashed;
@@ -275,7 +275,7 @@ a {
   border: 0;
   border-radius: var(--radius-sm);
   background: none;
-  color: var(--accent);
+  color: var(--accent-deep);
   font-weight: 500;
   font-size: 13px;
   text-decoration: none;
@@ -283,7 +283,7 @@ a {
 .text-button:hover:not(:disabled),
 .tertiary:hover:not(:disabled) {
   background: var(--accent-soft);
-  color: var(--accent-hover);
+  color: var(--accent-deep);
   filter: none;
 }
 .text-button:disabled,
@@ -830,7 +830,7 @@ fieldset {
 }
 .shell .sidebar .brand-dot {
   margin-left: -6px;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .shell .sidebar .mobile-menu {
   display: none;
@@ -983,7 +983,7 @@ fieldset {
   height: 28px;
   border-radius: 50%;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-deep);
   font: 600 12px/1 var(--font-body);
 }
 .shell .sidebar .account .account-name {
@@ -1193,7 +1193,7 @@ fieldset {
   .shell .sidebar .rail-nav a.station.active {
     background: transparent;
     box-shadow: none;
-    color: var(--accent);
+    color: var(--accent-deep);
   }
   .shell .sidebar .station-node {
     width: 5px;

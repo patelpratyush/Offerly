@@ -1,0 +1,1015 @@
+/*
+ * Field Office — workspace layer. Loaded after every page stylesheet.
+ *
+ * Grammar:
+ *   - paper (sage grey) for working surfaces, forest for navigation;
+ *   - persimmon only for the one primary action per view, selection, focus;
+ *   - butter highlighter marks "your move";
+ *   - display type is Archivo expanded (font-stretch 112–125%), heavy;
+ *     numbers, dates and small labels are Martian Mono;
+ *   - buttons are tactile: they sit on a 3px ink ledge and press into it;
+ *   - cards catch a soft persimmon light under the pointer (--mx/--my).
+ */
+
+/* ---------- base ---------- */
+html,
+body {
+  background: var(--bg);
+}
+body {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-stretch: 100%;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+/* Paper tooth: a fixed, very faint grain under everything. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0.5;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0.07  0 0 0 0 0.12  0 0 0 0 0.1  0 0 0 0.09 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+::selection {
+  background: var(--butter);
+  color: var(--text);
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+h1,
+h2,
+h3,
+h4,
+.brand,
+.sign {
+  font-family: var(--font-display);
+  color: var(--text);
+}
+h1 {
+  font-stretch: 118%;
+  font-weight: 760;
+  letter-spacing: -0.03em;
+}
+h2 {
+  font-stretch: 110%;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+h3 {
+  font-weight: 650;
+  letter-spacing: -0.01em;
+}
+.mono,
+time,
+.count,
+.nav-count,
+kbd,
+.eyebrow,
+.tiny-label {
+  font-family: var(--font-mono);
+}
+.eyebrow,
+.tiny-label,
+.shell .page-heading .eyebrow {
+  font-size: 11px;
+  font-weight: 500;
+  font-stretch: 100%;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+
+/* ---------- focus ---------- */
+:root a:focus-visible,
+:root button:focus-visible,
+:root input:focus-visible,
+:root select:focus-visible,
+:root textarea:focus-visible,
+:root summary:focus-visible,
+:root [tabindex]:focus-visible,
+:root [role="option"]:focus-visible {
+  outline: 2px solid var(--accent-deep);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 6px var(--accent-glow);
+}
+
+/* Headings focused by route changes get no ring (they are not controls). */
+:root h1[tabindex="-1"]:focus,
+:root h2[tabindex="-1"]:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+/* ---------- buttons: ink ledge, press, lean ---------- */
+:root .primary.primary,
+:root .secondary.secondary,
+:root .light-button.light-button,
+:root .danger.danger {
+  --lift: 0px;
+  --ledge: 3px;
+  min-height: 34px;
+  padding: 7px 14px;
+  border-width: 1.5px;
+  border-radius: var(--radius);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.005em;
+  transform: translate(var(--tx, 0px), calc(var(--ty, 0px) + var(--lift)));
+  transition:
+    transform 260ms var(--ease-spring),
+    box-shadow 180ms var(--ease-out),
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease;
+}
+:root .primary.primary {
+  background: var(--accent);
+  border-color: var(--text);
+  color: var(--accent-text);
+  box-shadow: 0 var(--ledge) 0 var(--text);
+}
+:root .secondary.secondary,
+:root .light-button.light-button {
+  background: var(--surface-2);
+  border-color: var(--border-strong);
+  color: var(--text);
+  box-shadow: 0 var(--ledge) 0 var(--border-strong);
+}
+:root .danger.danger {
+  background: var(--surface-2);
+  border-color: var(--danger);
+  color: var(--danger);
+  box-shadow: 0 var(--ledge) 0 var(--danger);
+}
+:root .primary.primary:hover:not(:disabled) {
+  --lift: -1px;
+  --ledge: 4px;
+  background: var(--accent-hover);
+  border-color: var(--text);
+  box-shadow: 0 var(--ledge) 0 var(--text);
+}
+:root .secondary.secondary:hover:not(:disabled),
+:root .light-button.light-button:hover:not(:disabled) {
+  --lift: -1px;
+  --ledge: 4px;
+  background: var(--surface-2);
+  border-color: var(--text);
+  box-shadow: 0 var(--ledge) 0 var(--text);
+}
+:root .danger.danger:hover:not(:disabled) {
+  --lift: -1px;
+  --ledge: 4px;
+  background: var(--danger-soft);
+  box-shadow: 0 var(--ledge) 0 var(--danger);
+}
+:root .primary.primary:active:not(:disabled),
+:root .secondary.secondary:active:not(:disabled),
+:root .light-button.light-button:active:not(:disabled),
+:root .danger.danger:active:not(:disabled) {
+  --lift: 3px;
+  --ledge: 0px;
+  transition-duration: 60ms;
+}
+:root .primary.primary:disabled,
+:root .secondary.secondary:disabled,
+:root .light-button.light-button:disabled,
+:root .danger.danger:disabled,
+:root [aria-disabled="true"].primary,
+:root [aria-disabled="true"].secondary {
+  background: var(--bg-subtle);
+  border-color: var(--border);
+  color: var(--text-3);
+  box-shadow: none;
+  transform: none;
+}
+.text-button,
+.tertiary {
+  border-radius: var(--radius-sm);
+  color: var(--accent-deep);
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1.5px;
+  transition:
+    text-decoration-color 160ms ease,
+    background-color 160ms ease;
+}
+.text-button:hover:not(:disabled),
+.tertiary:hover:not(:disabled) {
+  background: transparent;
+  color: var(--accent-deep);
+  text-decoration-color: currentColor;
+}
+
+/* ---------- tags ---------- */
+.code-tag,
+.shell .badge,
+.shell .badge[class] {
+  border-radius: var(--radius-sm);
+  border-color: var(--border-strong);
+  background: transparent;
+  color: var(--text-2);
+  font-weight: 600;
+  font-size: 12px;
+}
+.code-tag.ink {
+  background: var(--text);
+  color: var(--surface-1);
+}
+/* "Your move" and other amber tags are a highlighter stroke. */
+.code-tag.amber {
+  background: linear-gradient(
+    100deg,
+    transparent 2%,
+    var(--butter) 6%,
+    var(--butter) 94%,
+    transparent 98%
+  );
+  color: var(--text);
+}
+.code-tag.blue {
+  background: var(--accent-soft);
+  color: var(--accent-deep);
+}
+
+/* ---------- fields ---------- */
+:root
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="file"]
+  ),
+:root select,
+:root textarea {
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  background-color: var(--surface-2);
+  color: var(--text);
+  transition:
+    border-color 140ms ease,
+    box-shadow 180ms var(--ease-out),
+    background-color 140ms ease;
+}
+:root
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="file"]
+  ):hover:not(:disabled),
+:root select:hover:not(:disabled),
+:root textarea:hover:not(:disabled) {
+  border-color: var(--border-strong);
+}
+:root
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not(
+    [type="file"]
+  ):focus-visible,
+:root select:focus-visible,
+:root textarea:focus-visible {
+  border-color: var(--text);
+  outline: none;
+  box-shadow: 0 0 0 4px var(--accent-glow);
+}
+:root input[type="checkbox"],
+:root input[type="radio"] {
+  accent-color: var(--accent-deep);
+}
+:root input[type="checkbox"]:checked {
+  background-color: var(--text);
+  border-color: var(--text);
+}
+
+/* ---------- shell: forest rail ---------- */
+:root {
+  --nav-width: 248px;
+  --strip-h: 52px;
+}
+.shell {
+  background: transparent;
+}
+.shell .sidebar {
+  padding: 18px 12px 14px;
+  background:
+    radial-gradient(120% 60% at 0% 0%, rgb(236 95 42 / 0.12), transparent 60%),
+    var(--panel);
+  color: var(--panel-text);
+  border-right: 0;
+}
+.shell .sidebar .brand {
+  gap: 10px;
+  padding: 4px 6px;
+  color: var(--panel-text);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-stretch: 122%;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+.shell .sidebar span.brand-mark {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px 8px 8px 2px;
+  background: var(--accent);
+  color: var(--text);
+  font: 800 15px/1 var(--font-display);
+  font-stretch: 125%;
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.35);
+  transition: transform 420ms var(--ease-spring);
+}
+.shell .sidebar .brand:hover span.brand-mark {
+  transform: rotate(-8deg) scale(1.06);
+}
+.shell .sidebar .rail-search {
+  min-height: 36px;
+  margin-top: 18px;
+  padding: 4px 10px;
+  border: 1px solid var(--panel-line);
+  border-radius: var(--radius);
+  background: var(--panel-2);
+  color: var(--panel-text-2);
+  box-shadow: none;
+  transition:
+    border-color 160ms ease,
+    background-color 160ms ease,
+    color 160ms ease;
+}
+.shell .sidebar .rail-search:hover {
+  background: var(--panel-3);
+  border-color: var(--panel-3);
+  color: var(--panel-text);
+}
+.shell .sidebar .rail-search kbd {
+  border: 1px solid var(--panel-line);
+  background: var(--panel);
+  color: var(--panel-text-2);
+  font: 500 10px/18px var(--font-mono);
+}
+.shell .sidebar .workspace-label {
+  margin: 22px 10px 8px;
+  color: var(--panel-text-2);
+  font: 500 10px/1.2 var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+.shell .sidebar .rail-nav ol {
+  gap: 2px;
+}
+.shell .sidebar .rail-nav li {
+  position: relative;
+  z-index: 1;
+}
+.rail-indicator,
+.rail-ghost {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  border-radius: var(--radius);
+  pointer-events: none;
+  transition:
+    transform 420ms var(--ease-spring),
+    width 320ms var(--ease-out),
+    height 320ms var(--ease-out),
+    opacity 200ms ease;
+}
+.rail-indicator {
+  background: var(--bg);
+  box-shadow:
+    0 2px 0 rgb(0 0 0 / 0.25),
+    inset 3px 0 0 var(--accent);
+}
+.rail-ghost {
+  background: var(--panel-2);
+  box-shadow: inset 0 0 0 1px var(--panel-line);
+}
+.shell .sidebar .rail-nav a.station {
+  min-height: 36px;
+  padding: 0 10px;
+  gap: 12px;
+  border-radius: var(--radius);
+  background: transparent;
+  color: var(--panel-text-2);
+  font-family: var(--font-body);
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: color 200ms ease;
+}
+.shell .sidebar .rail-nav a.station:hover:not(.active) {
+  background: transparent;
+  color: var(--panel-text);
+}
+.shell .sidebar .rail-nav a.station.active {
+  background: transparent;
+  box-shadow: none;
+  color: var(--text);
+  font-weight: 650;
+}
+.shell .station-node {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--panel-line);
+  transform: rotate(45deg);
+  transition:
+    transform 320ms var(--ease-spring),
+    background-color 200ms ease;
+}
+.shell .sidebar .rail-nav a.station:hover:not(.active) .station-node {
+  background: var(--panel-text-2);
+  transform: rotate(45deg) scale(1.2);
+}
+.shell .sidebar .rail-nav a.station.active .station-node {
+  background: var(--accent);
+  transform: rotate(135deg) scale(1.25);
+}
+@media (hover: hover) and (pointer: fine) {
+  .shell .sidebar a.station:hover .station-node {
+    transform: rotate(45deg) scale(1.2);
+  }
+}
+.shell .sidebar .nav-count {
+  color: var(--panel-text-2);
+  font: 500 11px/18px var(--font-mono);
+}
+.shell .sidebar .rail-nav a.station.active .nav-count {
+  background: var(--text);
+  color: var(--bg);
+}
+.shell .sidebar .account {
+  padding: 14px 6px 0;
+  border-top: 1px solid var(--panel-line);
+}
+.shell .sidebar .account .avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--butter);
+  color: var(--text);
+  font: 800 13px/1 var(--font-display);
+  font-stretch: 120%;
+}
+.shell .sidebar .account strong {
+  color: var(--panel-text);
+  font-weight: 600;
+}
+.shell .sidebar .account small {
+  color: var(--panel-text-2);
+}
+.shell .sidebar .account > button {
+  color: var(--panel-text-2);
+}
+.shell .sidebar .account > button:hover {
+  background: var(--panel-2);
+  color: var(--panel-text);
+}
+
+/* ---------- top strip ---------- */
+.shell .topbar {
+  padding: 0 40px;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  backdrop-filter: saturate(1.2) blur(12px);
+  border-bottom: 1px solid var(--border);
+}
+.shell .topbar .strip-crumb {
+  color: var(--text-3);
+  font: 500 11px/1 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+.shell .topbar .strip-page b {
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-stretch: 112%;
+  font-weight: 700;
+}
+.shell .topbar time {
+  font: 500 11.5px/1 var(--font-mono);
+  color: var(--text-2);
+}
+.shell .topbar .private-tag {
+  padding: 3px 9px 3px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface-1);
+  font-weight: 500;
+}
+.shell .topbar .private-tag > span {
+  background: var(--success);
+  box-shadow: 0 0 0 0 rgb(45 106 62 / 0.5);
+  animation: fo-pulse 2.6s var(--ease-out) infinite;
+}
+@keyframes fo-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgb(45 106 62 / 0.45);
+  }
+  70%,
+  100% {
+    box-shadow: 0 0 0 7px rgb(45 106 62 / 0);
+  }
+}
+
+/* ---------- page heading ---------- */
+.shell .page-heading h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 2.6vw, 40px);
+  font-stretch: 118%;
+  font-weight: 780;
+  line-height: 1.04;
+  letter-spacing: -0.035em;
+  text-wrap: balance;
+}
+.shell .page-heading p {
+  max-width: 62ch;
+  margin-top: 8px;
+  color: var(--text-2);
+  font-size: 14px;
+}
+
+/* ---------- sections ---------- */
+.shell .section-head h2,
+.shell .today-section .section-head h2 {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-stretch: 112%;
+  font-weight: 720;
+  letter-spacing: -0.02em;
+}
+.shell .count,
+.shell .today-section .count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 20px;
+  padding: 0 6px;
+  border: 1px solid var(--border-strong);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--text-2);
+  font: 500 11px/1 var(--font-mono);
+}
+
+/* ---------- cards + spotlight ---------- */
+.shell .panel,
+.shell .today-card,
+.shell .brief-signal,
+.shell .application-card,
+.shell .job-card {
+  position: relative;
+  isolation: isolate;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.shell .panel::after,
+.shell .today-card::after,
+.shell .brief-signal::after,
+.shell .application-card::after,
+.shell .job-card::after,
+[data-spot]::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0;
+  background: radial-gradient(
+    360px circle at var(--mx, 50%) var(--my, 50%),
+    var(--accent-glow),
+    transparent 60%
+  );
+  transition: opacity 260ms ease;
+}
+@media (hover: hover) and (pointer: fine) {
+  .shell .panel:hover::after,
+  .shell .today-card:hover::after,
+  .shell .brief-signal:hover::after,
+  .shell .application-card:hover::after,
+  .shell .job-card:hover::after,
+  [data-spot]:hover::after {
+    opacity: 0.55;
+  }
+}
+
+/* Today: three big signals */
+.shell .brief-signals {
+  gap: 14px;
+}
+.shell .brief-signal {
+  min-height: 118px;
+  padding: 16px 18px 18px;
+  overflow: hidden;
+  transition:
+    transform 320ms var(--ease-spring),
+    box-shadow 240ms var(--ease-out),
+    border-color 160ms ease;
+}
+.shell .brief-signal:hover {
+  transform: translateY(-3px);
+  border-color: var(--text);
+  box-shadow: 0 4px 0 var(--text);
+}
+.shell .brief-signal:active {
+  transform: translateY(1px);
+  box-shadow: 0 0 0 var(--text);
+  transition-duration: 60ms;
+}
+.shell .brief-label {
+  font: 500 11px/1.3 var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-2);
+}
+.shell .brief-value {
+  font-family: var(--font-display);
+  font-size: 52px;
+  font-stretch: 125%;
+  font-weight: 800;
+  letter-spacing: -0.05em;
+  line-height: 0.9;
+  animation: fo-number 700ms var(--ease-spring) both;
+}
+@keyframes fo-number {
+  from {
+    transform: translateY(40%);
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    transform: none;
+    opacity: 1;
+    filter: none;
+  }
+}
+.shell .brief-signal.is-alert {
+  background:
+    repeating-linear-gradient(
+      -45deg,
+      transparent 0 9px,
+      rgb(179 38 30 / 0.06) 9px 18px
+    ),
+    var(--surface-1);
+  border-color: rgb(179 38 30 / 0.45);
+}
+.shell .brief-signal.is-alert:hover {
+  border-color: var(--danger);
+  box-shadow: 0 4px 0 var(--danger);
+}
+
+/* ---------- tables ---------- */
+.shell .tt th,
+.shell .application-table thead th,
+.shell .today-card thead th {
+  font: 500 10.5px/1.2 var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-3);
+}
+.shell .application-table tbody tr,
+.shell .tt tbody tr,
+.shell .dep-row {
+  position: relative;
+}
+.shell .application-table tbody td:first-child,
+.shell .tt tbody td:first-child {
+  box-shadow: inset 0 0 0 0 var(--accent);
+  transition:
+    box-shadow 220ms var(--ease-out),
+    background-color 160ms ease;
+}
+.shell .application-table tbody tr:hover td,
+.shell .tt tbody tr:hover td {
+  background: color-mix(in srgb, var(--butter-soft) 34%, var(--surface-1));
+}
+.shell .application-table tbody tr:hover td:first-child,
+.shell .tt tbody tr:hover td:first-child {
+  box-shadow: inset 3px 0 0 0 var(--accent);
+}
+
+/* ---------- segmented toggles + tabs: sliding feel ---------- */
+.shell .view-toggle,
+.shell .detail-tabs {
+  border-radius: var(--radius);
+}
+.shell .view-toggle button[aria-pressed="true"] {
+  background: var(--text);
+  color: var(--bg);
+  box-shadow: 0 2px 0 rgb(0 0 0 / 0.25);
+}
+
+/* ---------- overlays ---------- */
+.shell .overlay,
+.pal-overlay {
+  background: rgb(20 48 42 / 0.42);
+  backdrop-filter: blur(3px) saturate(0.9);
+}
+.shell .modal,
+.palette {
+  border: 1.5px solid var(--text);
+  border-radius: var(--radius-xl);
+  background: var(--surface-1);
+  box-shadow:
+    0 6px 0 var(--text),
+    var(--shadow-lg);
+}
+.shell .drawer {
+  border-left: 1.5px solid var(--text);
+  background: var(--bg);
+  box-shadow: -24px 0 60px -30px rgb(19 32 26 / 0.5);
+}
+.pal-opt[aria-selected="true"] {
+  background: var(--text);
+  color: var(--bg);
+}
+.pal-opt[aria-selected="true"] .pal-hint {
+  color: var(--panel-text-2);
+}
+
+/* ---------- empty + notices ---------- */
+.shell .empty {
+  border: 1.5px dashed var(--border-strong);
+  border-radius: var(--radius-lg);
+  background: transparent;
+}
+.shell .notice,
+.shell .alert {
+  border-radius: var(--radius);
+  border-width: 1.5px;
+}
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-subtle),
+    var(--surface-1),
+    var(--bg-subtle)
+  );
+  background-size: 200% 100%;
+  animation: fo-shimmer 1.4s linear infinite;
+}
+@keyframes fo-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}
+
+/* ---------- route entrance ---------- */
+@keyframes fo-enter {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fo-heading {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 -20% 0);
+  }
+}
+.shell .content > .page-heading h1 {
+  animation: fo-heading 620ms var(--ease-out) both;
+}
+.shell .content > *:not(.page-heading):not(.alert):not(.notice):not(footer) {
+  animation: fo-enter 520ms var(--ease-out) both;
+}
+.shell .content > *:nth-child(3) {
+  animation-delay: 60ms;
+}
+.shell .content > *:nth-child(4) {
+  animation-delay: 110ms;
+}
+.shell .content > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.shell .content > *:nth-child(n + 6) {
+  animation-delay: 200ms;
+}
+.shell .brief-signal:nth-child(2) .brief-value {
+  animation-delay: 80ms;
+}
+.shell .brief-signal:nth-child(3) .brief-value {
+  animation-delay: 160ms;
+}
+
+/* ---------- auth: forest field, paper card ---------- */
+:root .auth {
+  background:
+    radial-gradient(60% 50% at 85% 10%, rgb(236 95 42 / 0.22), transparent 70%),
+    radial-gradient(
+      50% 40% at 0% 100%,
+      rgb(242 201 76 / 0.14),
+      transparent 70%
+    ),
+    linear-gradient(var(--panel-line) 1px, transparent 1px) 0 0 / 100% 56px,
+    var(--panel);
+}
+:root .auth .auth-brand {
+  color: var(--panel-text);
+  font-family: var(--font-display);
+  font-stretch: 122%;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+}
+:root .auth .auth-mark {
+  border-radius: 8px 8px 8px 2px;
+  background: var(--accent);
+  color: var(--text);
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+:root .auth .auth-form {
+  border: 1.5px solid var(--text);
+  border-radius: var(--radius-xl);
+  background: var(--bg);
+  box-shadow:
+    0 8px 0 rgb(0 0 0 / 0.35),
+    0 40px 80px -30px rgb(0 0 0 / 0.6);
+  animation: fo-enter 600ms var(--ease-spring) both;
+}
+:root .auth .auth-form h1 {
+  font-family: var(--font-display);
+  font-size: clamp(28px, 4vw, 36px);
+  font-stretch: 120%;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+}
+:root .auth .auth-form .text-button {
+  color: var(--accent-deep);
+}
+:root .auth > small,
+:root .auth > p {
+  color: var(--panel-text-2);
+}
+
+/* ---------- mobile ---------- */
+@media (max-width: 900px) {
+  .shell .sidebar {
+    padding: 10px 14px;
+    background: var(--panel);
+  }
+  .shell .sidebar .brand {
+    font-size: 17px;
+  }
+  .shell .sidebar .rail-search {
+    margin: 0 0 0 auto;
+    background: var(--panel-2);
+  }
+  .shell .sidebar .rail-nav,
+  .shell .sidebar .rail-nav.is-open {
+    background: color-mix(in srgb, var(--panel) 94%, transparent);
+    backdrop-filter: blur(12px) saturate(1.2);
+    border-top: 1px solid var(--panel-line);
+  }
+  .shell .sidebar .rail-nav ol {
+    padding: 6px;
+    gap: 2px;
+  }
+  .shell .sidebar .rail-nav a.station {
+    width: 78px;
+    min-height: 54px;
+    font-size: 11px;
+  }
+  .shell .sidebar .rail-nav a.station.active {
+    color: var(--text);
+  }
+  .shell .sidebar .nav-count {
+    background: var(--panel-3);
+    color: var(--panel-text);
+  }
+  .rail-ghost {
+    display: none;
+  }
+  .rail-indicator {
+    box-shadow: inset 0 -3px 0 var(--accent);
+  }
+  .shell .topbar {
+    padding: 0 16px;
+  }
+  .shell .brief-value {
+    font-size: 40px;
+  }
+}
+
+/* ---------- reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .rail-indicator,
+  .rail-ghost,
+  .shell .station-node,
+  .shell .sidebar span.brand-mark,
+  .shell .brief-signal {
+    transition: none;
+  }
+  .shell .brief-signal:hover {
+    transform: none;
+  }
+  .shell .content > .page-heading h1,
+  .shell .content > *,
+  .shell .brief-value,
+  :root .auth .auth-form,
+  .shell .topbar .private-tag > span {
+    animation: none;
+  }
+  :root .primary.primary,
+  :root .secondary.secondary,
+  :root .light-button.light-button,
+  :root .danger.danger {
+    transform: none;
+    transition:
+      background-color 120ms ease,
+      border-color 120ms ease,
+      color 120ms ease;
+  }
+}
+
+/* ---------- status words + stage marks ---------- */
+.status-word {
+  border-radius: 6px;
+  font-weight: 600;
+}
+.status-move {
+  background: linear-gradient(
+    100deg,
+    transparent 2%,
+    var(--butter) 6%,
+    var(--butter) 94%,
+    transparent 98%
+  );
+  color: var(--text);
+}
+.status-over {
+  background: var(--danger);
+  color: #fff;
+}
+:is(.gate-tag, .platform-code):is(.gate-sub, .gate-rev) {
+  --dot-bg: var(--text-2);
+  --dot-ring: var(--text-2);
+}
+:is(.gate-tag, .platform-code).gate-asm {
+  --dot-bg: var(--butter);
+  --dot-ring: var(--warning);
+}
+:is(.gate-tag, .platform-code).gate-int {
+  --dot-bg: var(--accent);
+  --dot-ring: var(--text);
+}
+.gate-tag b,
+.platform-code {
+  border-radius: 2px;
+  transform: rotate(45deg) scale(0.9);
+}
+.next-move-btn {
+  border-radius: 8px;
+  box-shadow: 0 2px 0 var(--border-strong);
+  transition:
+    transform 240ms var(--ease-spring),
+    box-shadow 160ms ease,
+    background-color 140ms ease;
+}
+.next-move-btn:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 3px 0 var(--text);
+  border-color: var(--text);
+}
+
+/* Drawer tabs: ink underline that grows in. */
+.shell .drawer .detail-tabs button {
+  position: relative;
+  box-shadow: none;
+  background: transparent;
+}
+.shell .drawer .detail-tabs button::after {
+  content: "";
+  position: absolute;
+  left: 8px;
+  right: 8px;
+  bottom: -1px;
+  height: 3px;
+  border-radius: 3px 3px 0 0;
+  background: var(--accent);
+  transform: scaleX(0);
+  transition: transform 320ms var(--ease-spring);
+}
+.shell .drawer .detail-tabs button.selected {
+  box-shadow: none;
+  color: var(--text);
+  font-weight: 650;
+}
+.shell .drawer .detail-tabs button.selected::after {
+  transform: scaleX(1);
+}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { LogOut, Search } from "lucide-react";
 import { pagePaths } from "../../routing";
@@ -28,6 +28,48 @@ export function ShellRail(props: RailProps) {
     if (!nav || !link || nav.scrollWidth <= nav.clientWidth) return;
     nav.scrollLeft = link.offsetLeft - (nav.clientWidth - link.offsetWidth) / 2;
   }, [page]);
+  // Sliding indicator: one element glides between stations instead of each
+  // link repainting its own background. Hover previews where it would go.
+  const listRef = useRef<HTMLOListElement>(null);
+  const [hover, setHover] = useState<string | null>(null);
+  const [box, setBox] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  const [ghost, setGhost] = useState<{
+    x: number;
+    y: number;
+    w: number;
+    h: number;
+  } | null>(null);
+  useLayoutEffect(() => {
+    const list = listRef.current;
+    if (!list) return;
+    const measure = (name: string | null) => {
+      if (!name) return null;
+      const el = list
+        .querySelector(`[data-station="${name}"]`)
+        ?.closest<HTMLElement>("li");
+      return el
+        ? {
+            x: el.offsetLeft,
+            y: el.offsetTop,
+            w: el.offsetWidth,
+            h: el.offsetHeight,
+          }
+        : null;
+    };
+    const update = () => {
+      setBox(measure(page));
+      setGhost(measure(hover));
+    };
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(list);
+    return () => observer.disconnect();
+  }, [page, hover]);
   return (
     <aside className="sidebar" inert={props.inert}>
       <Link className="brand" to="/today">
@@ -60,10 +102,36 @@ export function ShellRail(props: RailProps) {
         aria-label="Workspace"
         className={"rail-nav" + (props.navigationOpen ? " is-open" : "")}
       >
-        <ol>
+        <ol ref={listRef} onPointerLeave={() => setHover(null)}>
+          {box && (
+            <span
+              className="rail-indicator"
+              aria-hidden="true"
+              style={{
+                transform: `translate(${box.x}px, ${box.y}px)`,
+                width: box.w,
+                height: box.h,
+              }}
+            />
+          )}
+          {ghost && hover !== page && (
+            <span
+              className="rail-ghost"
+              aria-hidden="true"
+              style={{
+                transform: `translate(${ghost.x}px, ${ghost.y}px)`,
+                width: ghost.w,
+                height: ghost.h,
+              }}
+            />
+          )}
           {STATIONS.map((name) => (
             <li key={name}>
               <Link
+                data-station={name}
+                onPointerEnter={(event) =>
+                  event.pointerType === "mouse" && setHover(name)
+                }
                 to={pagePaths[name]}
                 aria-current={page === name ? "page" : undefined}
                 className={"station" + (page === name ? " active" : "")}

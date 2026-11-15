@@ -190,7 +190,7 @@
 .wire-source a {
   display: inline-block;
   margin: 0 0 6px;
-  color: var(--accent);
+  color: var(--accent-deep);
   font-size: 13px;
   font-weight: 500;
   text-decoration: none;

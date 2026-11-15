@@ -114,7 +114,7 @@
   height: 32px;
   border-radius: 50%;
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-deep);
   font: 600 13px/1 var(--font-body);
 }
 .shell .contact-identity .dir-name-block {
@@ -134,7 +134,7 @@
   overflow-wrap: anywhere;
 }
 .shell .contact-identity:hover h2 {
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .shell .contact-identity span > span,
 .shell .contact-identity .dir-role {

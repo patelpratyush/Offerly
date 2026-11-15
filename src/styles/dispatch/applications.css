@@ -71,7 +71,7 @@
 .status-move {
   background: var(--accent-soft);
   border-color: transparent;
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .status-over {
   background: var(--danger-soft);
@@ -211,7 +211,7 @@
 }
 .shell .pipeline-strip button.selected > strong {
   background: var(--accent-soft);
-  color: var(--accent);
+  color: var(--accent-deep);
 }
 .shell .pipeline-strip button:focus-visible {
   outline: 2px solid var(--accent);
