@@ -1,37 +1,52 @@
-/* Dispatch tokens: single source of truth. See reference/dispatch-2026-11/DIRECTION.md */
+/*
+ * Offerly tokens (Linear-style, Nov 2026). Single source of truth.
+ * Near-monochrome: neutral grays + one indigo accent. Colour carries meaning
+ * only (accent = action/selection, red = error/danger, green = success,
+ * amber = warning). Legacy Dispatch names are kept as aliases so older
+ * selectors resolve to the new palette.
+ */
 :root {
-  --board: #0e0f0c;
-  --board-2: #1b1c17;
-  --paper: #efebdd;
-  --paper-2: #e4dfcc;
-  --sheet: #f8f5ea;
-  --ink: #14130f;
-  --ink-2: #4a483f;
-  --rule: #14130f;
-  --hair: #c9c3ac;
-  --amber: #ffb000;
-  --amber-ink: #14130f;
-  --red: #c21f17;
-  --green: #1f6b43;
-  --blue: #1d4f91;
+  color-scheme: light;
 
-  --canvas: var(--paper);
-  --surface: var(--sheet);
-  --surface-subtle: var(--paper-2);
-  --line: var(--hair);
-  --muted: var(--ink-2);
-  --nav: var(--board);
-  --focus: var(--blue);
-  --brand-hover: #e09a00;
-  --brand-soft: #fff0c7;
-  --radius: 0;
-  --radius-sm: 2px;
+  /* neutrals */
+  --bg: #fbfbfc;
+  --bg-subtle: #f4f4f6;
+  --bg-muted: #ececf0;
+  --surface-1: #ffffff;
+  --text: #18181b;
+  --text-2: #55555f;
+  --text-3: #6b6b76;
+  --border: #e4e4e9;
+  --border-strong: #d4d4db;
 
-  --font-sign: "Archivo Variable", "Archivo", "Arial Narrow", sans-serif;
-  --font-body: "Archivo Variable", "Archivo", system-ui, sans-serif;
-  --font-mono: "Martian Mono Variable", "Martian Mono", ui-monospace, monospace;
-  --heading-font: var(--font-sign);
-  --mono: var(--font-mono);
+  /* one accent */
+  --accent: #4f46e5;
+  --accent-hover: #4338ca;
+  --accent-soft: #eef0ff;
+  --accent-text: #ffffff;
+
+  /* semantic */
+  --danger: #c81e1e;
+  --danger-soft: #fdf0f0;
+  --success: #16794a;
+  --success-soft: #edf8f2;
+  --warning: #9a5b00;
+  --warning-soft: #fdf6e7;
+
+  --shadow-sm: 0 1px 2px rgb(16 16 24 / 0.05);
+  --shadow-md: 0 4px 12px rgb(16 16 24 / 0.08), 0 1px 3px rgb(16 16 24 / 0.06);
+  --shadow-lg: 0 16px 40px rgb(16 16 24 / 0.14), 0 2px 6px rgb(16 16 24 / 0.06);
+
+  --radius: 6px;
+  --radius-sm: 4px;
+  --radius-lg: 10px;
+
+  --font-body: "Inter Variable", "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-sign: var(--font-body);
+  --font-mono: var(--font-body);
+  --font-code: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --heading-font: var(--font-body);
+  --mono: var(--font-body);
 
   --s1: 4px;
   --s2: 8px;
@@ -41,16 +56,42 @@
   --s6: 32px;
   --s7: 48px;
   --s8: 72px;
-  --stamp: 4px 4px 0 var(--ink);
-  --flip: 180ms cubic-bezier(0.2, 0.7, 0.2, 1);
+
+  /* legacy Dispatch aliases (do not use in new code) */
+  --board: var(--bg-subtle);
+  --board-2: var(--bg-muted);
+  --paper: var(--bg);
+  --paper-2: var(--bg-subtle);
+  --sheet: var(--surface-1);
+  --ink: var(--text);
+  --ink-2: var(--text-2);
+  --rule: var(--border);
+  --hair: var(--border);
+  --amber: var(--accent);
+  --amber-ink: var(--accent-text);
+  --red: var(--danger);
+  --green: var(--success);
+  --blue: var(--accent);
+  --stamp: var(--shadow-md);
+  --flip: 0ms;
+
+  /* legacy workspace aliases */
+  --canvas: var(--bg);
+  --surface: var(--surface-1);
+  --surface-subtle: var(--bg-subtle);
+  --line: var(--border);
+  --muted: var(--text-2);
+  --nav: var(--bg-subtle);
+  --focus: var(--accent);
+  --brand-hover: var(--accent-hover);
+  --brand-soft: var(--accent-soft);
 }
+
+/* Dark mode: deferred until legacy hard-coded colours in style.css/workspace.css are tokenised. */
+
 html {
   font-family: var(--font-body);
-  background: var(--paper);
-  color: var(--ink);
-}
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --flip: 0ms;
-  }
+  font-feature-settings: "cv11", "ss01";
+  background: var(--bg);
+  color: var(--text);
 }

@@ -95,9 +95,6 @@
   transform: scale(0.97);
 }
 @media (hover: hover) and (pointer: fine) {
-  .shell .primary:hover:not(:disabled) {
-    transform: translate(-1px, -1px);
-  }
   .shell .sidebar a.station:hover .station-node {
     transform: scale(1.25);
   }

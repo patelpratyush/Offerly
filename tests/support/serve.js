@@ -9,8 +9,8 @@ const env = {
   ...process.env,
   NODE_ENV: "development",
   DATABASE_PATH: join(directory, "workspace.sqlite"),
-  PORT: "3002",
-  OFFERLY_API_PORT: "3002",
+  PORT: process.env.E2E_API_PORT || "3002",
+  OFFERLY_API_PORT: process.env.E2E_API_PORT || "3002",
   TRUST_PROXY_LOOPBACK: "false",
 };
 for (const key of ["APP_ORIGIN", "REGISTRATION_TOKEN", "CLAMAV_SOCKET"])
@@ -21,7 +21,7 @@ const children = [
   spawn(process.execPath, ["server/index.js"], { env, stdio: "inherit" }),
   spawn(
     process.execPath,
-    ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", "4173"],
+    ["node_modules/vite/bin/vite.js", "--host", "127.0.0.1", "--port", process.env.E2E_WEB_PORT || "4173"],
     { env, stdio: "inherit" },
   ),
 ];
