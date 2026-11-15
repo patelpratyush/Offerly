@@ -346,7 +346,9 @@ export function Showreel() {
   return (
     <section
       ref={root}
-      className={"sr" + (playing ? "" : " is-held")}
+      // Reduced motion must not pause: the 1ms animations need to run to
+      // their end frame, otherwise the stage freezes on a blank first frame.
+      className={"sr" + (playing || calm ? "" : " is-held")}
       aria-labelledby="showreel-title"
       style={{ ["--scene-ms" as string]: `${SCENE_MS}ms` }}
       onPointerEnter={(event) => event.pointerType === "mouse" && setHeld(true)}

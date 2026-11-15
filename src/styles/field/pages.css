@@ -43,19 +43,19 @@
   vertical-align: baseline;
 }
 
-/* ---------- ledger tables: forest header band ---------- */
+/* ---------- tables: one light header everywhere ---------- */
 .shell .application-table thead th,
 .shell .tt thead th,
 .shell .ir-table thead th,
 .shell .discover-table thead th,
 .shell .prepare-table thead th,
 .shell .today-card thead th {
-  background: var(--panel);
-  color: var(--panel-text-2);
-  border-color: var(--panel-line);
-  font: 500 10.5px/1.2 var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  border-color: var(--border);
+  font: 500 12px/1.2 var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
 }
 .shell
   :is(
@@ -484,5 +484,36 @@
   .shell .contact-directory-row::before,
   .shell .control-index a {
     transition: none;
+  }
+}
+
+/* ---------- labels: sentence case, body face (mono stays for numbers/dates) ---------- */
+.eyebrow,
+.tiny-label,
+.shell .page-heading .eyebrow,
+.shell .sidebar .workspace-label,
+.shell .topbar .strip-crumb,
+.shell .brief-label,
+.shell .ir-stat dt {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.shell .sidebar .workspace-label {
+  font-size: 11.5px;
+}
+
+/* Mobile: stage strip scrolls sideways — fade the right edge so it reads as scrollable. */
+@media (max-width: 640px) {
+  .shell .pipeline-strip {
+    overflow-x: auto;
+    scrollbar-width: none;
+    -webkit-mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+    mask-image: linear-gradient(90deg, #000 calc(100% - 36px), transparent);
+  }
+  .shell .pipeline-strip::-webkit-scrollbar {
+    display: none;
   }
 }

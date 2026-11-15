@@ -1261,3 +1261,20 @@
     min-width: 44px;
   }
 }
+
+/* Next step: pills above, task text below on up to two lines (no hard truncation). */
+@media (min-width: 641px) {
+  .shell .application-table .next-step {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    max-width: 260px;
+  }
+  .shell .application-table .table-next-action {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    white-space: normal;
+    line-height: 1.35;
+  }
+}

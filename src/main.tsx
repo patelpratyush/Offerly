@@ -1750,7 +1750,13 @@ function App() {
                                   </span>
                                 </td>
                                 <td data-label="Applied">
-                                  {a.appliedDate || "Unknown"}
+                                  {a.appliedDate ? (
+                                    <time dateTime={a.appliedDate}>
+                                      {shortDate(a.appliedDate)}
+                                    </time>
+                                  ) : (
+                                    "Unknown"
+                                  )}
                                 </td>
                                 <td className="open-cell">
                                   {moveButton(a)}
