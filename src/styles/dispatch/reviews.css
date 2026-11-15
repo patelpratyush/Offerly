@@ -1,60 +1,100 @@
-/* Dispatch / Reviews = Telegrams. Each proposal is a two-column wire:
-   source evidence (left) and current -> proposed (right), decision at the foot.
-   Tokens: ./tokens.css. Global primitives (buttons, inputs, tags) live in core.css. */
+/* Reviews (Linear-style): an evidence queue. Each proposal is a card with the
+   source evidence beside the current -> proposed diff, and a decision bar with
+   one primary and one secondary action. Tokens: ./tokens.css. */
 
+.shell .recruiting-review {
+  display: grid;
+  gap: var(--s4);
+  min-width: 0;
+}
 .shell .recruiting-review > .section-head {
-  border-bottom: 2px solid var(--rule);
-  padding-bottom: var(--s4);
-  margin-bottom: var(--s4);
-}
-.shell .recruiting-review > .section-head h2 {
-  font-family: var(--font-sign);
-  font-stretch: 70%;
-  font-weight: 800;
-  font-size: 30px;
-  line-height: 1;
-  text-transform: uppercase;
-  letter-spacing: -0.01em;
-  margin: 0 0 var(--s1);
-}
-.shell .recruiting-review > section > h2 {
-  font-family: var(--font-sign);
-  font-stretch: 70%;
-  font-weight: 800;
-  font-size: 22px;
-  text-transform: uppercase;
-  margin: var(--s5) 0 var(--s3);
-}
-
-/* Non-wire panels in this page (evidence form, jobs, locks) */
-.shell .recruiting-review > section.panel {
-  background: var(--sheet);
-  border: 2px solid var(--rule);
-  border-radius: 0;
-  box-shadow: none;
-}
-
-/* ---- the wire ---- */
-.shell .recruiting-review .wire {
-  --wire-accent: var(--amber);
-  background: var(--sheet);
-  border: 2px solid var(--rule);
-  border-left: 2px solid var(--rule);
-  border-radius: 0;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--s3);
+  margin: 0;
   padding: 0;
-  margin: 0 0 var(--s6);
-  overflow: visible;
+  border: 0;
 }
-.shell .recruiting-review .wire[data-status="pending"] {
-  box-shadow: var(--stamp);
+.shell .recruiting-review > .section-head h2,
+.shell .recruiting-review > section > h2 {
+  margin: 0 0 2px;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.011em;
+  text-transform: none;
+  color: var(--text);
 }
-.shell .recruiting-review .wire[data-status="accepted"],
-.shell .recruiting-review .wire[data-status="corrected"] {
-  --wire-accent: var(--green);
+.shell .recruiting-review > .section-head p {
+  margin: 0;
+  font-size: 13px;
 }
-.shell .recruiting-review .wire[data-status="rejected"],
-.shell .recruiting-review .wire[data-status="undone"] {
-  --wire-accent: var(--ink-2);
+/* Informational, not a success state. */
+.shell .recruiting-review > .notice {
+  display: block;
+  margin: 0;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font-weight: 400;
+}
+/* Fields: core.css owns the look; this only beats a legacy cream background. */
+:root .recruiting-review :is(select, textarea):not(:disabled) {
+  background-color: var(--surface-1);
+}
+
+/* Supporting panels: evidence form, processing jobs, locks */
+.shell .recruiting-review > section.panel {
+  display: grid;
+  gap: var(--s3);
+  margin: 0;
+  padding: var(--s5);
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+.shell .recruiting-review > section.panel > h2 {
+  margin: 0;
+}
+.shell .recruiting-review > section.panel > p {
+  margin: 0;
+  font-size: 13px;
+}
+.shell .recruiting-review > section.panel .detail-item {
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 13px;
+}
+.shell .recruiting-review > section.panel .detail-item + .detail-item {
+  margin-top: var(--s2);
+}
+
+/* ---- the queue ---- */
+.shell .recruiting-review .wire-list {
+  display: grid;
+  gap: var(--s3);
+}
+.shell .recruiting-review .wire-list > h2 {
+  margin: var(--s2) 0 0;
+}
+.shell .recruiting-review .wire-list > p {
+  margin: 0;
+  font-size: 13px;
+}
+.shell .recruiting-review .wire {
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
 }
 
 .wire-head {
@@ -62,44 +102,42 @@
   align-items: center;
   gap: var(--s3);
   flex-wrap: wrap;
-  padding: var(--s2) var(--s4);
-  background: var(--board);
-  color: var(--paper);
-  border-bottom: 2px solid var(--rule);
-}
-.wire-code {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--amber-ink);
-  background: var(--amber);
-  padding: 2px 8px;
+  padding: 12px var(--s4);
+  border-bottom: 1px solid var(--border);
 }
 .shell .wire-head h3 {
   flex: 1 1 12rem;
   min-width: 0;
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 13px;
+  font-family: var(--font-body);
+  font-size: 14px;
   font-weight: 500;
-  color: var(--paper);
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 .shell .wire-head .wire-status {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--paper);
-  background: transparent;
-  border: 1px solid var(--paper);
-  border-radius: 0;
-  padding: 2px 8px;
+  gap: 6px;
+  text-transform: capitalize;
+}
+.shell .wire-head .wire-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-3);
 }
 .wire[data-status="pending"] .wire-status::before {
-  content: "HOLD · ";
-  color: var(--amber);
+  background: var(--accent);
+}
+.shell .wire[data-status="accepted"] .wire-status,
+.shell .wire[data-status="corrected"] .wire-status {
+  background: var(--success-soft);
+  border-color: transparent;
+  color: var(--success);
+}
+.wire[data-status="accepted"] .wire-status::before,
+.wire[data-status="corrected"] .wire-status::before {
+  background: var(--success);
 }
 
 .wire-body {
@@ -107,177 +145,196 @@
   grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
 }
 .wire-source {
-  padding: var(--s4);
-  background: var(--paper-2);
-  border-right: 2px dashed var(--rule);
   min-width: 0;
+  padding: var(--s4);
+  background: var(--bg);
+  border-right: 1px solid var(--border);
 }
 .wire-change {
-  padding: var(--s4);
   min-width: 0;
+  padding: var(--s4);
 }
 .shell .wire-label {
   margin: 0 0 var(--s2);
-  font-family: var(--font-mono);
-  font-size: 11px;
+  font-family: var(--font-body);
+  font-size: 12px;
   font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-2);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-2);
 }
 .shell .recruiting-review .wire blockquote {
   margin: 0 0 var(--s3);
-  padding: var(--s3) var(--s3) var(--s3) var(--s4);
-  background: var(--sheet);
-  border: 0;
-  border-left: 4px solid var(--rule);
-  border-top: 1px dashed var(--ink-2);
-  border-bottom: 1px dashed var(--ink-2);
-  color: var(--ink);
-  font-family: var(--font-mono);
+  padding: 10px 12px;
+  background: var(--surface-1);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--border-strong);
+  border-radius: var(--radius);
+  color: var(--text);
+  font-family: var(--font-body);
   font-size: 13px;
-  line-height: 1.65;
+  line-height: 1.6;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-  position: relative;
-}
-.shell .recruiting-review .wire blockquote::before {
-  content: "QUOTED";
-  display: block;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: var(--ink-2);
-  margin-bottom: var(--s1);
 }
 .shell .wire .wire-meta,
 .shell .recruiting-review .wire .wire-meta {
-  margin: 0 0 var(--s2);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  line-height: 1.6;
-  color: var(--ink-2);
+  margin: 0 0 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-2);
   overflow-wrap: anywhere;
   max-width: none;
 }
+.wire-source a {
+  display: inline-block;
+  margin: 0 0 6px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+.wire-source a:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 .wire-pad {
   padding: 0 var(--s4);
+}
+.shell .recruiting-review .wire > .wire-pad {
+  margin: var(--s3) 0;
 }
 
 /* ---- current -> proposed ---- */
 .shell .wire .review-comparison {
   display: block;
-  background: none;
-  border: 0;
-  border-radius: 0;
   margin: 0 0 var(--s3);
-  overflow: visible;
+  overflow: hidden;
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
 .wire-cols,
 .wire-row {
   display: grid;
-  grid-template-columns: 6.5rem minmax(0, 1fr) 1.5rem minmax(0, 1.2fr);
+  grid-template-columns: 7rem minmax(0, 1fr) 1.25rem minmax(0, 1.2fr);
   gap: var(--s2);
-  align-items: baseline;
+  align-items: center;
 }
 .shell .wire .review-comparison > .wire-cols {
-  grid-template-columns: minmax(0, 1fr) 1.5rem minmax(0, 1.2fr);
-  margin-left: calc(6.5rem + var(--s2));
-  padding: 0 0 var(--s1);
-  background: none;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-2);
+  grid-template-columns: minmax(0, 1fr) 1.25rem minmax(0, 1.2fr);
+  padding: 6px 10px 6px calc(10px + 7rem + var(--s2));
+  margin: 0;
+  background: var(--bg-subtle);
+  border-bottom: 1px solid var(--border);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-2);
 }
 .shell .wire .review-comparison > .wire-row {
-  padding: var(--s2) 0;
+  padding: 8px 10px;
   background: none;
-  border-top: 1px solid var(--hair);
+}
+.shell .wire .review-comparison > .wire-row + .wire-row {
+  border-top: 1px solid var(--border);
 }
 .shell .wire .review-comparison dt {
   margin: 0;
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-2);
 }
 .shell .wire .review-comparison dd {
   margin: 0;
-  font-size: 15px;
+  font-size: 13px;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
 .wire-arrow {
-  font-family: var(--font-mono);
   text-align: center;
-  color: var(--ink-2);
+  color: var(--text-3);
+}
+.wire-current del,
+.wire-proposed ins {
+  display: inline-block;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm);
 }
 .wire-current del {
-  color: var(--ink-2);
+  background: var(--danger-soft);
+  color: var(--danger);
   text-decoration: line-through;
-  text-decoration-thickness: 2px;
-  text-decoration-color: var(--red);
+  text-decoration-thickness: 1px;
 }
 .wire-proposed ins {
-  text-decoration: underline;
-  text-decoration-thickness: 3px;
-  text-underline-offset: 3px;
-  text-decoration-color: var(--green);
-  font-weight: 700;
-  background: none;
+  background: var(--success-soft);
+  color: var(--success);
+  font-weight: 500;
+  text-decoration: none;
 }
 .wire-lock {
   display: inline-flex;
   align-items: center;
   gap: 4px;
   margin-left: var(--s2);
-  padding: 1px 6px;
-  border: 1px solid var(--rule);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  background: var(--paper-2);
-  color: var(--ink);
+  padding: 1px 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font: 500 12px/18px var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
 }
 .wire-row[data-locked="true"] .wire-proposed {
-  color: var(--ink-2);
+  color: var(--text-2);
 }
 
-/* ---- banners: ambiguity, locks, chronology/override errors ---- */
+/* ---- banners: ambiguity, locks, errors ---- */
 .shell .wire .wire-banner {
   display: flex;
   align-items: flex-start;
   gap: var(--s2);
   margin: 0;
-  padding: var(--s2) var(--s4);
+  padding: 10px var(--s4);
   border: 0;
-  border-bottom: 2px solid var(--rule);
-  border-left: 10px solid var(--rule);
+  border-bottom: 1px solid var(--border);
   border-radius: 0;
-  font-size: 13px;
-  line-height: 1.5;
   max-width: none;
-  background: var(--paper-2);
-  color: var(--ink);
+  background: var(--bg-subtle);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.shell .wire .wire-banner strong {
+  font-weight: 600;
 }
 .shell .wire .wire-change .wire-banner {
   margin: 0 0 var(--s3);
-  border: 2px solid var(--rule);
-  border-left-width: 10px;
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--radius);
 }
 .shell .wire .wire-banner[data-kind="ambiguity"] {
-  background: var(--amber);
-  color: var(--amber-ink);
+  background: var(--warning-soft);
+  color: var(--warning);
 }
 .shell .wire .wire-banner[data-kind="error"] {
-  background: var(--sheet);
-  color: var(--red);
-  border-left-color: var(--red);
-  border-top: 2px solid var(--red);
-  font-weight: 600;
+  margin: var(--s3) var(--s4);
+  padding: 8px 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 500;
 }
 .wire-banner svg {
   flex: none;
@@ -288,34 +345,39 @@
 .wire-controls {
   margin-top: var(--s3);
   padding-top: var(--s3);
-  border-top: 1px dashed var(--ink-2);
+  border-top: 1px solid var(--border);
 }
 .wire-contacts,
 .wire-action {
   padding: var(--s3) var(--s4);
-  border-top: 1px dashed var(--ink-2);
+  border-top: 1px solid var(--border);
+  font-size: 13px;
+}
+.wire-contacts p {
+  margin: 0 0 6px;
 }
 .wire-action summary {
   cursor: pointer;
-  font-weight: 600;
+  font-weight: 500;
 }
 .shell .wire .wire-decide {
   display: flex;
-  justify-content: flex-start;
-  margin: 0;
-  max-width: none;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--s3);
-  padding: var(--s3) var(--s4);
-  background: var(--paper-2);
-  border-top: 2px solid var(--rule);
+  justify-content: flex-end;
+  gap: var(--s2);
+  max-width: none;
+  margin: 0;
+  padding: 12px var(--s4);
+  background: var(--bg);
+  border-top: 1px solid var(--border);
   font-size: inherit;
-  color: var(--ink);
+  color: var(--text);
 }
-.wire-decide .wire-label {
-  margin: 0 var(--s2) 0 0;
-  color: var(--ink);
+.shell .wire .wire-decide .wire-label {
+  margin: 0 auto 0 0;
+  color: var(--text-2);
+  font-size: 13px;
 }
 
 @media (max-width: 800px) {
@@ -324,7 +386,12 @@
   }
   .wire-source {
     border-right: 0;
-    border-bottom: 2px dashed var(--rule);
+    border-bottom: 1px solid var(--border);
+  }
+}
+@media (max-width: 720px) {
+  .shell .recruiting-review > section.panel {
+    padding: var(--s4);
   }
 }
 @media (max-width: 520px) {
@@ -333,16 +400,46 @@
   }
   .wire-row {
     grid-template-columns: minmax(0, 1fr);
-    gap: var(--s1);
+    gap: 4px;
   }
   .wire-arrow {
     display: none;
   }
   .wire-proposed::before {
     content: "→ ";
-    font-family: var(--font-mono);
+    color: var(--text-3);
+  }
+  .shell .wire .wire-decide .wire-label {
+    flex: 1 1 100%;
   }
   .wire-decide > button {
     flex: 1 1 100%;
   }
+}
+
+/* Retire legacy decoration from workspace.css. */
+.shell .recruiting-review > section.wire-list {
+  margin: 0;
+  padding: 0;
+  border-top: 0;
+}
+.shell .recruiting-review > .notice {
+  border-left: 1px solid var(--border);
+}
+.shell .recruiting-review .form-fields {
+  align-items: end;
+}
+.shell .recruiting-review .form-fields > .primary {
+  justify-self: start;
+  align-self: end;
+  width: auto;
+  min-height: 34px;
+}
+.shell .recruiting-review .form-fields > .notice,
+.shell .recruiting-review .form-fields > .form-error {
+  align-self: center;
+}
+.shell .recruiting-review .wire-controls > .checkbox-label {
+  max-width: 60ch;
+  line-height: 1.45;
 }

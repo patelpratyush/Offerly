@@ -113,7 +113,8 @@ export function CompaniesPage() {
                 )}
                 <li>{c.openJobs} open in catalog</li>
                 <li>
-                  {c.sources.length} {c.sources.length === 1 ? "board" : "boards"}
+                  {c.sources.length}{" "}
+                  {c.sources.length === 1 ? "board" : "boards"}
                 </li>
               </ul>
               {c.size.estimate && (

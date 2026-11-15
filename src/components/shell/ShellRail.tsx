@@ -31,27 +31,10 @@ export function ShellRail(props: RailProps) {
   return (
     <aside className="sidebar" inert={props.inert}>
       <Link className="brand" to="/today">
-        <svg
-          className="brand-mark"
-          viewBox="0 0 28 28"
-          aria-hidden="true"
-          focusable="false"
-        >
-          <rect x="0" y="0" width="28" height="28" fill="#14130f" />
-          <path d="M9 6v16" stroke="#ffb000" strokeWidth="2" />
-          <rect x="6" y="4" width="6" height="6" fill="#ffb000" />
-          <rect
-            x="6"
-            y="18"
-            width="6"
-            height="6"
-            fill="#14130f"
-            stroke="#ffb000"
-            strokeWidth="2"
-          />
-          <path d="M15 7h8M15 21h8" stroke="#efebdd" strokeWidth="2" />
-        </svg>
-        offerly<span className="brand-dot">.</span>
+        <span className="brand-mark" aria-hidden="true">
+          O
+        </span>
+        Offerly
       </Link>
       <button
         className="mobile-menu secondary"
@@ -70,7 +53,7 @@ export function ShellRail(props: RailProps) {
         <span>Jump to…</span>
         <kbd aria-hidden="true">{isMac() ? "⌘K" : "Ctrl K"}</kbd>
       </button>
-      <div className="workspace-label">Line · Personal workspace</div>
+      <div className="workspace-label">Workspace</div>
       <nav
         ref={navRef}
         id="workspace-navigation"
@@ -144,7 +127,7 @@ function clockParts(date: Date, timeZone: string) {
   };
 }
 
-/** Top strip: page code plus the user's local date and time, in mono. */
+/** Top strip: breadcrumb for the page plus the user's local date and time. */
 export function ShellTopbar({
   page,
   timezone,
@@ -161,16 +144,19 @@ export function ShellTopbar({
   return (
     <header className="topbar">
       <span className="strip-page">
-        <span className="code-tag ink">
-          <span className="sr-only">Page code </span>
-          <Flap value={`${stationNumber(page)} ${PAGE_CODES[page] || "---"}`} />
+        <span className="sr-only">
+          Page code {stationNumber(page)} {PAGE_CODES[page] || "---"}.{" "}
+        </span>
+        <span className="strip-crumb">Workspace</span>
+        <span className="strip-sep" aria-hidden="true">
+          /
         </span>
         <b>{page}</b>
       </span>
       <span className="strip-clock">
         <time dateTime={clock.iso}>
-          <span className="strip-day">{clock.day} </span>
-          <Flap value={clock.time} />{" "}
+          <span className="strip-day">{clock.day} · </span>
+          <span className="strip-time">{clock.time}</span>{" "}
           <span className="strip-zone">{clock.zone}</span>
         </time>
         <span className="private-tag">

@@ -55,8 +55,12 @@ export function PrepareHub(props: Props) {
     reload();
   }, [reload]);
   const move = (event: React.KeyboardEvent, index: number) => {
-    const delta =
-      event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+    // The rail is vertical on wide screens and horizontal on narrow ones.
+    const delta = ["ArrowRight", "ArrowDown"].includes(event.key)
+      ? 1
+      : ["ArrowLeft", "ArrowUp"].includes(event.key)
+        ? -1
+        : 0;
     if (!delta) return;
     event.preventDefault();
     const next = tabs[(index + delta + tabs.length) % tabs.length][0];

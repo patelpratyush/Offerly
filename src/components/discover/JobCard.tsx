@@ -23,11 +23,8 @@ const ELIGIBILITY: Record<string, string> = {
   needs_verification: "Needs verification",
   does_not_meet: "Does not meet a stated requirement",
 };
-const ELIG_CODE: Record<string, string> = {
-  meets: "MEETS",
-  needs_verification: "VERIFY",
-  does_not_meet: "NO",
-};
+/* Scores at or above this read as a strong fit and get the accent pill. */
+const STRONG_FIT = 75;
 const PLATFORM: Record<string, string> = {
   greenhouse: "Greenhouse",
   lever: "Lever",
@@ -76,7 +73,7 @@ export function JobCard({
   return (
     <article className="discover-card" aria-labelledby={labelId}>
       <header>
-        <div>
+        <div className="discover-main">
           <h3 id={labelId}>{job.title}</h3>
           <p className="discover-company">
             {job.company.name}
@@ -85,59 +82,63 @@ export function JobCard({
               ? ` · ${job.workArrangement}`
               : ""}
           </p>
+          <ul className="discover-badges" aria-label="Status">
+            {job.applied && (
+              <li className="is-applied">
+                Already applied ({job.applied.stage}) ·{" "}
+                <Link to={`/applications/${job.applied.applicationId}`}>
+                  open application
+                </Link>
+              </li>
+            )}
+            <li className={job.company.size.ambiguous ? "is-warn" : ""}>
+              {job.company.size.label}
+              {job.company.size.entity !== "employer"
+                ? ` · ${job.company.size.entity}`
+                : ""}
+            </li>
+            {job.verification === "could_not_verify" && (
+              <li className="is-warn">Could not verify recently</li>
+            )}
+            {job.status === "not_listed" && (
+              <li className="is-warn">No longer listed by source</li>
+            )}
+            {f.reopenedCount > 0 && <li>Reposted or reopened</li>}
+          </ul>
         </div>
-        {job.fit?.score !== null && job.fit ? (
-          <div
-            className="discover-fit"
-            aria-label={`Fit ${job.fit.score} out of 100. Not an interview probability.`}
-          >
-            <em aria-hidden="true">FIT</em>
-            <strong>{job.fit.score}</strong>
-            <span>fit / 100</span>
-          </div>
-        ) : (
-          <div className="discover-fit is-empty">
-            <em aria-hidden="true">FIT</em>
-            <strong>–</strong>
-            <span>{job.fit ? "not enough evidence" : "no profile"}</span>
-          </div>
-        )}
+        <div className="discover-side">
+          {job.fit?.score !== null && job.fit ? (
+            <div
+              className={
+                "discover-fit" +
+                (job.fit.score >= STRONG_FIT ? " is-strong" : "")
+              }
+              aria-label={`Fit ${job.fit.score} out of 100. Not an interview probability.`}
+            >
+              <strong>{job.fit.score}</strong>
+              <span>fit</span>
+            </div>
+          ) : (
+            <div className="discover-fit is-empty">
+              <span>{job.fit ? "Not enough evidence" : "No profile"}</span>
+            </div>
+          )}
+          <p className={"discover-elig is-" + job.eligibility.status}>
+            <span className="discover-dot" aria-hidden="true" />
+            {ELIGIBILITY[job.eligibility.status]}
+          </p>
+          <p className="discover-basis">
+            <em>
+              {f.postedPrecision === "unknown" ? "First seen" : "Employer date"}
+            </em>{" "}
+            {f.postedPrecision === "unknown"
+              ? `Found ${when(f.firstDiscoveredAt)}`
+              : dateOnly
+                ? when(f.employerPostedAt, true)
+                : when(f.employerPostedAt)}
+          </p>
+        </div>
       </header>
-      <ul className="discover-badges" aria-label="Status">
-        {job.applied && (
-          <li className="is-applied">
-            Already applied ({job.applied.stage}) ·{" "}
-            <Link to={`/applications/${job.applied.applicationId}`}>
-              open application
-            </Link>
-          </li>
-        )}
-        <li className={"is-" + job.eligibility.status}>
-          <em aria-hidden="true">{ELIG_CODE[job.eligibility.status]}</em>
-          {ELIGIBILITY[job.eligibility.status]}
-        </li>
-        <li className={job.company.size.ambiguous ? "is-warn" : ""}>
-          {job.company.size.label}
-          {job.company.size.entity !== "employer"
-            ? ` · ${job.company.size.entity}`
-            : ""}
-        </li>
-        {job.verification === "could_not_verify" && (
-          <li className="is-warn">Could not verify recently</li>
-        )}
-        {job.status === "not_listed" && (
-          <li className="is-warn">No longer listed by source</li>
-        )}
-        {f.reopenedCount > 0 && <li>Reposted or reopened</li>}
-      </ul>
-      <p className="discover-basis">
-        <em>{f.postedPrecision === "unknown" ? "FIRST SEEN" : "EMPLOYER DATE"}</em>{" "}
-        {f.postedPrecision === "unknown"
-          ? `Found ${when(f.firstDiscoveredAt)}`
-          : dateOnly
-            ? when(f.employerPostedAt, true)
-            : when(f.employerPostedAt)}
-      </p>
       <dl className="discover-dates">
         <div>
           <dt>Posted</dt>
@@ -215,89 +216,101 @@ export function JobCard({
           <p>{job.eligibility.note}</p>
         )}
       </details>
-      <p className="discover-sources">
-        Source{job.sources.length === 1 ? "" : "s"}:{" "}
-        {job.sources.map((s) => (
-          <a key={s.url} href={s.url} target="_blank" rel="noopener noreferrer">
-            {PLATFORM[s.platform] || "Employer"} listing
-            <ExternalLink size={12} aria-hidden="true" />
-            <span className="sr-only"> (opens in a new tab)</span>
-          </a>
-        ))}
-      </p>
-      <div className="discover-actions">
-        {job.saved ? (
-          <button
-            className="secondary"
-            disabled={busy}
-            onClick={() => act(`/jobs/${job.id}/save`, "DELETE")}
-          >
-            <BookmarkCheck size={15} aria-hidden="true" /> Saved
-            <span className="sr-only"> — remove {job.title}</span>
-          </button>
-        ) : (
-          <button
-            className="secondary"
-            disabled={busy}
-            onClick={() => act(`/jobs/${job.id}/save`, "PUT")}
-          >
-            <Bookmark size={15} aria-hidden="true" /> Save
-            <span className="sr-only"> {job.title}</span>
-          </button>
-        )}
-        <button
-          className="secondary"
-          disabled={busy}
-          aria-pressed={job.watched}
-          onClick={() =>
-            act(
-              `/companies/${job.company.id}/watch`,
-              job.watched ? "DELETE" : "PUT",
-            )
-          }
-        >
-          {job.watched ? "Watching" : "Watch"} {job.company.name}
-        </button>
-        {job.dismissed ? (
-          <button
-            className="secondary"
-            disabled={busy}
-            onClick={() => act(`/jobs/${job.id}/dismiss`, "DELETE")}
-          >
-            <Undo2 size={15} aria-hidden="true" /> Restore
-          </button>
-        ) : dismissing ? (
-          <span className="discover-dismiss">
-            <label>
-              Why dismiss?
-              <select
-                value={reason}
-                onChange={(e) => setReason(e.target.value)}
-              >
-                {REASONS.map(([v, l]) => (
-                  <option key={v} value={v}>
-                    {l}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button
-              className="primary"
-              disabled={busy}
-              onClick={() => act(`/jobs/${job.id}/dismiss`, "PUT", { reason })}
+      <div className="discover-foot">
+        <p className="discover-sources">
+          Source{job.sources.length === 1 ? "" : "s"}:{" "}
+          {job.sources.map((s) => (
+            <a
+              key={s.url}
+              href={s.url}
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              Dismiss
+              {PLATFORM[s.platform] || "Employer"} listing
+              <ExternalLink size={12} aria-hidden="true" />
+              <span className="sr-only"> (opens in a new tab)</span>
+            </a>
+          ))}
+        </p>
+        <div className="discover-actions">
+          {job.saved ? (
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => act(`/jobs/${job.id}/save`, "DELETE")}
+            >
+              <BookmarkCheck size={15} aria-hidden="true" /> Saved
+              <span className="sr-only"> — remove {job.title}</span>
             </button>
-            <button className="secondary" onClick={() => setDismissing(false)}>
-              Cancel
+          ) : (
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => act(`/jobs/${job.id}/save`, "PUT")}
+            >
+              <Bookmark size={15} aria-hidden="true" /> Save
+              <span className="sr-only"> {job.title}</span>
             </button>
-          </span>
-        ) : (
-          <button className="secondary" onClick={() => setDismissing(true)}>
-            <EyeOff size={15} aria-hidden="true" /> Not for me
-            <span className="sr-only">: {job.title}</span>
+          )}
+          <button
+            className="secondary"
+            disabled={busy}
+            aria-pressed={job.watched}
+            onClick={() =>
+              act(
+                `/companies/${job.company.id}/watch`,
+                job.watched ? "DELETE" : "PUT",
+              )
+            }
+          >
+            {job.watched ? "Watching" : "Watch"} {job.company.name}
           </button>
-        )}
+          {job.dismissed ? (
+            <button
+              className="secondary"
+              disabled={busy}
+              onClick={() => act(`/jobs/${job.id}/dismiss`, "DELETE")}
+            >
+              <Undo2 size={15} aria-hidden="true" /> Restore
+            </button>
+          ) : dismissing ? (
+            <span className="discover-dismiss">
+              <label>
+                Why dismiss?
+                <select
+                  value={reason}
+                  onChange={(e) => setReason(e.target.value)}
+                >
+                  {REASONS.map(([v, l]) => (
+                    <option key={v} value={v}>
+                      {l}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <button
+                className="primary"
+                disabled={busy}
+                onClick={() =>
+                  act(`/jobs/${job.id}/dismiss`, "PUT", { reason })
+                }
+              >
+                Dismiss
+              </button>
+              <button
+                className="secondary"
+                onClick={() => setDismissing(false)}
+              >
+                Cancel
+              </button>
+            </span>
+          ) : (
+            <button className="secondary" onClick={() => setDismissing(true)}>
+              <EyeOff size={15} aria-hidden="true" /> Not for me
+              <span className="sr-only">: {job.title}</span>
+            </button>
+          )}
+        </div>
       </div>
     </article>
   );

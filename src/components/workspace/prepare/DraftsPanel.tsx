@@ -351,8 +351,11 @@ export function DraftsPanel({
             />
           </label>
           {!!open.length && (
-            <div className="prepare-preview wide" aria-label="Open placeholders">
-              <span className="prepare-code">TO FILL</span>
+            <div
+              className="prepare-preview wide"
+              aria-label="Open placeholders"
+            >
+              <span className="prepare-code">To fill</span>
               <pre>
                 {(form.subject + "\n\n" + form.body)
                   .split(/(\[\[[^\]\n]{1,200}\]\])/g)

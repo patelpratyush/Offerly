@@ -21,7 +21,7 @@ type Props = {
 const owners = ["You", "Employer", "Nobody", "Unclear"];
 const activeJob = (job: Item) =>
   ["queued", "running", "retry"].includes(job.status);
-const panelStyle = { padding: 20, marginBottom: 20, minWidth: 0 };
+const panelStyle = { minWidth: 0 };
 function message(error: unknown) {
   return error instanceof Error
     ? error.message
@@ -548,7 +548,6 @@ function ReviewCard({
       aria-label={`Review ${evidence?.sourceId || review.id}`}
     >
       <header className="wire-head">
-        <span className="wire-code">Wire</span>
         <h3>{evidence?.sourceId || "Evidence review"}</h3>
         <span className="badge wire-status">{review.status}</span>
       </header>

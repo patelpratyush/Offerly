@@ -227,7 +227,7 @@ test("rich contacts retain sources, explicit confirmations and multiple applicat
   await page.getByLabel("Search connections").fill("personal.example");
   await expect(page.locator(".contact-directory-row")).toHaveCount(1);
   await expect(page.locator(".contact-directory-row")).toContainText(
-    "2 LINKED APPLICATIONS",
+    "2 linked applications",
   );
   expect(
     await page.evaluate(

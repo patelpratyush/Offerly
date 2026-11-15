@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ArrowUpRight, BellRing } from "lucide-react";
+import { ArrowUpRight } from "lucide-react";
 import "../../styles/insights-reminders.css";
 
 type Delivery = {
@@ -28,6 +28,10 @@ const stateText: Record<string, string> = {
   failed: "Failed",
 };
 const order = ["pending", "failed", "suppressed", "sent"];
+const stateTone: Record<string, string> = {
+  failed: " red",
+  sent: " green",
+};
 
 // Shows the recorded date or time exactly as stored; nothing is inferred.
 export function whenLabel(d: Pick<Delivery, "when" | "precision">) {
@@ -73,29 +77,30 @@ export function TodayReminders({ applications, request, onOpen }: Props) {
     .slice(0, 6);
   return (
     <section
-      className="panel today-reminders"
+      className="panel today-reminders today-section"
       aria-labelledby="today-reminders-heading"
     >
       <div className="section-head">
         <h2 id="today-reminders-heading">
-          <BellRing size={17} aria-hidden="true" /> Reminder deliveries
+          Reminder deliveries <span className="count">{deliveries.length}</span>
         </h2>
-        <span className="count">{deliveries.length}</span>
       </div>
       {deliveries.length ? (
         <>
-          <p className="muted" role="status">
+          <p className="today-section-note" role="status">
             {summary}. Dates are the ones recorded on the interview, assessment
             or application. No email is sent.
           </p>
-          <ul className="today-reminder-list">
+          <ul className="today-reminder-list today-card">
             {shown.map((d) => {
               const application = applications.find(
                 (a) => a.id === d.applicationId,
               );
               return (
                 <li key={d.id} data-state={d.state}>
-                  <span className={`badge delivery-${d.state}`}>
+                  <span
+                    className={`code-tag delivery-${d.state}${stateTone[d.state] || ""}`}
+                  >
                     {stateText[d.state] || d.state}
                   </span>
                   <span>
@@ -135,14 +140,14 @@ export function TodayReminders({ applications, request, onOpen }: Props) {
             })}
           </ul>
           {deliveries.length > shown.length && (
-            <p className="muted">
+            <p className="today-section-note">
               {deliveries.length - shown.length} more in Settings, Reminder
               rules.
             </p>
           )}
         </>
       ) : (
-        <p className="muted">
+        <p className="today-card today-card-empty">
           No reminders planned. Scheduled interviews, open assessments and
           follow-ups create them from your reminder rules.
         </p>

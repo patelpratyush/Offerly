@@ -26,7 +26,7 @@ export function ContactDirectory({
               onClick={() => onEdit(contact)}
             >
               <span className="avatar" aria-hidden="true">
-                {contact.name.charAt(0)}
+                {contact.name.charAt(0).toUpperCase()}
               </span>
               <span className="dir-name-block">
                 <h2>{contact.name}</h2>
@@ -70,8 +70,8 @@ export function ContactDirectory({
             </div>
             <div className="contact-linked">
               <span className="tiny-label">
-                {linked.length} LINKED{" "}
-                {linked.length === 1 ? "APPLICATION" : "APPLICATIONS"}
+                {linked.length} linked{" "}
+                {linked.length === 1 ? "application" : "applications"}
               </span>
               {linked.length ? (
                 linked.map((a: Item) => (

@@ -115,6 +115,18 @@ const sessionChannel =
   typeof BroadcastChannel === "undefined"
     ? null
     : new BroadcastChannel("offerly-session");
+// "2026-11-05" -> "Nov 5" (adds the year when it differs from this year).
+function shortDate(iso: string) {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  const date = new Date(Date.UTC(y, m - 1, d));
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: y === new Date().getFullYear() ? undefined : "numeric",
+    timeZone: "UTC",
+  }).format(date);
+}
 function resetSession(notifyOtherTabs = true) {
   const requested = safeReturnTo(
     window.location.pathname + window.location.search + window.location.hash,
@@ -1020,28 +1032,16 @@ function App() {
             )}
             <div className="page-heading">
               <div>
-                <div className="eyebrow">
-                  {page === "Today"
-                    ? new Intl.DateTimeFormat("en-US", {
-                        weekday: "long",
-                        month: "long",
-                        day: "numeric",
-                        timeZone: w.user.timezone,
-                      }).format(new Date())
-                    : (
-                        {
-                          Applications: "02 / THE PIPELINE",
-                          Discover: "03 / THE FEED",
-                          Companies: "04 / THE COVERAGE",
-                          Reviews: "03 / THE EVIDENCE DESK",
-                          Connections: "04 / YOUR PEOPLE",
-                          Documents: "05 / THE ARCHIVE",
-                          Prepare: "05B / GET READY",
-                          Insights: "06 / THE BIG PICTURE",
-                          Settings: "07 / MAKE IT YOURS",
-                        } as Record<string, string>
-                      )[page]}
-                </div>
+                {page === "Today" && (
+                  <div className="eyebrow">
+                    {new Intl.DateTimeFormat("en-US", {
+                      weekday: "long",
+                      month: "long",
+                      day: "numeric",
+                      timeZone: w.user.timezone,
+                    }).format(new Date())}
+                  </div>
+                )}
                 <h1 tabIndex={-1}>
                   {page === "Today"
                     ? `Make your next move, ${w.user.name.split(" ")[0]}.`
@@ -1114,7 +1114,7 @@ function App() {
                   request={api}
                 >
                   <div className="today-grid" id="today-actions">
-                    <section className="panel">
+                    <section className="panel today-section">
                       <div className="section-head">
                         <h2>
                           Your next steps{" "}
@@ -1128,45 +1128,46 @@ function App() {
                         </button>
                       </div>
                       {tasks.length ? (
-                        tasks.map((t) => (
-                          <div className="task" key={t.id}>
-                            <button
-                              aria-label={"Complete " + t.title}
-                              className="check-button"
-                              disabled={busy}
-                              onClick={() =>
-                                run(() =>
-                                  saveRecord("task", { ...t, done: true }),
-                                )
-                              }
-                            >
-                              <Check size={14} />
-                            </button>
-                            <div>
+                        <div className="today-card">
+                          {tasks.map((t) => (
+                            <div className="task" key={t.id}>
                               <button
-                                className="task-title"
+                                aria-label={"Complete " + t.title}
+                                className="check-button"
+                                disabled={busy}
                                 onClick={() =>
-                                  setModal({ kind: "task", data: t })
+                                  run(() =>
+                                    saveRecord("task", { ...t, done: true }),
+                                  )
                                 }
                               >
-                                {t.title}
-                                <span className="sr-only"> · Edit task</span>
+                                <Check size={14} />
                               </button>
-                              <small>{appName(t.applicationId)}</small>
+                              <div>
+                                <button
+                                  className="task-title"
+                                  onClick={() =>
+                                    setModal({ kind: "task", data: t })
+                                  }
+                                >
+                                  {t.title}
+                                  <span className="sr-only"> · Edit task</span>
+                                </button>
+                                <small>{appName(t.applicationId)}</small>
+                              </div>
+                              <span
+                                className={
+                                  t.due && t.due < today ? "overdue" : "muted"
+                                }
+                              >
+                                {t.due
+                                  ? (t.due < today ? "Overdue · " : "Due ") +
+                                    shortDate(t.due)
+                                  : "No deadline"}
+                              </span>
                             </div>
-                            <span
-                              className={
-                                t.due && t.due < today ? "overdue" : "muted"
-                              }
-                            >
-                              {t.due
-                                ? t.due < today
-                                  ? "Overdue · " + t.due
-                                  : t.due
-                                : "No deadline"}
-                            </span>
-                          </div>
-                        ))
+                          ))}
+                        </div>
                       ) : (
                         <Empty
                           title="No open tasks."
@@ -1189,46 +1190,58 @@ function App() {
                     await refresh();
                   }}
                 />
-                <div className="section-head space-top today-recent">
-                  <h2>Recent applications</h2>
-                  <button
-                    className="text-button"
-                    onClick={() => setPage("Applications")}
-                  >
-                    View all applications <ArrowRight size={16} />
-                  </button>
-                </div>
-                {active.length ? (
-                  <ul className="tt-recent" aria-label="Recent applications">
-                    {active
-                      .slice(-3)
-                      .reverse()
-                      .map((a) => (
-                        <li key={a.id}>
-                          <button onClick={() => showDetail(a)}>
-                            <GateTag stage={a.stage} />
-                            <span className="tt-service">
-                              <strong>{a.title}</strong>
-                              <small>
-                                {a.company} · {a.location || "Location unknown"}
-                              </small>
-                            </span>
-                            <StatusTag status={ownerStatus(a)} />
-                            <ArrowUpRight size={15} aria-hidden="true" />
-                          </button>
-                        </li>
-                      ))}
-                  </ul>
-                ) : (
-                  <section className="panel">
+                <section
+                  className="today-section today-recent-section"
+                  aria-labelledby="today-recent-heading"
+                >
+                  <div className="section-head today-recent">
+                    <h2 id="today-recent-heading">
+                      Recent applications{" "}
+                      <span className="count">
+                        {Math.min(active.length, 3)}
+                      </span>
+                    </h2>
+                    <button
+                      className="text-button"
+                      onClick={() => setPage("Applications")}
+                    >
+                      View all applications <ArrowRight size={16} />
+                    </button>
+                  </div>
+                  {active.length ? (
+                    <ul
+                      className="tt-recent today-card"
+                      aria-label="Recent applications"
+                    >
+                      {active
+                        .slice(-3)
+                        .reverse()
+                        .map((a) => (
+                          <li key={a.id}>
+                            <button onClick={() => showDetail(a)}>
+                              <GateTag stage={a.stage} />
+                              <span className="tt-service">
+                                <strong>{a.title}</strong>
+                                <small>
+                                  {a.company} ·{" "}
+                                  {a.location || "Location unknown"}
+                                </small>
+                              </span>
+                              <StatusTag status={ownerStatus(a)} />
+                              <ArrowUpRight size={15} aria-hidden="true" />
+                            </button>
+                          </li>
+                        ))}
+                    </ul>
+                  ) : (
                     <Empty
                       title="Add your first application."
                       text="Add your first application or bring over your spreadsheet."
                       action="Add an application"
                       onClick={() => newRecord("application")}
                     />
-                  </section>
-                )}
+                  )}
+                </section>
               </>
             )}
             {page === "Reviews" && (
@@ -1600,9 +1613,13 @@ function App() {
                           return (
                             <section className="board-column" key={s}>
                               <h3>
-                                <b className="platform-code" aria-hidden="true">
-                                  {gateCode(s)}
-                                </b>
+                                <b
+                                  className={
+                                    "platform-code gate-" +
+                                    gateCode(s).toLowerCase()
+                                  }
+                                  aria-hidden="true"
+                                />
                                 <span className="platform-name">{s}</span>{" "}
                                 <span className="platform-count">
                                   {column.length}
@@ -1672,10 +1689,12 @@ function App() {
                           </caption>
                           <thead>
                             <tr>
-                              <th scope="col">Select</th>
-                              <th scope="col">Service</th>
-                              <th scope="col">Gate</th>
-                              <th scope="col">Status / next move</th>
+                              <th scope="col" className="select-col">
+                                <span className="sr-only">Select</span>
+                              </th>
+                              <th scope="col">Role</th>
+                              <th scope="col">Stage</th>
+                              <th scope="col">Next step</th>
                               <th scope="col">Location</th>
                               <th scope="col">Priority</th>
                               <th scope="col">Applied</th>
@@ -1704,32 +1723,35 @@ function App() {
                                     <small>{a.company}</small>
                                   </button>
                                 </td>
-                                <td data-label="Gate">
+                                <td data-label="Stage">
                                   <GateTag stage={a.stage} />
                                 </td>
-                                <td data-label="Status / next move">
-                                  <span className="response-owner">
-                                    <StatusTag status={ownerStatus(a)} />
-                                    {appHasOverdue(a, w, today) && (
-                                      <OverdueTag />
-                                    )}
-                                  </span>
-                                  <small className="table-next-action">
-                                    {nextAction(a.id)}
-                                  </small>
+                                <td data-label="Next step">
+                                  <div className="next-step">
+                                    <span className="response-owner">
+                                      <StatusTag status={ownerStatus(a)} />
+                                      {appHasOverdue(a, w, today) && (
+                                        <OverdueTag />
+                                      )}
+                                    </span>
+                                    <small className="table-next-action">
+                                      {nextAction(a.id)}
+                                    </small>
+                                  </div>
                                 </td>
                                 <td data-label="Location">
                                   {a.location || "Unknown"}
                                 </td>
                                 <td data-label="Priority">
-                                  <span
-                                    className={
-                                      "priority " + a.priority.toLowerCase()
-                                    }
-                                  >
-                                    ●
-                                  </span>{" "}
-                                  {a.priority}
+                                  <span className="priority-cell">
+                                    <span
+                                      aria-hidden="true"
+                                      className={
+                                        "priority " + a.priority.toLowerCase()
+                                      }
+                                    />
+                                    {a.priority}
+                                  </span>
                                 </td>
                                 <td data-label="Applied">
                                   {a.appliedDate || "Unknown"}
@@ -1927,7 +1949,7 @@ function App() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="drawer-top">
-                <span className="eyebrow">APPLICATION DETAILS</span>
+                <span className="eyebrow">Application</span>
                 <button
                   aria-label="Close details"
                   autoFocus
@@ -1946,7 +1968,7 @@ function App() {
                 </div>
                 <dl className="ticket-stub">
                   <div>
-                    <dt>Gate</dt>
+                    <dt>Stage</dt>
                     <dd>
                       <GateTag stage={detail.stage} />
                     </dd>
@@ -1965,12 +1987,12 @@ function App() {
                 </dl>
               </header>
               <div className="ticket-move">
-                <span className="tiny-label">NEXT MOVE</span>
+                <span className="tiny-label">Next step</span>
                 {moveButton(detail, "next-move-btn primary-move")}
               </div>
               <div className="detail-actions">
                 <button
-                  className="primary"
+                  className="secondary"
                   onClick={() =>
                     setModal({ kind: "application", data: detail })
                   }
@@ -2025,7 +2047,7 @@ function App() {
                   <div className="detail-summary">
                     <div>
                       <small>Stage</small>
-                      <span className="badge">{detail.stage}</span>
+                      <GateTag stage={detail.stage} />
                     </div>
                     <div>
                       <small>Next response</small>
@@ -2358,45 +2380,26 @@ function Auth({
   }, []);
   return (
     <div className="auth">
-      <section className="auth-story">
-        <Link className="brand" to="/" aria-label="Offerly home">
-          <span className="auth-mark" aria-hidden="true">
-            O
-          </span>
-          offerly
-        </Link>
-        <div>
-          <span className="tiny-label">KEEP YOUR SEARCH IN ORDER.</span>
-          <h2>
-            Your search,
-            <br />
-            on the board.
-          </h2>
-          <p>
-            Track applications, prepare for interviews, and keep your next
-            action in view.
-          </p>
-        </div>
-        <span>Applications · Tasks · Interviews · Documents</span>
-      </section>
-      <section className="auth-form">
-        <span className="auth-stub" aria-hidden="true">
-          {recovery ? "RECOVERY" : register ? "NEW SERVICE" : "BOARDING PASS"}
+      <Link className="auth-brand" to="/" aria-label="Offerly home">
+        <span className="auth-mark" aria-hidden="true">
+          O
         </span>
-        <span className="eyebrow">YOUR PERSONAL JOB SEARCH WORKSPACE</span>
+        Offerly
+      </Link>
+      <section className="auth-form">
         <h1 tabIndex={-1}>
           {recovery
-            ? "Recover your workspace."
+            ? "Reset your password"
             : register
-              ? "Make room for what’s next."
+              ? "Create your workspace"
               : "Welcome back."}
         </h1>
         <p>
           {recovery
             ? "Use a saved recovery code to choose a new password. This signs out all sessions and invalidates every recovery code."
             : register
-              ? "Create your private workspace to get started."
-              : "Pick up where you left off."}
+              ? "A private workspace for your job search."
+              : "Sign in to pick up where you left off."}
         </p>
         <form
           key={recovery ? "recover" : "credentials"}
@@ -2434,7 +2437,7 @@ function Auth({
                 name="name"
                 autoComplete="name"
                 required
-                placeholder="Pratyush Patel"
+                placeholder="Alex Morgan"
               />
             </label>
           )}
@@ -2473,7 +2476,9 @@ function Auth({
                 register || recovery ? "new-password" : "current-password"
               }
               placeholder={
-                register ? "At least 15 characters" : "Your password"
+                register || recovery
+                  ? "At least 15 characters"
+                  : "Your password"
               }
             />
           </label>

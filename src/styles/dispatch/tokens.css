@@ -91,7 +91,6 @@
 
 html {
   font-family: var(--font-body);
-  font-feature-settings: "cv11", "ss01";
   background: var(--bg);
   color: var(--text);
 }

@@ -1,9 +1,10 @@
-/* Dispatch / Settings = Control room. Sticky section index on the left, ruled
-   panels on the right, destructive zone fenced by a hazard stripe. */
+/* Settings: quiet section index on the left, one white card per section on
+   the right. Card = 15px/600 title, muted description, form rows with labels
+   on the left (desktop). Danger zone uses --danger text and --danger-soft only. */
 
 .shell .control-room {
   display: grid;
-  grid-template-columns: 14rem minmax(0, 1fr);
+  grid-template-columns: 12rem minmax(0, 46rem);
   column-gap: var(--s6);
   align-items: start;
 }
@@ -11,69 +12,60 @@
   grid-column: 1;
   grid-row: 1 / span 2;
   position: sticky;
-  top: var(--s4);
+  top: calc(var(--strip-h) + var(--s4));
   align-self: start;
-  border: 2px solid var(--rule);
-  background: var(--sheet);
+  border: 0;
+  background: transparent;
 }
 .control-index-title {
   display: block;
-  padding: var(--s2) var(--s3);
-  background: var(--board);
-  color: var(--amber);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
+  padding: 0 10px 6px;
+  background: transparent;
+  color: var(--text-3);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
 }
 .control-index ol {
+  display: grid;
+  gap: 1px;
   list-style: none;
   margin: 0;
   padding: 0;
-  counter-reset: sec;
 }
 .control-index li {
-  counter-increment: sec;
-  border-top: 1px solid var(--hair);
+  border: 0;
 }
-.control-index li:first-child {
-  border-top: 0;
-}
-.control-index a {
+.shell .control-index a {
   display: flex;
-  gap: var(--s2);
-  align-items: baseline;
-  min-height: 40px;
-  padding: var(--s2) var(--s3);
-  color: var(--ink);
+  align-items: center;
+  min-height: 30px;
+  padding: 4px 10px;
+  border-radius: var(--radius);
+  color: var(--text-2);
   text-decoration: none;
-  font-family: var(--font-sign);
-  font-stretch: 80%;
-  font-weight: 700;
-  font-size: 14px;
-  text-transform: uppercase;
-  letter-spacing: 0.01em;
-  transition: background-color 120ms linear;
+  font-family: var(--font-body);
+  font-stretch: normal;
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0;
+  text-transform: none;
+  transition:
+    background-color 120ms ease,
+    color 120ms ease;
 }
-.control-index a::before {
-  content: counter(sec, decimal-leading-zero);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 400;
-  color: var(--ink-2);
+.shell .control-index a:hover {
+  background: var(--bg-muted);
+  color: var(--text);
 }
-.control-index a:hover {
-  background: var(--amber);
-  color: var(--amber-ink);
+.shell .control-index li:last-child a {
+  color: var(--danger);
 }
-.control-index a:hover::before {
-  color: var(--amber-ink);
-}
-.control-index li:last-child a {
-  color: var(--red);
-}
-.control-index li:last-child a:hover {
-  color: var(--amber-ink);
+.shell .control-index li:last-child a:hover {
+  background: var(--danger-soft);
+  color: var(--danger);
 }
 
 .shell .control-room > .settings-panel,
@@ -85,140 +77,256 @@
   display: block;
 }
 
-/* ruled panels */
-.shell .control-room .settings-panel {
+/* section cards */
+.shell .control-room .settings-panel,
+.shell .control-room .settings-panel.ir-section {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s3);
   max-width: none;
-  margin: 0 0 var(--s5);
-  padding: var(--s4) var(--s5) var(--s5);
-  border: 2px solid var(--rule);
-  border-radius: 0;
-  background: var(--sheet);
+  margin: 0 0 var(--s4);
+  padding: 20px 24px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
 }
 .shell .control-room .settings-panel.space-top {
   margin-top: 0;
 }
-.shell .control-room .settings-panel > h2,
+.shell .control-room .settings-panel > :is(button, a) {
+  align-self: flex-start;
+}
+.shell .control-room .settings-panel :is(p, h2, h3, ul, form) {
+  margin: 0;
+}
+.shell .control-room .settings-panel h2,
 .shell .control-room .settings-panel > h2.space-top {
-  margin: 0 calc(-1 * var(--s5)) var(--s3);
-  padding: var(--s2) var(--s5);
-  background: var(--paper-2);
-  border-top: 0;
-  border-bottom: 2px solid var(--rule);
-  font-family: var(--font-sign);
-  font-stretch: 70%;
-  font-weight: 800;
-  font-size: 22px;
-  line-height: 1.1;
-  text-transform: uppercase;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-family: var(--font-body);
+  font-stretch: normal;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text);
+}
+.shell .control-room .settings-panel > h2 + p {
+  margin-top: calc(-1 * var(--s2));
+}
+.shell .control-room .settings-panel > h2.space-top,
+.shell .control-room .settings-panel > section.space-top {
+  margin-top: var(--s3);
+  padding-top: var(--s5);
+  border-top: 1px solid var(--border);
+}
+.shell .control-room .settings-panel > section.space-top {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+}
+.shell .control-room .settings-panel > section.space-top > h2 + p {
+  margin-top: calc(-1 * var(--s2));
+}
+.shell .control-room .settings-panel > section.space-top > :is(button, a) {
+  align-self: flex-start;
+}
+.shell .control-room .settings-panel h3 {
+  margin: var(--s2) 0 0;
+  font-size: 13px;
+  font-weight: 600;
   letter-spacing: 0;
-  color: var(--ink);
-}
-.shell .control-room .settings-panel > h2.space-top {
-  margin-top: var(--s5);
-  border-top: 2px solid var(--rule);
-}
-.shell .control-room .settings-panel > p,
-.shell .control-room .settings-panel form {
-  max-width: 46rem;
+  text-transform: none;
+  color: var(--text);
 }
 .shell .control-room .settings-panel p,
-.shell .control-room .settings-panel label,
 .shell .control-room .settings-panel .muted {
-  color: var(--ink);
+  max-width: 62ch;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.55;
 }
-.shell .control-room .settings-panel .muted {
-  color: var(--ink-2);
+.shell .control-room .settings-panel p[role="status"]:not(:empty) {
+  color: var(--text);
 }
+.shell .control-room .settings-panel label {
+  color: var(--text);
+}
+.shell .control-room .settings-panel a:not(.secondary):not(.primary) {
+  color: var(--accent);
+}
+.shell .control-room .settings-panel :is(p, small) a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.shell .control-room .settings-panel a.text-button {
+  margin-left: -6px;
+}
+.shell .control-room .settings-panel pre {
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  font-family: var(--font-code);
+  font-size: 13px;
+}
+
+/* checkbox + sentence labels sit in a row */
+.shell .control-room .settings-panel label:has(> input[type="checkbox"]) {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: var(--s2);
+  max-width: 62ch;
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+.shell .control-room .settings-panel label:has(> input[type="checkbox"]) > input {
+  margin-top: 2px;
+}
+
+/* form rows */
+.shell .control-room .settings-panel form {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: var(--s3);
+  max-width: none;
+}
+.shell .control-room .settings-panel form > label:not(:has(> input[type="checkbox"])) {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  align-items: center;
+  column-gap: var(--s4);
+  font-size: 13px;
+  font-weight: 500;
+}
+.shell .control-room .settings-panel form > label:has(> textarea):not(:has(> input[type="checkbox"])) {
+  align-items: start;
+}
+.shell .control-room .settings-panel textarea {
+  background-color: var(--surface-1);
+  font-family: var(--font-body);
+}
+.shell .control-room .settings-panel form > :not(label) {
+  margin-left: calc(11rem + var(--s4));
+}
+.shell .control-room .settings-panel form > :is(button, a) {
+  align-self: flex-start;
+}
+.shell .control-room .settings-panel form > .muted {
+  margin-top: calc(-1 * var(--s1));
+  font-size: 12px;
+}
+
 .control-room [tabindex="-1"]:focus {
   outline: none;
 }
 .control-room [tabindex="-1"]:focus-visible {
-  outline: 3px dashed var(--blue);
+  outline: 2px solid var(--accent);
   outline-offset: 4px;
+  border-radius: var(--radius-lg);
 }
 .control-room [id^="settings-"] {
-  scroll-margin-top: var(--s4);
+  scroll-margin-top: calc(var(--strip-h) + var(--s4));
 }
 
-/* AI: readiness vs budgets vs consent are three separate ruled blocks */
-.ai-block {
-  max-width: 46rem;
-  margin: 0 0 var(--s4);
-  padding: var(--s3) var(--s4);
-  border: 1px solid var(--rule);
-  border-left-width: 6px;
-  background: var(--paper);
+/* AI: readiness, budgets and consent as three quiet sub-blocks */
+.shell .control-room .ai-block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+  max-width: none;
+  margin: 0;
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
 }
-.ai-block[data-kind="budgets"] {
-  border-style: dashed;
-  border-left-style: solid;
+.shell .control-room .ai-block[data-kind="consent"] {
+  background: var(--surface-1);
 }
-.ai-block[data-kind="consent"] {
-  border-left-color: var(--amber);
-  border-left-width: 10px;
-  background: var(--sheet);
-  border-color: var(--rule);
+.shell .control-room .ai-block > :is(button, a) {
+  align-self: flex-start;
 }
-.shell .ai-block > h3 {
-  margin: 0 0 var(--s2);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  font-weight: 500;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink);
-}
-.shell .ai-block p:last-child {
-  margin-bottom: 0;
+.shell .control-room .ai-block > h3 {
+  margin: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text);
 }
 .shell .ai-readiness {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0;
-  border: 1px solid var(--rule);
-  margin-block: var(--s3);
+  margin: var(--s1) 0;
+  padding: 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
+  overflow: hidden;
 }
 .shell .ai-readiness li {
-  background: var(--sheet);
+  margin: 0;
+  padding: 10px 12px;
   border: 0;
-  border-right: 1px solid var(--rule);
-  padding: var(--s3);
+  border-right: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
   font-size: 13px;
 }
 .shell .ai-readiness li:last-child {
   border-right: 0;
 }
 .shell .ai-readiness li strong {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: var(--ink-2);
+  display: block;
+  margin-bottom: 2px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-2);
 }
 
-/* hazard zone: account deletion */
+/* reminder + calendar panels reuse the card rhythm */
+.shell .control-room .settings-panel .ir-actions {
+  gap: var(--s3);
+}
+.shell .control-room .settings-panel .ir-check {
+  max-width: 62ch;
+}
+
+/* danger zone */
 .shell .control-room .settings-panel.hazard-zone {
-  margin-top: var(--s7);
-  padding-top: calc(var(--s4) + 16px);
-  border: 2px solid var(--rule);
-  border-left: 2px solid var(--rule);
-  background: var(--sheet);
+  margin-top: var(--s6);
+  padding-top: 20px;
+  border: 1px solid var(--border);
+  background: var(--surface-1);
   position: relative;
 }
 .shell .control-room .settings-panel.hazard-zone::before {
-  content: "";
-  position: absolute;
-  inset: -2px -2px auto -2px;
-  height: 16px;
-  background: repeating-linear-gradient(
-    -45deg,
-    var(--ink) 0 12px,
-    var(--amber) 12px 24px
-  );
-  border: 2px solid var(--rule);
+  content: none;
 }
 .shell .control-room .settings-panel.hazard-zone > h2 {
-  margin-top: var(--s3);
-  background: var(--red);
-  color: #fff;
-  border-bottom-color: var(--rule);
+  margin: 0;
+  background: transparent;
+  color: var(--danger);
+}
+.shell .control-room .settings-panel.hazard-zone form {
+  padding-top: var(--s4);
+  border-top: 1px solid var(--border);
 }
 
 @media (max-width: 900px) {
@@ -227,36 +335,57 @@
   }
   .shell .control-room > .control-index {
     position: static;
-    margin-bottom: var(--s4);
+    margin: 0 calc(-1 * var(--s1)) var(--s4);
+  }
+  .control-index-title {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .control-index ol {
     display: flex;
+    gap: var(--s1);
     overflow-x: auto;
-    counter-reset: sec;
+    padding: 2px var(--s1);
+    scrollbar-width: none;
   }
   .control-index li {
     flex: none;
-    border-top: 0;
-    border-right: 1px solid var(--hair);
   }
-  .shell .control-room .settings-panel {
-    padding-inline: var(--s3);
+  .shell .control-index a {
+    min-height: 32px;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    background: var(--surface-1);
+    white-space: nowrap;
   }
-  .shell .control-room .settings-panel > h2,
-  .shell .control-room .settings-panel > h2.space-top {
-    margin-inline: calc(-1 * var(--s3));
-    padding-inline: var(--s3);
+  .shell .control-room .settings-panel,
+  .shell .control-room .settings-panel.ir-section {
+    padding: 16px;
+  }
+  .shell .control-room .settings-panel form > label:not(:has(> input[type="checkbox"])) {
+    grid-template-columns: minmax(0, 1fr);
+    row-gap: 6px;
+  }
+  .shell .control-room .settings-panel form > :not(label) {
+    margin-left: 0;
   }
   .shell .ai-readiness {
     grid-template-columns: minmax(0, 1fr);
   }
   .shell .ai-readiness li {
     border-right: 0;
-    border-bottom: 1px solid var(--rule);
+    border-bottom: 1px solid var(--border);
+  }
+  .shell .ai-readiness li:last-child {
+    border-bottom: 0;
   }
 }
 @media (prefers-reduced-motion: reduce) {
-  .control-index a {
+  .shell .control-index a {
     transition: none;
   }
 }

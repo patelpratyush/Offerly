@@ -110,9 +110,11 @@ export function DocumentLibrary({
                   >
                     <div className="version-identity">
                       <strong>
-                        {d.versionNumber
-                          ? `Version ${d.versionNumber}`
-                          : "Legacy version"}
+                        <span className="version-pill">
+                          {d.versionNumber
+                            ? `Version ${d.versionNumber}`
+                            : "Legacy version"}
+                        </span>
                         {submitted.length > 0 && (
                           <span className="manifest-stamp">Submitted</span>
                         )}

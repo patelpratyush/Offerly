@@ -86,180 +86,204 @@ export function Reminders({
     .filter((item) => ["scheduled", "due"].includes(item.state))
     .sort((a, b) => a.dueDate.localeCompare(b.dueDate));
   return (
-    <section className="panel reminders-panel" aria-label="In-app reminders">
-      <h2>In-app reminders</h2>
-      <p className="muted">
+    <section
+      className="panel reminders-panel today-section"
+      aria-label="In-app reminders"
+    >
+      <div className="section-head">
+        <h2>
+          In-app reminders <span className="count">{active.length}</span>
+        </h2>
+      </div>
+      <p className="today-section-note">
         Date-only reminders become due on that date in your workspace timezone.
         They appear here; no email or push notification is sent.
       </p>
-      {error && <p role="alert">{error}</p>}
-      <details>
-        <summary>Add reminder</summary>
-        <form
-          onSubmit={async (event) => {
-            event.preventDefault();
-            const source = sources.find(
-              (item) => `${item.sourceKind}:${item.id}` === selectedSource,
-            );
-            if (!source) {
-              setError("Choose a reminder source");
-              return;
-            }
-            if (
-              await mutate("/reminders", {
-                title,
-                applicationId,
-                sourceKind: source.sourceKind,
-                sourceId: source.id,
-                dueDate,
-              })
-            ) {
-              setTitle("");
-              setDueDate("");
-            }
-          }}
-        >
-          <fieldset disabled={busy} className="filter-grid">
-            <legend>New reminder</legend>
-            <label>
-              Reminder title
-              <input
-                required
-                maxLength={300}
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-            </label>
-            <label>
-              Reminder application
-              <select
-                aria-label="Reminder application"
-                required
-                value={applicationId}
-                onChange={(e) => {
-                  setApplicationId(e.target.value);
-                  setSelectedSource(`application:${e.target.value}`);
-                }}
-              >
-                <option value="">Choose application</option>
-                {applications.map((item) => (
-                  <option key={item.id} value={item.id}>
-                    {item.company} · {item.title}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Reminder source
-              <select
-                aria-label="Reminder source"
-                required
-                value={selectedSource}
-                onChange={(e) => setSelectedSource(e.target.value)}
-              >
-                <option value="">Choose source</option>
-                {sources.map((item) => (
-                  <option
-                    key={`${item.sourceKind}:${item.id}`}
-                    value={`${item.sourceKind}:${item.id}`}
-                  >
-                    {item.sourceTitle}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              Reminder date
-              <input
-                required
-                type="date"
-                value={dueDate}
-                onChange={(e) => setDueDate(e.target.value)}
-              />
-            </label>
-            <button type="submit">Create reminder</button>
-          </fieldset>
-        </form>
-      </details>
-      {!active.length && <p className="muted">No active reminders.</p>}
-      {active.map((item) => (
-        <article key={item.id} className="detail-section">
-          <h3>{item.title}</h3>
-          <p>
-            {item.state === "due" ? "Due" : "Scheduled"} · {item.dueDate} · date
-            only
-          </p>
-          <p className="muted">
-            {applications.find(
-              (application) => application.id === item.applicationId,
-            )?.company || "Application"}
-          </p>
-          <div className="merge-actions">
-            <button
-              disabled={busy}
-              onClick={() =>
-                mutate(`/reminders/${item.id}/action`, {
-                  version: item.version,
-                  action: "dismiss",
-                })
-              }
-            >
-              Dismiss {item.title}
-            </button>
-            <button
-              disabled={busy}
-              onClick={() =>
-                mutate(`/reminders/${item.id}/action`, {
-                  version: item.version,
-                  action: "cancel",
-                })
-              }
-            >
-              Cancel {item.title}
-            </button>
-          </div>
+      {error && (
+        <p className="alert" role="alert">
+          {error}
+        </p>
+      )}
+      <div className="today-card">
+        <details className="reminder-add">
+          <summary>Add reminder</summary>
           <form
-            onSubmit={(event) => {
+            onSubmit={async (event) => {
               event.preventDefault();
-              void mutate(`/reminders/${item.id}/action`, {
-                version: item.version,
-                action: "snooze",
-                dueDate: snoozes[item.id],
-              });
+              const source = sources.find(
+                (item) => `${item.sourceKind}:${item.id}` === selectedSource,
+              );
+              if (!source) {
+                setError("Choose a reminder source");
+                return;
+              }
+              if (
+                await mutate("/reminders", {
+                  title,
+                  applicationId,
+                  sourceKind: source.sourceKind,
+                  sourceId: source.id,
+                  dueDate,
+                })
+              ) {
+                setTitle("");
+                setDueDate("");
+              }
             }}
           >
-            <label>
-              Snooze date for {item.title}
-              <input
-                type="date"
-                required
-                disabled={busy}
-                value={snoozes[item.id] || ""}
-                onChange={(e) =>
-                  setSnoozes((values) => ({
-                    ...values,
-                    [item.id]: e.target.value,
-                  }))
-                }
-              />
-            </label>
-            <button disabled={busy} type="submit">
-              Snooze {item.title}
-            </button>
+            <fieldset disabled={busy} className="filter-grid">
+              <legend>New reminder</legend>
+              <label>
+                Reminder title
+                <input
+                  required
+                  maxLength={300}
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                />
+              </label>
+              <label>
+                Reminder application
+                <select
+                  aria-label="Reminder application"
+                  required
+                  value={applicationId}
+                  onChange={(e) => {
+                    setApplicationId(e.target.value);
+                    setSelectedSource(`application:${e.target.value}`);
+                  }}
+                >
+                  <option value="">Choose application</option>
+                  {applications.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.company} · {item.title}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Reminder source
+                <select
+                  aria-label="Reminder source"
+                  required
+                  value={selectedSource}
+                  onChange={(e) => setSelectedSource(e.target.value)}
+                >
+                  <option value="">Choose source</option>
+                  {sources.map((item) => (
+                    <option
+                      key={`${item.sourceKind}:${item.id}`}
+                      value={`${item.sourceKind}:${item.id}`}
+                    >
+                      {item.sourceTitle}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Reminder date
+                <input
+                  required
+                  type="date"
+                  value={dueDate}
+                  onChange={(e) => setDueDate(e.target.value)}
+                />
+              </label>
+              <button className="primary" type="submit">
+                Create reminder
+              </button>
+            </fieldset>
           </form>
-        </article>
-      ))}
-      <details>
-        <summary>Reminder history</summary>
-        {reminders
-          .filter((item) => !["scheduled", "due"].includes(item.state))
-          .map((item) => (
-            <p key={item.id}>
-              {item.title} · {item.state}
-              {item.cancellationReason ? ` · ${item.cancellationReason}` : ""}
+        </details>
+        {!active.length && (
+          <p className="reminder-empty">No active reminders.</p>
+        )}
+        {active.map((item) => (
+          <article
+            key={item.id}
+            className="detail-section reminder-item"
+            data-state={item.state}
+          >
+            <h3>{item.title}</h3>
+            <p className="reminder-when">
+              {item.state === "due" ? "Due" : "Scheduled"} · {item.dueDate} ·
+              date only
             </p>
-          ))}
-      </details>
+            <p className="muted">
+              {applications.find(
+                (application) => application.id === item.applicationId,
+              )?.company || "Application"}
+            </p>
+            <div className="merge-actions">
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() =>
+                  mutate(`/reminders/${item.id}/action`, {
+                    version: item.version,
+                    action: "dismiss",
+                  })
+                }
+              >
+                Dismiss {item.title}
+              </button>
+              <button
+                className="secondary"
+                disabled={busy}
+                onClick={() =>
+                  mutate(`/reminders/${item.id}/action`, {
+                    version: item.version,
+                    action: "cancel",
+                  })
+                }
+              >
+                Cancel {item.title}
+              </button>
+            </div>
+            <form
+              className="reminder-snooze"
+              onSubmit={(event) => {
+                event.preventDefault();
+                void mutate(`/reminders/${item.id}/action`, {
+                  version: item.version,
+                  action: "snooze",
+                  dueDate: snoozes[item.id],
+                });
+              }}
+            >
+              <label>
+                Snooze date for {item.title}
+                <input
+                  type="date"
+                  required
+                  disabled={busy}
+                  value={snoozes[item.id] || ""}
+                  onChange={(e) =>
+                    setSnoozes((values) => ({
+                      ...values,
+                      [item.id]: e.target.value,
+                    }))
+                  }
+                />
+              </label>
+              <button className="secondary" disabled={busy} type="submit">
+                Snooze {item.title}
+              </button>
+            </form>
+          </article>
+        ))}
+        <details className="reminder-history">
+          <summary>Reminder history</summary>
+          {reminders
+            .filter((item) => !["scheduled", "due"].includes(item.state))
+            .map((item) => (
+              <p key={item.id}>
+                {item.title} · {item.state}
+                {item.cancellationReason ? ` · ${item.cancellationReason}` : ""}
+              </p>
+            ))}
+        </details>
+      </div>
     </section>
   );
 }

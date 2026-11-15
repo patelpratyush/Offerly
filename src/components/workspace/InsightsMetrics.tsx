@@ -116,7 +116,7 @@ export function InsightsMetrics({ request }: { request: Request }) {
     <section className="ir-section" aria-labelledby="ir-metrics-heading">
       <div className="section-head">
         <div>
-          <span className="tiny-label">SUBMISSION COHORT METRICS</span>
+          <span className="tiny-label">Submission cohort metrics</span>
           <h2 id="ir-metrics-heading">What your own records show</h2>
         </div>
       </div>

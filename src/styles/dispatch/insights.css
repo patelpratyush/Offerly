@@ -1,225 +1,408 @@
-/* Dispatch / Insights = Punctuality report. Horizontal bar rows with an explicit
-   n / denominator in mono; unknown is "No data yet", never zero. */
+/* Insights: white cards, accent bars on a neutral track, metric cards with
+   the sample size beneath the number. Unknown is "No data yet", never zero. */
 
 .shell .insight-layout {
-  gap: var(--s5);
+  display: grid;
+  grid-template-columns: minmax(0, 1.65fr) minmax(260px, 1fr);
+  gap: var(--s4);
+  align-items: start;
+}
+.shell .insight-context {
+  display: grid;
+  gap: var(--s4);
 }
 .shell .insight-pipeline,
 .shell .insight-context > .panel,
+.shell .insights-empty,
+.shell .insight-data-note {
+  margin: 0;
+  padding: 16px 20px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
+.shell .insight-data-note {
+  background: var(--bg-subtle);
+  box-shadow: none;
+}
 .shell .insights-empty {
-  border: 2px solid var(--rule);
-  border-top-width: 6px;
-  border-radius: 0;
-  background: var(--sheet);
+  max-width: 720px;
+}
+.shell .insight-pipeline > .section-head,
+.shell .insight-context > .panel > .section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--s3);
+  margin: 0 0 var(--s1);
+  padding: 0;
+  border: 0;
 }
 .shell .insight-pipeline h2,
+.shell .insight-context h2,
 .shell .insights-empty h2,
 .shell .ir-section h2,
 .shell .insight-data-note h2 {
-  font-family: var(--font-sign);
-  font-stretch: 70%;
-  font-weight: 800;
-  font-size: 28px;
-  line-height: 1.05;
-  text-transform: uppercase;
-  letter-spacing: -0.005em;
+  margin: 2px 0 0;
+  font-family: var(--font-body);
+  font-stretch: normal;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text);
 }
 .shell .insight-pipeline .tiny-label,
 .shell .insight-data-note .tiny-label,
 .shell .ir-section .tiny-label,
 .shell .insights-empty .tiny-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: var(--ink-2);
+  display: block;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-3);
+}
+.shell .insight-pipeline .section-head > .muted {
+  font-size: 12px;
+  color: var(--text-3);
+  text-align: right;
+}
+.shell .insight-pipeline .panel-copy,
+.shell .insight-context .panel-copy,
+.shell .insight-data-note p,
+.shell .insights-empty p {
+  margin: 0 0 var(--s3);
+  padding: 0;
+  color: var(--text-2);
+  font-size: 13px;
+  line-height: 1.55;
+}
+.shell .insight-data-note p:last-child,
+.shell .insights-empty p:last-child {
+  margin-bottom: 0;
+}
+.shell .insight-pipeline > a.text-button {
+  margin: var(--s3) 0 0 -6px;
+  padding-inline: 6px;
 }
 
-/* bar rows */
+/* stage bar rows */
 .shell .insights {
-  padding-block: var(--s2);
+  margin: 0;
+  padding: var(--s1) 0;
 }
 .shell .bar-row,
 .shell .insight-pipeline .bar-row {
   display: grid;
-  grid-template-columns: 8rem minmax(0, 1fr) auto;
+  grid-template-columns: 8.5rem minmax(0, 1fr) 4rem;
   gap: var(--s3);
   align-items: center;
   margin-block: 0;
-  padding: var(--s2) 0;
-  border-bottom: 1px dotted var(--ink-2);
+  padding: 6px 0;
+  border: 0;
 }
 .shell .bar-row > span {
-  font-family: var(--font-sign);
-  font-stretch: 75%;
-  font-weight: 700;
-  font-size: 15px;
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-stretch: normal;
+  font-weight: 500;
+  font-size: 13px;
+  text-transform: none;
+  color: var(--text);
   overflow-wrap: anywhere;
 }
 .shell .bar-row > div {
-  height: 18px;
-  border: 2px solid var(--rule);
-  border-radius: 0;
-  background:
-    repeating-linear-gradient(
-      90deg,
-      transparent 0 calc(10% - 1px),
-      var(--hair) calc(10% - 1px) 10%
-    ),
-    var(--sheet);
+  height: 8px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  overflow: hidden;
 }
 .shell .bar-row i {
   display: block;
   height: 100%;
-  border-radius: 0;
-  background: var(--ink);
-  transition: width 150ms linear;
+  border-radius: 999px;
+  background: var(--accent);
+  transition: width 150ms ease;
 }
 .shell .bar-row > b,
 .shell .insight-pipeline .bar-row > b {
-  font-family: var(--font-mono);
-  font-size: 15px;
+  min-width: 0;
+  font-family: var(--font-body);
+  font-size: 13px;
   font-weight: 600;
+  font-variant-numeric: tabular-nums;
   text-align: right;
   white-space: nowrap;
-  min-width: 5.5rem;
+  color: var(--text);
 }
 .shell .insight-pipeline .bar-row > b small,
 .shell .source-breakdown small {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--text-3);
+}
+.shell .source-breakdown {
+  margin: 0;
 }
 .shell .source-breakdown > div {
-  border-bottom: 1px dotted var(--ink-2);
-  font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s4);
+  padding-block: 8px;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+.shell .source-breakdown > div:last-child {
+  border-bottom: 0;
+}
+.shell .source-breakdown dt {
+  color: var(--text);
 }
 .shell .source-breakdown dd {
-  font-family: var(--font-mono);
-}
-.shell .insight-data-note {
-  border-top: 2px solid var(--rule);
-  padding-inline: 0;
+  margin: 0;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 /* honest empty states */
 .pr-nodata {
-  display: inline-block;
-  margin: var(--s2) 0;
-  padding: 2px 8px;
-  border: 1px dashed var(--ink);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink);
+  display: inline-flex;
+  margin: var(--s2) 0 0;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font: 500 12px/18px var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
 }
 
-/* cohort metrics: stat strip, tables as printed report */
-.shell .ir-note {
-  border-left: 4px solid var(--rule);
-  background: var(--paper-2);
-  border-radius: 0;
+/* cohort metrics */
+.shell .ir-section {
+  display: grid;
+  gap: var(--s4);
+  margin-top: var(--s6);
+}
+.shell .ir-section > .section-head {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+.shell .ir-section > .panel {
+  padding: 16px 20px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+}
+.shell .ir-section > .panel h3 {
+  margin: 0 0 4px;
   font-size: 14px;
+  font-weight: 600;
+}
+.shell .ir-section > .panel-copy {
+  margin: 0;
+  padding: 0;
+  color: var(--text-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+.shell .ir-note {
+  margin: 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font-size: 13px;
+}
+.shell .ir-filters label {
+  color: var(--text-2);
+  font-size: 12px;
+  font-weight: 500;
 }
 .shell .ir-stats {
-  gap: 0;
-  border: 2px solid var(--rule);
-  background: var(--sheet);
-}
-.shell .ir-stat {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: var(--s3);
+  margin: 0;
   border: 0;
-  border-right: 1px solid var(--rule);
-  border-bottom: 1px solid var(--rule);
-  border-radius: 0;
   background: transparent;
 }
+.shell .ir-stat {
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+}
 .shell .ir-stat dt {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-2);
 }
 .shell .ir-stat dd {
-  font-family: var(--font-mono);
-  font-size: 26px;
+  margin: 6px 0 0;
+  font-family: var(--font-body);
+  font-size: 24px;
   font-weight: 600;
-  color: var(--ink);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
 }
 .shell .ir-stat dd small {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-2);
+  display: block;
+  margin-top: 6px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.45;
+  letter-spacing: 0;
+  color: var(--text-3);
 }
 .pr-bar {
   display: block;
-  height: 14px;
-  margin-top: var(--s2);
-  border: 2px solid var(--rule);
-  background: var(--sheet);
+  height: 6px;
+  margin-top: var(--s3);
+  border: 0;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  overflow: hidden;
 }
 .pr-bar i {
   display: block;
   height: 100%;
-  background: var(--ink);
+  border-radius: 999px;
+  background: var(--accent);
+}
+.pr-bar:has(> em) {
+  height: auto;
+  background: transparent;
+  border-radius: 0;
 }
 .pr-bar em {
   display: block;
-  padding-inline: var(--s1);
-  font: normal 400 11px/10px var(--font-mono);
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-2);
-  background: repeating-linear-gradient(
-    -45deg,
-    transparent 0 4px,
-    var(--hair) 4px 5px
-  );
+  padding: 0;
+  font: normal 400 12px/1.4 var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-3);
+  background: none;
 }
 .shell .ir-table-wrap {
-  border: 2px solid var(--rule);
-  border-radius: 0;
-  background: var(--sheet);
+  overflow-x: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
 }
-.shell .ir-table caption {
-  font-family: var(--font-sign);
-  font-stretch: 75%;
-  font-weight: 800;
-  font-size: 17px;
-  text-transform: uppercase;
-}
-.shell .ir-table thead th {
-  background: var(--ink);
-  color: var(--paper);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-.shell .ir-table td {
-  font-family: var(--font-mono);
+.shell .ir-table {
+  width: 100%;
+  min-width: 460px;
+  border-collapse: collapse;
   font-size: 13px;
 }
-.shell .ir-tag {
-  border: 1px dashed var(--ink);
-  border-radius: 0;
+.shell .ir-table caption {
+  padding: 12px 16px;
+  font-family: var(--font-body);
+  font-stretch: normal;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  text-transform: none;
+  color: var(--text);
+}
+.shell .ir-table thead th {
+  padding: 8px 16px;
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  background: var(--bg-subtle);
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+}
+.shell .ir-table tbody th,
+.shell .ir-table td {
+  padding: 9px 16px;
+  border-top: 0;
+  border-bottom: 1px solid var(--border);
   background: transparent;
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.shell .ir-table tbody th {
+  color: var(--text);
+  font-weight: 500;
+}
+.shell .ir-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.shell .ir-table tbody tr:hover > * {
+  background: var(--bg);
+}
+.shell .ir-tag {
+  display: inline-flex;
+  margin-left: var(--s2);
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--warning-soft);
+  color: var(--warning);
+  font: 500 12px/18px var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+  vertical-align: 1px;
+}
+.shell .ir-actions .text-button {
+  margin-left: -6px;
 }
 
+@media (max-width: 1100px) {
+  .shell .insight-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .shell .insight-context {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
 @media (max-width: 640px) {
+  .shell .insight-pipeline,
+  .shell .insight-context > .panel,
+  .shell .insights-empty,
+  .shell .insight-data-note {
+    padding: 14px 16px 16px;
+  }
+  .shell .insight-context {
+    grid-template-columns: minmax(0, 1fr);
+  }
   .shell .bar-row,
   .shell .insight-pipeline .bar-row {
     grid-template-columns: minmax(0, 1fr) auto;
+    row-gap: 6px;
   }
   .shell .bar-row > div {
     grid-column: 1 / -1;
     grid-row: 2;
+  }
+  .shell .ir-stats {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .shell .ir-stat dd {
+    font-size: 22px;
   }
 }
 @media (prefers-reduced-motion: reduce) {

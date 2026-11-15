@@ -19,7 +19,7 @@ export function WorkspaceInsights({
   if (!total)
     return (
       <section className="panel insights-empty">
-        <span className="tiny-label">YOUR SEARCH, IN PERSPECTIVE</span>
+        <span className="tiny-label">Your search, in perspective</span>
         <span className="pr-nodata">No data yet</span>
         <h2>A clearer picture starts with your first application.</h2>
         <p>
@@ -37,7 +37,7 @@ export function WorkspaceInsights({
       <section className="panel insight-pipeline">
         <div className="section-head">
           <div>
-            <span className="tiny-label">CURRENT STAGE DISTRIBUTION</span>
+            <span className="tiny-label">Current stage distribution</span>
             <h2>Your pipeline today</h2>
           </div>
           <span className="muted">{total} total applications</span>
@@ -93,7 +93,7 @@ export function WorkspaceInsights({
           </dl>
         </section>
         <section className="insight-data-note">
-          <span className="tiny-label">READ THE RECORD ACCURATELY</span>
+          <span className="tiny-label">Read the record accurately</span>
           <h2>Known dates, clear limits.</h2>
           <p>
             {dated.length} of {total} applications have a recorded applied date.{" "}

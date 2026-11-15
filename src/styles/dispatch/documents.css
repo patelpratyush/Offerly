@@ -1,144 +1,275 @@
-/* Dispatch / Documents = Manifest. Families as manifest entries, versions as
-   ledger lines, SUBMITTED as a rectangular stamp. */
+/* Documents: each family is a card (type icon, title, label, version count),
+   versions are quiet rows with a version pill, usage and a download action. */
 
+.shell .library-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s4);
+  margin-bottom: var(--s3);
+}
+.shell .library-toolbar .search {
+  flex: 0 1 360px;
+  width: auto;
+}
 .shell .library-toolbar > span {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--text-2);
 }
 .shell .document-library > .subtle-info {
-  background: var(--paper-2);
+  margin: 0 0 var(--s4);
+  padding: 0;
   border: 0;
-  border-left: 4px solid var(--rule);
   border-radius: 0;
-  color: var(--ink);
-  font-family: var(--font-mono);
-  font-size: 12px;
-  line-height: 1.6;
+  background: transparent;
+  color: var(--text-2);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.5;
 }
 .shell .document-family {
-  border: 2px solid var(--rule);
-  border-radius: 0;
-  background: var(--sheet);
-  margin-bottom: var(--s5);
+  margin-bottom: var(--s4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background: var(--surface-1);
+  box-shadow: var(--shadow-sm);
+  overflow: hidden;
 }
 .shell .document-family-heading {
-  background: var(--paper-2);
-  border-bottom: 2px solid var(--rule);
-  padding: var(--s3) var(--s4);
-  gap: var(--s3);
+  display: flex;
+  align-items: center;
   flex-wrap: wrap;
+  gap: var(--s3);
+  padding: 14px 16px;
+  background: var(--surface-1);
+  border-bottom: 1px solid var(--border);
+}
+.shell .document-family-heading > div {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: var(--s2);
+}
+.shell .document-family-heading > div > h2 {
+  order: 0;
+  min-width: 0;
+}
+.shell .document-family-heading > div > p {
+  order: 2;
+  flex-basis: 100%;
 }
 .shell .document-family-heading .file-icon {
-  color: var(--ink);
-  width: 32px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
   height: 36px;
+  margin: 0;
+  border-radius: var(--radius);
+  background: var(--bg-subtle);
+  color: var(--text-2);
+}
+.shell .document-family-heading .file-icon svg {
+  width: 18px;
+  height: 18px;
 }
 .shell .document-family-heading h2 {
-  font-family: var(--font-sign);
-  font-stretch: 70%;
-  font-weight: 800;
-  font-size: 24px;
-  line-height: 1.05;
-  text-transform: uppercase;
-  margin: var(--s1) 0;
+  margin: 0;
+  font-family: var(--font-body);
+  font-stretch: normal;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 1.35;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 .shell .document-family-heading .tiny-label {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: var(--ink);
+  order: 1;
+  display: inline-flex;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  color: var(--text-2);
+  font: 500 12px/18px var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
+}
+.shell .document-family-heading .tiny-label:empty {
+  display: none;
 }
 .shell .document-family-heading p {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-2);
+  margin: 2px 0 0;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-3);
+}
+:root .shell .document-family-heading .secondary {
+  flex-shrink: 0;
+  min-height: 30px;
+  padding: 4px 10px;
+  font-size: 13px;
 }
 
-/* ledger lines */
+/* version rows */
 .shell .document-version {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr) auto;
-  padding: var(--s3) var(--s4);
-  gap: var(--s4);
-  border-bottom: 1px dotted var(--ink-2);
-  background: var(--sheet);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  align-items: start;
+  gap: var(--s5);
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-1);
+  box-shadow: none;
+  transition: background-color 120ms ease;
 }
-.shell .document-version.is-submitted {
-  box-shadow: inset 5px 0 0 var(--blue);
+.shell .document-version:last-child {
+  border-bottom: 0;
+}
+.shell .document-version:hover {
+  background: var(--bg);
+}
+.shell .version-identity,
+.shell .version-usage {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
 }
 .shell .version-identity strong {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--s2);
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
   font-size: 13px;
-  font-weight: 600;
-  color: var(--ink);
+  font-weight: 500;
+  color: var(--text);
 }
-.shell .version-identity span {
-  color: var(--ink);
-  font-size: 14px;
+.shell .version-identity .version-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border-radius: 999px;
+  background: var(--bg-muted);
+  color: var(--text);
+  font: 500 12px/18px var(--font-body);
+  white-space: nowrap;
+}
+.shell .version-identity > span {
+  color: var(--text-2);
+  font-size: 13px;
+  overflow-wrap: anywhere;
 }
 .shell .version-identity small,
 .shell .version-usage small {
-  font-family: var(--font-mono);
-  font-size: 11px;
-  color: var(--ink-2);
+  font-family: var(--font-body);
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--text-3);
 }
 .shell .version-usage strong {
-  font-family: var(--font-mono);
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text);
+}
+.shell .version-applications {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  margin-top: 4px;
+}
+.shell .version-applications .text-button {
+  margin-left: -6px;
+  text-align: left;
+  white-space: normal;
   font-size: 12px;
-  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+.shell .version-download.text-button {
+  min-height: 28px;
+  color: var(--text-2);
+  font-size: 13px;
+}
+.shell .version-download.text-button:hover {
+  background: var(--bg-subtle);
+  color: var(--text);
 }
 
-/* the stamp */
-.manifest-stamp {
-  display: inline-block;
-  padding: 1px 8px;
-  border: 2px solid var(--blue);
-  color: var(--blue);
-  background: transparent;
-  font-family: var(--font-sign);
-  font-stretch: 80%;
-  font-weight: 800;
-  font-size: 12px;
-  letter-spacing: 0.14em;
-  text-transform: uppercase;
-  line-height: 1.5;
-  transform: rotate(-2deg);
-  outline: 1px solid var(--blue);
-  outline-offset: 2px;
+/* "Submitted" state pill */
+.manifest-stamp,
+.shell .version-identity .manifest-stamp {
+  display: inline-flex;
+  align-items: center;
+  padding: 0 7px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--success-soft);
+  color: var(--success);
+  font: 500 12px/18px var(--font-body);
+  letter-spacing: 0;
+  text-transform: none;
   white-space: nowrap;
+  transform: none;
+  outline: 0;
 }
 
 /* submitted usage records in the application detail */
 .shell .submitted-entry {
-  border: 2px solid var(--rule);
-  border-left: 6px solid var(--blue);
-  border-radius: 0;
-  background: var(--sheet);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-1);
 }
 .shell .submitted-entry.is-retracted {
-  border-left-color: var(--ink-2);
   border-style: dashed;
-  border-left-style: solid;
+  background: var(--bg-subtle);
 }
 .shell .submitted-entry.is-retracted > .section-head strong {
   text-decoration: line-through;
-  text-decoration-color: var(--ink-2);
+  text-decoration-color: var(--text-3);
 }
 
+@media (max-width: 1100px) {
+  .shell .document-version {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--s2) var(--s5);
+  }
+  .shell .version-download.text-button {
+    grid-column: 1 / -1;
+    justify-self: start;
+    margin-left: -6px;
+  }
+}
 @media (max-width: 760px) {
+  .shell .library-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--s2);
+  }
+  .shell .library-toolbar .search {
+    flex: none;
+  }
   .shell .document-version {
     grid-template-columns: minmax(0, 1fr);
     gap: var(--s2);
   }
+  .shell .document-family-heading > div {
+    flex: 1 1 calc(100% - 52px);
+  }
+  :root .shell .document-family-heading .secondary {
+    margin-left: 48px;
+  }
 }
 @media (prefers-reduced-motion: reduce) {
-  .manifest-stamp {
-    transform: none;
+  .shell .document-version {
+    transition: none;
   }
 }

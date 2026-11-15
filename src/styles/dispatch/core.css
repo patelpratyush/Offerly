@@ -1447,3 +1447,32 @@ fieldset {
   color: var(--text-2);
   font-size: 13px;
 }
+
+/* Touch: compact desktop controls grow to 44px targets. */
+@media (pointer: coarse) {
+  .shell .view-toggle button,
+  [role="tab"],
+  .tabs button,
+  .shell .detail-tabs button,
+  .text-button,
+  .tertiary,
+  .shell .modal .section-head > button,
+  .shell .drawer-top > button,
+  .shell .alert button,
+  .shell .notice button {
+    min-height: 44px;
+  }
+  .shell .modal .section-head > button,
+  .shell .drawer-top > button {
+    min-width: 44px;
+  }
+}
+
+/* Brand mark: same monogram as the public site. */
+.shell .sidebar span.brand-mark {
+  display: inline-grid;
+  place-items: center;
+  background: var(--text);
+  color: var(--surface-1);
+  font: 600 13px/1 var(--font-body);
+}

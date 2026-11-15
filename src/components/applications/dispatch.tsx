@@ -25,11 +25,14 @@ export function gateCode(stage: string) {
     "—"
   );
 }
-/** Gate code tag with the full stage word always present. */
+/**
+ * Stage tag: a small coloured dot (class gate-<code>) plus the full stage word.
+ * The gate code stays as a class hook only; it is never shown.
+ */
 export function GateTag({ stage }: { stage: string }) {
   return (
     <span className={"gate-tag gate-" + gateCode(stage).toLowerCase()}>
-      <b aria-hidden="true">{gateCode(stage)}</b>
+      <b aria-hidden="true" />
       <span>{stage}</span>
     </span>
   );
@@ -50,22 +53,22 @@ export type StatusWord = {
 /** Status words come only from recorded ownership and due dates. */
 export function ownerStatus(a: Rec): StatusWord {
   if (a.owner === "You")
-    return { tone: "move", text: "YOUR MOVE", long: "Your reply is next" };
+    return { tone: "move", text: "Your move", long: "Your reply is next" };
   if (a.owner === "Employer") {
     const d = daysSince(a.ownerEffectiveAt);
     return {
       tone: "wait",
-      text: d === null ? "WAITING" : `WAITING ${d} D`,
+      text: d === null ? "Waiting" : `Waiting · ${d}d`,
       long:
         "Waiting for employer" +
         (d === null ? "" : ` · ${d} ${d === 1 ? "day" : "days"}`),
     };
   }
   if (a.owner === "Nobody")
-    return { tone: "quiet", text: "NO REPLY DUE", long: "No reply needed" };
+    return { tone: "quiet", text: "No reply due", long: "No reply needed" };
   return {
     tone: "quiet",
-    text: "OWNER UNCLEAR",
+    text: "Owner unclear",
     long: "Response owner unclear",
   };
 }
@@ -78,14 +81,13 @@ export function StatusTag({ status }: { status: StatusWord }) {
   );
 }
 export function OverdueTag() {
-  return <span className="status-word status-over">OVERDUE</span>;
+  return <span className="status-word status-over">Overdue</span>;
 }
 
 export function appHasOverdue(a: Rec, w: any, today: string) {
   return (
     w.tasks.some(
-      (t: Rec) =>
-        t.applicationId === a.id && !t.done && t.due && t.due < today,
+      (t: Rec) => t.applicationId === a.id && !t.done && t.due && t.due < today,
     ) ||
     w.assessments.some(
       (x: Rec) =>

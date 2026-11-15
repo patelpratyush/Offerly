@@ -1,7 +1,7 @@
 import { test, expect } from "@playwright/test";
 import AxeBuilder from "@axe-core/playwright";
 
-test("public landing previews stages and connects signup, sign-in, and home", async ({
+test("public landing previews the workspace and connects signup, sign-in, and home", async ({
   page,
 }, testInfo) => {
   const errors = [];
@@ -11,39 +11,24 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Your next move. All the details. One workspace.",
+      name: "Every application, contact and next step in one place.",
     }),
   ).toBeVisible();
   await expect(page.getByLabel("Your name")).toHaveCount(0);
   const preview = page.locator("#workspace-preview");
-  await expect(preview).toContainText("ILLUSTRATIVE DATA");
-  const firstFlap = preview.locator(".dp-ch").first();
-  await page.getByRole("button", { name: "Pause page motion" }).click();
+  await expect(preview).toContainText("Sample data · fictional employers");
+  await expect(preview.getByText("Senior Product Designer")).toBeVisible();
   await expect(
-    page.getByRole("button", { name: "Play page motion" }),
-  ).toHaveAttribute("aria-pressed", "true");
-  await page.getByRole("button", { name: "Play page motion" }).click();
-  await expect(
-    page.getByRole("button", { name: "Pause page motion" }),
-  ).toHaveAttribute("aria-pressed", "false");
-  await preview.getByRole("button", { name: "Offer" }).click();
-  await expect(preview.getByText("Senior Designer")).toBeVisible();
-  await expect(preview.getByRole("button", { name: "Offer" })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
-  await preview.getByRole("button", { name: "Saved" }).click();
-  await expect(preview.getByText("Product Designer")).toBeVisible();
-  await page
-    .getByText("Do I need to connect my inbox?", { exact: true })
-    .click();
+    page.getByRole("heading", { name: "Gmail import with a review queue" }),
+  ).toBeVisible();
   await expect(
     page.getByText(
       "Optional read-only Gmail is available only when configured for your account.",
-      {
-        exact: false,
-      },
+      { exact: false },
     ),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Private by default" }),
   ).toBeVisible();
   await expect
     .poll(() =>
@@ -52,12 +37,6 @@ test("public landing previews stages and connects signup, sign-in, and home", as
       ),
     )
     .toBe(true);
-  await page.emulateMedia({ reducedMotion: "reduce" });
-  await expect(firstFlap).toHaveCSS("animation-name", "none");
-  await expect(
-    page.getByRole("button", { name: "Pause page motion" }),
-  ).toBeHidden();
-  await page.emulateMedia({ reducedMotion: "no-preference" });
   await page.screenshot({
     path: testInfo.outputPath("landing-full.png"),
     fullPage: true,
@@ -91,7 +70,7 @@ test("public landing previews stages and connects signup, sign-in, and home", as
   await expect(
     page.getByRole("heading", {
       level: 1,
-      name: "Your next move. All the details. One workspace.",
+      name: "Every application, contact and next step in one place.",
     }),
   ).toBeVisible();
   await page.getByRole("link", { name: "Sign in", exact: true }).click();
@@ -111,7 +90,7 @@ test("landing keeps account entry controls inside narrow and tablet viewports", 
     await expect(
       page.getByRole("heading", {
         level: 1,
-        name: "Your next move. All the details. One workspace.",
+        name: "Every application, contact and next step in one place.",
       }),
     ).toBeVisible();
     for (const name of ["Get started", "Sign in", "Start your workspace"]) {

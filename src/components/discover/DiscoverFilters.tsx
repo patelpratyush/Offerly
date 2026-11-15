@@ -113,7 +113,12 @@ export function DiscoverFilters({
           />
         </label>
         <label>
-          Minimum stated salary (excludes jobs that do not state pay)
+          <span>
+            Minimum stated salary{" "}
+            <span className="discover-hint">
+              (excludes jobs that do not state pay)
+            </span>
+          </span>
           <input
             type="number"
             min={0}

@@ -1,8 +1,11 @@
 import type { ReactNode } from "react";
 import { ArrowRight, ArrowUpRight, Check } from "lucide-react";
 import { TodayReminders } from "./TodayReminders";
-import { Departures, type DepartureSource } from "../today/Departures";
-import { Flap } from "../applications/dispatch";
+import {
+  Departures,
+  buildDepartures,
+  type DepartureSource,
+} from "../today/Departures";
 
 type RecordItem = { id: string; [key: string]: any };
 type Props = {
@@ -45,61 +48,67 @@ export function TodayFocus({
   ].length;
   const pending = w.reviews.filter((r) => r.status === "pending");
   const byId = new Map(w.applications.map((a) => [a.id, a]));
-  const pad = (n: number) => String(n).padStart(2, "0");
+  const upNext = buildDepartures({ ...w, today }).length;
   const open = (kind: DepartureSource, record: RecordItem) =>
     kind === "application" || !onSource
       ? onOpen(record)
       : onSource(kind, record);
   return (
     <>
+      <div className="brief-signals" role="group" aria-label="Daily priorities">
+        <a
+          href="#today-actions"
+          className={"brief-signal" + (overdue ? " is-alert" : "")}
+        >
+          <span className="brief-label">
+            Overdue {overdue === 1 ? "item" : "items"}
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </span>
+          <span className="brief-value">{overdue}</span>
+        </a>
+        <a href="#reply-ownership" className="brief-signal">
+          <span className="brief-label">
+            {replies.length === 1 ? "Reply" : "Replies"} owed
+            <ArrowUpRight size={14} aria-hidden="true" />
+          </span>
+          <span className="brief-value">{replies.length}</span>
+        </a>
+        <button onClick={onReviews} className="brief-signal">
+          <span className="brief-label">
+            Pending {pending.length === 1 ? "review" : "reviews"}
+            <ArrowRight size={14} aria-hidden="true" />
+          </span>
+          <span className="brief-value">{pending.length}</span>
+        </button>
+      </div>
       <section
-        className="departures"
+        className="departures today-section"
         id="reply-ownership"
-        aria-label="Daily priorities"
+        aria-labelledby="up-next-heading"
       >
-        <div className="dep-top">
-          <div>
-            <span className="tiny-label">TODAY · {today}</span>
-            <h2 className="dep-title">Departures</h2>
-          </div>
-          <div className="brief-signals">
-            <a href="#today-actions" className="brief-signal">
-              <Flap value={pad(overdue)} />
-              <span>
-                Overdue {overdue === 1 ? "item" : "items"}
-                <ArrowUpRight size={14} aria-hidden="true" />
-              </span>
-            </a>
-            <a href="#reply-ownership" className="brief-signal">
-              <Flap value={pad(replies.length)} />
-              <span>
-                {replies.length === 1 ? "Reply" : "Replies"} owed
-                <ArrowUpRight size={14} aria-hidden="true" />
-              </span>
-            </a>
-            <button onClick={onReviews} className="brief-signal">
-              <Flap value={pad(pending.length)} />
-              <span>
-                Pending {pending.length === 1 ? "review" : "reviews"}
-                <ArrowRight size={14} aria-hidden="true" />
-              </span>
-            </button>
-          </div>
+        <div className="section-head">
+          <h2 id="up-next-heading">
+            Up next <span className="count">{upNext}</span>
+          </h2>
         </div>
-        <Departures
-          applications={w.applications}
-          tasks={w.tasks}
-          assessments={w.assessments}
-          rounds={w.rounds}
-          today={today}
-          onSource={open}
-        />
-        {!w.assessments.some(
-          (a) => !["Completed", "Canceled"].includes(a.status),
-        ) && <p className="dep-note">No assessment deadlines.</p>}
-        <p className="dep-note">Recorded next steps. You decide what changes.</p>
+        <div className="today-card">
+          <Departures
+            applications={w.applications}
+            tasks={w.tasks}
+            assessments={w.assessments}
+            rounds={w.rounds}
+            today={today}
+            onSource={open}
+          />
+        </div>
+        <p className="dep-note">
+          {!w.assessments.some(
+            (a) => !["Completed", "Canceled"].includes(a.status),
+          ) && <span>No assessment deadlines. </span>}
+          Recorded next steps. You decide what changes.
+        </p>
       </section>
-      <section className="hold" aria-labelledby="hold-heading">
+      <section className="hold today-section" aria-labelledby="hold-heading">
         <div className="section-head">
           <h2 id="hold-heading">
             Hold <span className="count">{pending.length}</span>
@@ -109,7 +118,7 @@ export function TodayFocus({
           </button>
         </div>
         {pending.length ? (
-          <ul className="hold-list">
+          <ul className="hold-list today-card">
             {pending.slice(0, 5).map((r) => {
               const a = byId.get(
                 r.applicationId ||
@@ -120,7 +129,7 @@ export function TodayFocus({
               return (
                 <li key={r.id}>
                   <button onClick={onReviews}>
-                    <span className="status-word">HOLD</span>
+                    <span className="code-tag amber">On hold</span>
                     <span>
                       <strong>
                         {a ? `${a.company} — ${a.title}` : "Evidence to match"}
@@ -140,7 +149,7 @@ export function TodayFocus({
             })}
           </ul>
         ) : (
-          <p className="hold-empty">
+          <p className="hold-empty today-card">
             <Check size={16} aria-hidden="true" /> Nothing on hold. Evidence
             never changes applications without your decision.
           </p>
