@@ -1,0 +1,28 @@
+# Render Blueprint for the background worker. Secrets are set in the dashboard
+# (sync: false); never commit values.
+services:
+  - type: worker
+    name: offerly-worker
+    runtime: docker
+    dockerfilePath: ./Dockerfile.worker
+    plan: starter
+    autoDeploy: true
+    envVars:
+      - key: DATABASE_URL        # runtime role (offerly_app) connection string, same as Vercel
+        sync: false
+      - key: GMAIL_ENABLED
+        value: "true"
+      - key: GMAIL_ENCRYPTION_KEY   # must match the Vercel value exactly
+        sync: false
+      - key: GMAIL_REDIRECT_URI
+        sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: RECRUITING_AI_ENABLED
+        value: "false"
+      - key: DISCOVERY_COLLECTION_ENABLED
+        value: "false"
+      - key: DISCOVERY_ALERTS_ENABLED
+        value: "false"
