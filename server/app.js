@@ -155,7 +155,7 @@ const schemas = {
   }),
 };
 export async function createApp(store, options = {}) {
-  const { db, list, get, save } = store;
+  const { db, list, listKinds, get, save } = store;
   const app = express();
   const config = securityConfig(options),
     limit = await createLimiter(db);
@@ -228,10 +228,24 @@ export async function createApp(store, options = {}) {
   });
   app.get("/api/workspace", async (req, res) => {
     const u = req.user;
-    const duplicates = duplicatePairs(
-      await list(u.id, "application"),
-      await list(u.id, "duplicate_review"),
-    );
+    const r = await listKinds(u.id, [
+      "application",
+      "duplicate_review",
+      "saved_view",
+      "contact",
+      "task",
+      "round",
+      "document",
+      "document_usage",
+      "listing_snapshot",
+      "assessment",
+      "recruiting_evidence",
+      "recruiting_job",
+      "recruiting_review",
+      "field_lock",
+      "reminder",
+    ]);
+    const duplicates = duplicatePairs(r.application, r.duplicate_review);
     res.json({
       user: {
         name: u.name,
@@ -243,24 +257,24 @@ export async function createApp(store, options = {}) {
         maxBytes: config.vercel ? 2 * 1024 * 1024 : 20 * 1024 * 1024,
         exportIncludesFiles: !config.vercel,
       },
-      applications: await list(u.id, "application"),
-      savedViews: (await list(u.id, "saved_view")).filter((v) => !v.archived),
-      contacts: await list(u.id, "contact"),
-      tasks: await list(u.id, "task"),
-      rounds: await list(u.id, "round"),
-      documents: await list(u.id, "document"),
-      documentUsages: await list(u.id, "document_usage"),
-      listingSnapshots: await list(u.id, "listing_snapshot"),
-      assessments: await list(u.id, "assessment"),
-      evidence: await list(u.id, "recruiting_evidence"),
-      recruitingJobs: await list(u.id, "recruiting_job"),
-      reviews: await list(u.id, "recruiting_review"),
-      fieldLocks: await list(u.id, "field_lock"),
-      reminders: await list(u.id, "reminder"),
+      applications: r.application,
+      savedViews: r.saved_view.filter((v) => !v.archived),
+      contacts: r.contact,
+      tasks: r.task,
+      rounds: r.round,
+      documents: r.document,
+      documentUsages: r.document_usage,
+      listingSnapshots: r.listing_snapshot,
+      assessments: r.assessment,
+      evidence: r.recruiting_evidence,
+      recruitingJobs: r.recruiting_job,
+      reviews: r.recruiting_review,
+      fieldLocks: r.field_lock,
+      reminders: r.reminder,
       duplicates,
       duplicateScanLimited: !!duplicates.limited,
-      duplicateReviews: (await list(u.id, "duplicate_review")).filter(
-        (r) => r.decision !== "undone",
+      duplicateReviews: r.duplicate_review.filter(
+        (x) => x.decision !== "undone",
       ),
     });
   });

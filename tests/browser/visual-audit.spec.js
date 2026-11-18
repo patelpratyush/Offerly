@@ -8,7 +8,7 @@ test("redesigned main pages stay usable with real synthetic workspace data", asy
   page,
 }, testInfo) => {
   test.setTimeout(90000);
-  const directory = "reference/dispatch-2026-11/screenshots";
+  const directory = "reference/design/screenshots";
   mkdirSync(directory, { recursive: true });
   const errors = [];
   const consoleErrors = [];

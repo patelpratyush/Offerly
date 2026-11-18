@@ -90,7 +90,13 @@ export function GmailSettings({ request }: { request: Request }) {
         <p>Loading connection status…</p>
       ) : (
         <>
-          <p role="status">{status.status.replaceAll("_", " ")}</p>
+          <p role="status">
+            {{
+              connected: "Gmail connected.",
+              disconnected: "Gmail not connected.",
+              reconnect_required: "Gmail needs to be reconnected.",
+            }[status.status] ?? status.status.replaceAll("_", " ")}
+          </p>
           {!status.configured && (
             <p>
               Hosted Gmail is not enabled. Server OAuth configuration is

@@ -95,6 +95,18 @@ export async function createStore(path, options) {
         )
         .all(user, kind)
     ).map((r) => ({ ...JSON.parse(r.data), id: r.id, version: r.version }));
+  // Several kinds in one round trip; same row shape and order as list().
+  const listKinds = async (user, kinds) => {
+    const rows = await db
+      .prepare(
+        `SELECT * FROM records WHERE user_id=? AND kind IN (${kinds.map(() => "?").join(",")}) ORDER BY ${db.hosted ? "sequence" : "rowid"}`,
+      )
+      .all(user, ...kinds);
+    const out = Object.fromEntries(kinds.map((k) => [k, []]));
+    for (const r of rows)
+      out[r.kind].push({ ...JSON.parse(r.data), id: r.id, version: r.version });
+    return out;
+  };
   const get = async (user, id) =>
     typeof id !== "string"
       ? undefined
@@ -269,7 +281,7 @@ export async function createStore(path, options) {
       );
       return { ...data, id: key, version: (old?.version || 0) + 1 };
     });
-  const store = { db, list, get, save, atomic };
+  const store = { db, list, listKinds, get, save, atomic };
   await initializeGmail(store);
   await initializeGmailSync(store);
   await initializeAiPolicy(store);

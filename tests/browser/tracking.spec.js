@@ -158,7 +158,9 @@ test("assessment deadlines, activity timeline and polished responsive pipeline",
     due: "2027-01-18",
   });
   await page.reload();
-  await expect(page.getByText("Data modeling exercise")).toBeVisible();
+  await expect(
+    page.getByText("Data modeling exercise", { exact: true }),
+  ).toBeVisible();
   await page.screenshot({
     path: `test-results/redesign-today-${test.info().project.name}.png`,
     fullPage: true,
