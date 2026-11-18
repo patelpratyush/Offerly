@@ -114,18 +114,6 @@ a {
   display: none !important;
 }
 
-/* ---------- split-flap: retired; text renders static ---------- */
-.flap {
-  display: inline;
-}
-.flap-ch {
-  display: inline;
-  white-space: pre;
-}
-.flap-run .flap-ch {
-  animation: none;
-}
-
 /* ---------- tags: small, quiet, rounded ---------- */
 .code-tag,
 .shell .badge,

@@ -878,7 +878,12 @@ function App() {
   const nextAction = (id: string) => {
     const due = nextActions.get(id);
     return due
-      ? `${due.title} · ${due.date ? shortDate(due.date.slice(0, 10)) : "No date"}`
+      ? `${due.title} · ${
+          due.date
+            ? shortDate(due.date.slice(0, 10)) +
+              (due.date.length > 10 ? " · " + due.date.slice(11, 16) : "")
+            : "No date"
+        }`
       : "No task or deadline set";
   };
   const performMove = (m: NextMove, a: Item) => {

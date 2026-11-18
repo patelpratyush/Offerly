@@ -7,12 +7,8 @@ import { processReminders } from "./reminders.js";
 import { processDeliveries } from "./reminder-rules.js";
 import { processDiscovery } from "./discovery/runner.js";
 process.umask(0o077);
-// Hosted: a standalone worker host sets DATABASE_URL (Postgres) and runs this
-// file directly. Local: SQLite at DATABASE_PATH.
 const store = await createStore(
-  /^postgres(?:ql)?:\/\//.test(process.env.DATABASE_URL || "")
-    ? process.env.DATABASE_URL
-    : resolve(process.env.DATABASE_PATH || "data/offerly.sqlite"),
+  resolve(process.env.DATABASE_PATH || "data/offerly.sqlite"),
 );
 let stopping = false;
 let active = null;

@@ -8,7 +8,10 @@ test("redesigned main pages stay usable with real synthetic workspace data", asy
   page,
 }, testInfo) => {
   test.setTimeout(90000);
-  const directory = "reference/design/screenshots";
+  // UPDATE_SCREENSHOTS=1 refreshes the tracked reference set; otherwise keep the tree clean.
+  const directory = process.env.UPDATE_SCREENSHOTS
+    ? "reference/design/screenshots"
+    : "test-results/screenshots";
   mkdirSync(directory, { recursive: true });
   const errors = [];
   const consoleErrors = [];

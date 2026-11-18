@@ -2,7 +2,6 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Link } from "react-router";
 import { LogOut, Search } from "lucide-react";
 import { pagePaths } from "../../routing";
-import { Flap } from "./Flap";
 import { PAGE_CODES, STATIONS, isMac, stationNumber } from "./nav";
 
 type RailProps = {
@@ -140,9 +139,7 @@ export function ShellRail(props: RailProps) {
                 <span className="station-node" aria-hidden="true" />
                 <span className="station-label">{name}</span>
                 {name === "Applications" && (
-                  <span className="nav-count">
-                    <Flap value={props.applicationCount} />
-                  </span>
+                  <span className="nav-count">{props.applicationCount}</span>
                 )}
                 <span className="nav-index" aria-hidden="true">
                   {stationNumber(name)}

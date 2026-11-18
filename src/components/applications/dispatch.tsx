@@ -1,5 +1,3 @@
-import { useEffect, useRef, useState } from "react";
-
 type Rec = { id: string; [key: string]: any };
 
 const GATES: Record<string, string> = {
@@ -165,34 +163,4 @@ export function deriveNextMove(a: Rec, w: any, today: string): NextMove {
     label: "Add next step",
     detail: "No task or deadline set",
   };
-}
-
-/** Split-flap text: characters flip (staggered) when the value changes. */
-export function Flap({
-  value,
-  className = "",
-}: {
-  value: string;
-  className?: string;
-}) {
-  const previous = useRef(value);
-  const [run, setRun] = useState(0);
-  useEffect(() => {
-    if (previous.current !== value) {
-      previous.current = value;
-      setRun((n) => n + 1);
-    }
-  }, [value]);
-  return (
-    <span className={"flap " + className}>
-      <span className="sr-only">{value}</span>
-      <span aria-hidden="true" key={run} className={run ? "flap-run" : ""}>
-        {Array.from(value).map((c, i) => (
-          <span key={i} style={{ ["--i" as any]: i }}>
-            {c}
-          </span>
-        ))}
-      </span>
-    </span>
-  );
 }
