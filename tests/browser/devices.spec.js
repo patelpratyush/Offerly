@@ -34,6 +34,8 @@ const noOverflow = async (page) =>
 test("workspace supports compact, landscape, tablet and wide-screen navigation", async ({
   page,
 }, testInfo) => {
+  // 21 page visits across three viewports; WebKit on CI runners can pass 30s.
+  test.setTimeout(60000);
   await account(page);
   const errors = [];
   page.on("pageerror", (error) => errors.push(error.message));
