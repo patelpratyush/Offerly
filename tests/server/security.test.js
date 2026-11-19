@@ -1,7 +1,7 @@
 import { request as httpRequest } from "node:http";
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { mkdtempSync, rmSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, rmSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { createServer } from "node:net";
@@ -823,4 +823,21 @@ test("session check endpoint confirms the signed-in account and rejects revoked 
   assert.equal((await request("/session", "GET")).status, 401);
   await request("/logout", "POST", {}, c);
   assert.equal((await request("/session", "GET", undefined, c)).status, 401);
+});
+
+test("Vercel static pages send the same security headers as the API", async (t) => {
+  const { request } = await setup(t);
+  const api = (await request("/auth/config")).headers;
+  const { headers } = JSON.parse(readFileSync("vercel.json", "utf8"));
+  const pages = headers.find(
+    (h) => !"/api/x".match(new RegExp(`^${h.source}$`)),
+  );
+  assert.ok(pages, "vercel.json must set headers for app pages");
+  for (const { key, value } of pages.headers)
+    assert.equal(value, api.get(key), key);
+  for (const key of ["Content-Security-Policy", "X-Frame-Options"])
+    assert.ok(
+      pages.headers.some((h) => h.key === key),
+      key,
+    );
 });

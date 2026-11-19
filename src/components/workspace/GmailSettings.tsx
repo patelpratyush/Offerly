@@ -38,10 +38,12 @@ export function GmailSettings({ request }: { request: Request }) {
       }
     }
     void poll();
-    const timer = window.setInterval(poll, 5000);
+    // Returning to the tab (e.g. from Google's consent page) refreshes once.
+    const onVisible = () => document.visibilityState === "visible" && poll();
+    document.addEventListener("visibilitychange", onVisible);
     return () => {
       alive = false;
-      window.clearInterval(timer);
+      document.removeEventListener("visibilitychange", onVisible);
     };
   }, [request]);
   async function act(path: string, body = {}) {
@@ -71,6 +73,14 @@ export function GmailSettings({ request }: { request: Request }) {
     }
   }
   const importing = ["queued", "running", "retry"].includes(progress?.status);
+  // Poll only while an import is in flight and the tab is visible.
+  useEffect(() => {
+    if (!importing) return;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState === "visible") refresh().catch(() => {});
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [importing]);
   return (
     <section
       className="panel settings-panel space-top"

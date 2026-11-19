@@ -89,13 +89,19 @@ test("Gmail settings disclose gates and control bounded imports", async ({
   await ai
     .getByRole("button", { name: "Grant AI data-sharing consent" })
     .click();
-  await expect(ai.getByRole("listitem").filter({ hasText: "Your consent" })).toContainText("granted");
+  await expect(
+    ai.getByRole("listitem").filter({ hasText: "Your consent" }),
+  ).toContainText("granted");
   await ai
     .getByRole("button", { name: "Revoke AI data-sharing consent" })
     .click();
-  await expect(ai.getByRole("listitem").filter({ hasText: "Your consent" })).toContainText("not granted");
+  await expect(
+    ai.getByRole("listitem").filter({ hasText: "Your consent" }),
+  ).toContainText("not granted");
   configured = true;
   connected = true;
+  // The real connect flow returns from Google with a full page load.
+  await page.reload();
   await expect(
     panel.getByRole("button", { name: "Start historical import" }),
   ).toBeVisible({ timeout: 10000 });
