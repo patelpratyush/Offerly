@@ -41,13 +41,9 @@ jobs:
           TEST_DATABASE_URL: postgresql://postgres:local-test-password@127.0.0.1:5432/offerly_test
       - run: npm run build
       - run: node scripts/audit.js
-      # The runner's apt/CDN download occasionally hangs; cap each try and retry.
-      - run: |
-          for attempt in 1 2 3; do
-            timeout 300 npx playwright install --with-deps chromium webkit firefox && exit 0
-            echo "playwright install attempt $attempt failed or timed out"
-          done
-          exit 1
+      # Step limit stops apt too (a shell timeout left apt holding the dpkg lock).
+      - run: npx playwright install --with-deps chromium webkit firefox
+        timeout-minutes: 10
       - run: npm run test:e2e
         env:
           CI: 'true'
