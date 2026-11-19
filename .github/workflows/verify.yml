@@ -10,7 +10,8 @@ concurrency:
   cancel-in-progress: true
 jobs:
   verify:
-    runs-on: ubuntu-latest
+    # Pinned: Playwright 1.65 ships ubuntu-24.04 builds; the 26.04 image made installs hang.
+    runs-on: ubuntu-24.04
     timeout-minutes: 25
     services:
       postgres:
