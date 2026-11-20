@@ -1,17 +1,12 @@
 import { z } from "zod";
-import { HttpError } from "./security.js";
+import { HttpError, isIsoDate } from "./security.js";
 export const documentUsageSchema = z.object({
   applicationId: z.string().uuid(),
   documentVersionId: z.string().uuid(),
   submittedDate: z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .refine(
-      (value) =>
-        !Number.isNaN(Date.parse(value)) &&
-        new Date(value).toISOString().slice(0, 10) === value,
-      "Enter a valid submission date",
-    ),
+    .refine(isIsoDate, "Enter a valid submission date"),
   purpose: z.enum(["Resume", "Cover letter", "Other"]),
   notes: z.string().trim().max(10000).default(""),
   retracted: z.boolean().default(false),

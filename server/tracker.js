@@ -1,17 +1,14 @@
 import { mapAsync as _mapAsync } from "./async.js";
 import { z } from "zod";
 import { createHash } from "node:crypto";
-import { HttpError } from "./security.js";
+import { HttpError, isIsoDate } from "./security.js";
 const short = z.string().trim().max(300);
 const filterDate = z.union([
   z.literal(""),
   z
     .string()
     .regex(/^\d{4}-\d{2}-\d{2}$/)
-    .refine(
-      (v) =>
-        !isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v,
-    ),
+    .refine(isIsoDate),
 ]);
 export const savedViewSchema = z.object({
   name: short.min(1).max(60),

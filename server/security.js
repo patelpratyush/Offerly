@@ -34,33 +34,32 @@ export function securityConfig(overrides = {}) {
     ...overrides,
   };
 }
+// A real calendar date in YYYY-MM-DD form ("2026-02-31" and "2026-13-01" fail).
+export const isIsoDate = (v) =>
+  typeof v === "string" &&
+  /^\d{4}-\d{2}-\d{2}$/.test(v) &&
+  Number.isFinite(Date.parse(v)) &&
+  new Date(v).toISOString().slice(0, 10) === v;
 export async function createLimiter(db) {
   if (!db.hosted)
     await db.exec(
       "CREATE TABLE IF NOT EXISTS rate_limits(key TEXT PRIMARY KEY,count INTEGER NOT NULL,expires INTEGER NOT NULL)",
     );
-  return async (key, limit, windowMs) =>
-    db.atomic(async () => {
-      const now = Date.now(),
-        hashed = digest(key);
+  // One statement, no transaction: parallel requests used to collide in a
+  // serializable transaction that scanned the whole table (409s on page load).
+  return async (key, limit, windowMs) => {
+    const now = Date.now();
+    // Expired rows are cleared now and then, outside the hot path.
+    if (Math.random() < 0.01)
       await db.prepare("DELETE FROM rate_limits WHERE expires<=?").run(now);
-      const row = await db
-        .prepare("SELECT * FROM rate_limits WHERE key=?")
-        .get(hashed);
-      if (
-        !row &&
-        (await db.prepare("SELECT count(*) n FROM rate_limits").get()).n >=
-          10000
+    const row = await db
+      .prepare(
+        "INSERT INTO rate_limits(key,count,expires) VALUES(?,1,?) ON CONFLICT(key) DO UPDATE SET count=CASE WHEN rate_limits.expires<=? THEN 1 WHEN rate_limits.count>? THEN rate_limits.count ELSE rate_limits.count+1 END,expires=CASE WHEN rate_limits.expires<=? THEN ? ELSE rate_limits.expires END RETURNING count",
       )
-        throw new HttpError(429, "Server busy. Try again shortly.");
-      if (row && row.count >= limit)
-        throw new HttpError(429, "Too many requests. Try again later.");
-      await db
-        .prepare(
-          "INSERT INTO rate_limits VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET count=count+1",
-        )
-        .run(hashed, 1, now + windowMs);
-    });
+      .get(digest(key), now + windowMs, now, limit, now, now + windowMs);
+    if (Number(row.count) > limit)
+      throw new HttpError(429, "Too many requests. Try again later.");
+  };
 }
 export function installSecurity(app, config, limit) {
   app.disable("x-powered-by");

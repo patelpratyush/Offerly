@@ -1,18 +1,12 @@
 import { z } from "zod";
-import { HttpError } from "./security.js";
+import { HttpError, isIsoDate } from "./security.js";
 const optionalDate = z
   .union([
     z.literal(""),
     z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .refine((value) => {
-        const timestamp = Date.parse(value);
-        return (
-          Number.isFinite(timestamp) &&
-          new Date(timestamp).toISOString().slice(0, 10) === value
-        );
-      }, "Enter a valid calendar date"),
+      .refine(isIsoDate, "Enter a valid calendar date"),
   ])
   .default("");
 export const applicationDetailsShape = {

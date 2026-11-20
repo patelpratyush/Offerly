@@ -8,7 +8,11 @@ import { createServer } from "node:net";
 import { scryptSync, randomUUID } from "node:crypto";
 import { createApp } from "../../server/app.js";
 import { createStore } from "../../server/store.js";
-import { securityConfig, digest } from "../../server/security.js";
+import {
+  securityConfig,
+  digest,
+  createLimiter,
+} from "../../server/security.js";
 import { validateDocument, scanWithClamav } from "../../server/files.js";
 import { SESSION_IDLE_MS } from "../../server/auth.js";
 const password = "test-security-password-123";
@@ -287,7 +291,7 @@ test("persistent account/IP throttling cannot be bypassed with forwarded headers
         .prepare("SELECT count FROM rate_limits WHERE key=?")
         .get(key)
     ).count,
-    10,
+    11, // the rejected attempt is recorded once, then the count stops growing
   );
 });
 test("production refuses missing HTTPS config, requires invitations, enforces secure host and transport", async (t) => {
@@ -840,4 +844,20 @@ test("Vercel static pages send the same security headers as the API", async (t) 
       pages.headers.some((h) => h.key === key),
       key,
     );
+});
+
+test("rate limiter allows exactly `limit` hits per window and resets after it", async (t) => {
+  const { store } = await setup(t);
+  const limit = await createLimiter(store.db);
+  for (let i = 0; i < 3; i++) await limit("probe", 3, 60000);
+  await assert.rejects(limit("probe", 3, 60000), /Too many requests/);
+  await assert.rejects(limit("probe", 3, 60000), /Too many requests/);
+  await store.db
+    .prepare("UPDATE rate_limits SET expires=? WHERE key=?")
+    .run(Date.now() - 1, digest("probe"));
+  await limit("probe", 3, 60000); // window over: counting starts again
+  const results = await Promise.allSettled(
+    Array.from({ length: 6 }, () => limit("burst", 4, 60000)),
+  );
+  assert.equal(results.filter((r) => r.status === "fulfilled").length, 4);
 });

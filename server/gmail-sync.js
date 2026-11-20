@@ -1,7 +1,7 @@
 import { validateAiReservation } from "./recruiting-ai-policy.js";
 import { extractRecruitingWithAi } from "./integrations/recruiting-ai.js";
 import { z } from "zod";
-import { HttpError } from "./security.js";
+import { HttpError, isIsoDate } from "./security.js";
 import {
   gmailAccount,
   gmailAccessToken,
@@ -13,11 +13,7 @@ const RETENTION = 30 * 86400000;
 const date = z
   .string()
   .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine(
-    (v) =>
-      Number.isFinite(Date.parse(v)) &&
-      new Date(v).toISOString().slice(0, 10) === v,
-  );
+  .refine(isIsoDate);
 const inputSchema = z
   .object({
     after: date,

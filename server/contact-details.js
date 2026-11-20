@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isIsoDate } from "./security.js";
 const text = z.string().trim().max(200);
 const source = z.enum([
   "Manual entry",
@@ -39,14 +40,7 @@ export const contactProvenanceFields = [
 ];
 const date = z
   .string()
-  .refine(
-    (value) =>
-      !value ||
-      (/^\d{4}-\d{2}-\d{2}$/.test(value) &&
-        Number.isFinite(Date.parse(value)) &&
-        new Date(value).toISOString().slice(0, 10) === value),
-    "Use a valid calendar date",
-  )
+  .refine((value) => !value || isIsoDate(value), "Use a valid calendar date")
   .default("");
 const linkedinUrl = z
   .string()

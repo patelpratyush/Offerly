@@ -15,6 +15,7 @@ import {
   installSecurity,
   createLimiter,
   HttpError,
+  isIsoDate,
 } from "./security.js";
 import { mountAuth } from "./auth.js";
 import { mountFiles, readDocumentBody } from "./files.js";
@@ -41,10 +42,7 @@ const date = z
     z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .refine(
-        (v) =>
-          !isNaN(Date.parse(v)) && new Date(v).toISOString().slice(0, 10) === v,
-      ),
+      .refine(isIsoDate),
   ])
   .default("");
 const url = z

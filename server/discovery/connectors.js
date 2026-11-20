@@ -3,6 +3,7 @@
 // is injected so tests use recorded or synthetic fixtures only. Collection of
 // real boards remains disabled until source permissions are confirmed
 // (reference/phase0/access-decision.md).
+import { isIsoDate } from "../security.js";
 export class ConnectorError extends Error {
   constructor(code, message, { retryAfterMs = 0 } = {}) {
     super(message || code);
@@ -141,9 +142,9 @@ export function parsePosted(value) {
   if (typeof value !== "string") return unknown;
   const text = value.trim();
   if (/^\d{4}-\d{2}-\d{2}$/.test(text)) {
-    const ok =
-      new Date(text + "T00:00:00Z").toISOString().slice(0, 10) === text;
-    return ok ? { at: text, precision: "date", timezone: "" } : unknown;
+    return isIsoDate(text)
+      ? { at: text, precision: "date", timezone: "" }
+      : unknown;
   }
   const match =
     /^\d{4}-\d{2}-\d{2}[T ]\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(Z|[+-]\d{2}:?\d{2})$/i.exec(
