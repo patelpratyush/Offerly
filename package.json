@@ -42,7 +42,7 @@
     "@fontsource-variable/archivo": "^5.3.0",
     "@fontsource-variable/martian-mono": "^5.3.0",
     "@vercel/blob": "2.9.0",
-    "@vercel/sandbox": "3.9.1",
+    "@vercel/sandbox": "4.0.0",
     "csv-parse": "^7.0.3",
     "csv-stringify": "^6.6.0",
     "express": "^5.3.0",
