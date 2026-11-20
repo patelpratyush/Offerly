@@ -9,9 +9,28 @@ concurrency:
   group: verify-${{ github.ref }}
   cancel-in-progress: true
 jobs:
-  verify:
-    # Pinned: Playwright 1.65 ships ubuntu-24.04 builds; the 26.04 image made installs hang.
+  # The test container must match @playwright/test exactly; read it from the
+  # lockfile so dependency bumps pick the right image automatically.
+  playwright-version:
     runs-on: ubuntu-24.04
+    outputs:
+      version: ${{ steps.lock.outputs.version }}
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+          sparse-checkout: package-lock.json
+          sparse-checkout-cone-mode: false
+      - id: lock
+        run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/@playwright/test'].version")" >> "$GITHUB_OUTPUT"
+  verify:
+    needs: playwright-version
+    runs-on: ubuntu-24.04
+    # Browsers and their system libraries come preinstalled, so CI never waits on
+    # Ubuntu mirrors or the Playwright CDN (both hung installs in Nov 2026).
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-noble
+      options: --user 1001
     timeout-minutes: 25
     services:
       postgres:
@@ -39,12 +58,9 @@ jobs:
       - run: npm test
       - run: npm run test:postgres
         env:
-          TEST_DATABASE_URL: postgresql://postgres:local-test-password@127.0.0.1:5432/offerly_test
+          TEST_DATABASE_URL: postgresql://postgres:local-test-password@postgres:5432/offerly_test
       - run: npm run build
       - run: node scripts/audit.js
-      # Step limit stops apt too (a shell timeout left apt holding the dpkg lock).
-      - run: npx playwright install --with-deps chromium webkit firefox
-        timeout-minutes: 10
       - run: npm run test:e2e
         env:
           CI: 'true'
