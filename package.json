@@ -62,7 +62,7 @@
     "@playwright/test": "^1.65.0",
     "@types/react": "^19.2.0",
     "@types/react-dom": "^19.2.0",
-    "concurrently": "^9.2.0",
+    "concurrently": "^10.0.7",
     "eslint": "^10.14.0",
     "globals": "^17.14.0",
     "prettier": "^3.9.10",
