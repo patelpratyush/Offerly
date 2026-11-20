@@ -39,7 +39,7 @@ npm run test:e2e
 npm run test:devices
 ```
 
-API tests use isolated in-memory databases. Browser suites create synthetic `test-*` accounts in disposable databases on dedicated ports 4173/3002, separate from the development app. The device suite covers Chromium/Android, WebKit/iPhone/iPad, Firefox, 320px touch and ultrawide profiles, including landscape, keyboard/panning simulation and larger application lists. Profiles emulate devices; physical keyboards, native zoom and screen readers still need hardware testing. See [device verification](reference/redesign/DEVICES.md).
+API tests use isolated in-memory databases. Browser suites create synthetic `test-*` accounts in disposable databases on dedicated ports 4173/3002, separate from the development app. The device suite covers Chromium/Android, WebKit/iPhone/iPad, Firefox, 320px touch and ultrawide profiles, including landscape, keyboard/panning simulation and larger application lists. Profiles emulate devices; physical keyboards, native zoom and screen readers still need hardware testing.
 
 ## Architecture
 
