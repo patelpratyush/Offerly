@@ -60,7 +60,7 @@ jobs:
         env:
           TEST_DATABASE_URL: postgresql://postgres:local-test-password@postgres:5432/offerly_test
       - run: npm run build
-      - run: node scripts/audit.js
+      - run: npm audit --audit-level=moderate
       - run: npm run test:e2e
         env:
           CI: 'true'
