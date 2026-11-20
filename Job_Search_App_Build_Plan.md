@@ -229,12 +229,12 @@ Separate public listing records from private candidate data. Enforce ownership i
 
 ### Phase 1 — Build the tracking foundation
 
-- [ ] Authentication and private account data.
-- [ ] Application table, board, custom stages, rounds, and timeline.
-- [ ] Contacts, notes, tasks, and document attachments.
-- [ ] CSV import/export and responsive layouts.
+- [x] Authentication and private account data.
+- [x] Application table, board, custom stages, rounds, and timeline.
+- [x] Contacts, notes, tasks, and document attachments.
+- [x] CSV import/export and responsive layouts.
 
-**Exit:** A user can manage an entire application manually and export their data.
+**Exit:** A user can manage an entire application manually and export their data. Implemented for the invited manual pilot; see [Phase 1 audit](reference/roadmap/PHASE1_AUDIT.md) for evidence and remaining pilot/operational gaps. Hosted exports contain document links; original files require separate authenticated downloads.
 
 ### Phase 2 — Automate recruiting updates
 
@@ -320,3 +320,14 @@ These references informed the proposed connector strategy. Recheck current docum
 - [Lever Postings API](https://github.com/lever/postings-api)
 - [Ashby Job Postings API](https://developers.ashbyhq.com/docs/public-job-posting-api)
 - [LinkedIn prohibited software and extensions](https://www.linkedin.com/help/linkedin/answer/a1341387/prohibition-of-scraping-software)
+
+### Implementation follow-up — November 5, 2026
+
+Phase 2 repository implementation now includes hosted read-only Gmail OAuth,
+private credential encryption, bounded import, History API processing through
+existing scheduler, conservative evidence proposals, explicit application/contact
+and event decisions, waiting timestamps, and disconnect/retention/deletion
+cleanup. See `reference/roadmap/PHASE2_IMPLEMENTATION.md`. Phase checkboxes above
+remain release acceptance gates: real-mail extraction quality and provider-backed
+hosted validation are still open. No synthetic run establishes stage safety.
+Production AI and automatic stage updates remain disabled.

@@ -2,11 +2,21 @@
 
 The PRD and build plan define scope; this file records implementation evidence and gaps. Milestone completion must follow the recorded acceptance results.
 
+## Phase 1 audit — November 1, 2026
+
+Audited main at `6e8acef` against the Phase 1 build-plan checklist, tracker implementation, regression coverage and hosted operating guide. Core manual tracking is implemented; do not rebuild it or start Gmail integration as a substitute for pilot feedback. See [audit and David's pilot checklist](reference/roadmap/PHASE1_AUDIT.md).
+
+Remaining work: David's usability feedback, hosted export/restore limitations, and public-launch operational validation. Production AI and automatic stage updates remain disabled. Real stage-safety evaluation remains unavailable because the owner's tracker workspace is empty; synthetic tests do not close that gate. Existing local Phase 0 owner guide/template remain uncommitted.
+
+The M1 table and M2 heading below contain historical shorthand: hosted private scanned uploads, recovery-code password reset, scheduler and manual review/reminder foundation are implemented. M2 Gmail OAuth/sync/extraction and outbound reminder delivery remain unimplemented. Hosted JSON exports include authenticated document links rather than original file bytes; use separate downloads. Public signup verification and broader public-launch gates remain open.
+
+Verification on November 1: all 197 tests and all 40 desktop/mobile browser scenarios passed. ESLint, strict TypeScript and production build passed. Dependency audit passed with zero vulnerabilities. No product code changed; no commit, push or deployment performed.
+
 ## Current checkpoint — October 31, 2026
 
 This section supersedes older historical checkpoint descriptions below. The private manual tracker, hosted Supabase/Vercel deployment, private scanned Blob uploads, hosted scheduler, and recovery-code password reset are implemented. Recent CI fixes are on main.
 
-Current verification inventory: `npm test` passes 197 tests; `npm run phase0:test` passes 87 tests; browser suite contains 34 desktop/mobile scenarios. Historical test counts below describe their original checkpoints.
+Current verification inventory: `npm test` passes 197 tests; `npm run phase0:test` passes 87 tests; browser suite contains 40 desktop/mobile scenarios. Historical test counts below describe their original checkpoints.
 
 Phase 0 feasibility spike includes six public-board probes, local Gmail authorization prototype, bounded recruiting import proof, synthetic fixtures, and GPT comparisons. The seven-day scan claim (612 messages) has no committed artifact and remains unverified from repository evidence. Two reviewers labeled and owner adjudicated the 24-case synthetic fresh-mail set; metrics and frozen GPT scoring are in [evaluation](reference/phase0/evaluation.md). A separate 10-case private email packet has independent reviewer labels, owner adjudication, and one exploratory GPT event run: 4/7 precision (57.1%; Wilson CI 25.0–84.2%) and 4/4 recall (100%; CI 51.0–100%). Missing candidate and tracker context prevents link-accuracy or stage-safety scoring; this prompt-visible packet is not representative. On October 25, one owner-authorized live smoke test sent 20 recent Gmail message bodies to GPT-6 Luna (20 calls, $0.0008671 actual token cost). It returned aggregate counts only: 3 confirmations, 1 interview; no per-message predictions or content were retained, so this is not an accuracy evaluation. The 12 recruiting plus 6 fit authored cases are separate. Representative consented evaluation, prompt-blind model scoring, and measured stage-mapping precision remain open. See [access decision](reference/phase0/access-decision.md).
 
@@ -129,3 +139,29 @@ Added date-only in-app reminders on application follow-ups, rounds, assessments 
 Scope: user-proposed stage/response-owner changes only, manual evidence only, no extraction confidence claims, no Gmail connection, no automatic status changes, no outgoing notifications. Gmail event extraction, provider-specific disconnect behavior and precision evaluation remain step 3/M2 work. Public deployment prerequisites remain unchanged.
 
 Verification: all 62 backend/API/security/recovery tests and all 26 desktop/mobile browser scenarios passed. Final mobile form refinement and stronger cross-account scheduler failure test passed the 10 focused backend tests and both review/reminder browser scenarios again. ESLint, strict TypeScript, production build and dependency audit passed (zero known dependency vulnerabilities). Focused WCAG 2 A/AA review-page checks passed; screenshots were inspected and saved under `reference/screenshots/recruiting-{desktop,mobile}.png`. These are scoped checks, not production certification. Verification completed before committing Step 2. No deployment was performed.
+
+## Phase 0–2 integration follow-up (2026-11-05)
+
+Phase 1 manual tracker remains implemented. Phase 2 now includes hosted read-only
+OAuth, private encrypted credentials, bounded import/progress/cancel/retry,
+History API polling through the existing scheduler, conservative deterministic
+review proposals, explicit contact acceptance, reply waiting timestamps, and
+explicit round/assessment/task actions with undo and reminder reconciliation.
+Two Gmail migrations are required before hosted startup. Existing uncommitted
+owner documentation has been preserved.
+
+Phase 0 production gates remain open: representative consented tracker-context
+labels, real link/stage-safety evaluation, verified domain, Google restricted
+scope/security requirements, and provider-backed hosted validation. Empty tracker
+cannot establish stage-safety accuracy. Production AI and automatic stage updates
+remain disabled. Synthetic tests verify behavior only, never production quality.
+See reference/roadmap/PHASE2_IMPLEMENTATION.md for configuration and validation.
+
+Integration verification: stable browser suite passed 42 scenarios (21 desktop,
+21 mobile); selected PostgreSQL suite passed 73 tests; Gmail OAuth/sync tests
+passed 14 each on SQLite and isolated PostgreSQL; recruiting/event action tests
+passed 12. Final frozen-code full check is recorded in Phase 2 implementation
+report when complete. No commit, push, deployment, live Gmail scan or production
+AI enablement occurred. Phase 0/2 release acceptance remains blocked by the real
+evidence and provider requirements above, rather than unchecked local feature
+implementation.
