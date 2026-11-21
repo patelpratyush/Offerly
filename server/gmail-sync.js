@@ -476,6 +476,8 @@ export async function purgeGmailEvidence(
       (e) =>
         e.sourceType === "gmail" && (all || Date.parse(e.expiresAt) <= now),
     );
+    // Nothing expired means nothing to redact; skip the full contact/history scan.
+    if (!all && !evidence.length) return { purged: 0 };
     const ids = new Set(evidence.map((e) => e.id));
     const sourceIds = evidence.map((e) => e.sourceId);
     function redact(value) {

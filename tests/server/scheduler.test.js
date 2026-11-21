@@ -137,3 +137,19 @@ test("expired processing budgets preserve cursors and report actual visits", asy
     nextCursor: "a",
   });
 });
+test("a failing Gmail step still lets reviews and reminders run", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  let reminded = false;
+  const result = await runScheduler(store, {
+    gmail: async () => {
+      throw new Error("corrupt sync row");
+    },
+    reminders: async () => {
+      reminded = true;
+      return { processed: 0, nextCursor: "" };
+    },
+  });
+  assert.deepEqual(result.gmail, { failed: true });
+  assert.equal(reminded, true);
+});

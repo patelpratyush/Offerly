@@ -1252,7 +1252,7 @@ test("quota failures during bulk edits and merges roll back every earlier write"
   );
 });
 test("deleting an application removes its records and unlinks contacts", async (t) => {
-  const { request, register } = await setup(t);
+  const { request, register, store } = await setup(t);
   const a = await register("del@example.com"),
     b = await register("other@example.com");
   const app = (
@@ -1287,12 +1287,27 @@ test("deleting an application removes its records and unlinks contacts", async (
       a,
     )
   ).data;
+  const { id: userId } = await store.db
+    .prepare("SELECT id FROM users WHERE email=?")
+    .get("del@example.com");
+  const review = await store.save(userId, "recruiting_review", {
+    applicationId: app.id,
+    status: "accepted",
+  });
+  const lock = await store.save(userId, "field_lock", {
+    applicationId: app.id,
+    field: "stage",
+    locked: true,
+  });
   const path = "/records/application/" + app.id;
   assert.equal((await request(path, "DELETE", { version: 1 }, b)).status, 404);
   assert.equal((await request(path, "DELETE", { version: 9 }, a)).status, 409);
   const done = await request(path, "DELETE", { version: app.version }, a);
   assert.equal(done.status, 200);
-  assert.equal(done.data.removed, 2);
+  assert.equal(done.data.removed, 3);
+  // Recruiting reviews stay as audit history; locks on the gone application go.
+  assert.ok(await store.get(userId, review.id));
+  assert.equal(await store.get(userId, lock.id), undefined);
   const w = (await request("/workspace", "GET", undefined, a)).data;
   assert.deepEqual(
     w.applications.map((x) => x.id),

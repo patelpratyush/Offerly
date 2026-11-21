@@ -30,7 +30,13 @@ export async function runScheduler(
   if (!state) return { skipped: true, reason: "already_running_or_replayed" };
   const deadline = Date.now() + 35000;
   try {
-    const gmailResult = await gmail(store, { deadline: Date.now() + 10000 });
+    // Best effort: a Gmail failure must not stop reviews and reminders.
+    const gmailResult = await gmail(store, {
+      deadline: Date.now() + 10000,
+    }).catch(() => {
+      console.error(JSON.stringify({ event: "gmail_tick_failed" }));
+      return { failed: true };
+    });
     const reviewResult = await recruiting(store, {
       cursor: state.recruiting_cursor,
       deadline: deadline - 17500,
