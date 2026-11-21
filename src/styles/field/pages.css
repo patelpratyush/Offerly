@@ -517,3 +517,24 @@
     display: none;
   }
 }
+
+/* application delete confirmation */
+.delete-confirm {
+  margin: var(--s3) 0;
+  padding: var(--s3) var(--s4);
+  border: 1px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+  color: var(--text);
+}
+.delete-confirm p {
+  margin: 0 0 var(--s3);
+}
+.delete-confirm .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+.secondary.danger {
+  color: var(--danger);
+}

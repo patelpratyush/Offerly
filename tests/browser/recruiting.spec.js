@@ -129,3 +129,54 @@ test("reviewed evidence, protected fields, undo and reminder lifecycle work on e
   await expect(reminders.getByText("No active reminders.")).toBeVisible();
   expect(errors).toEqual([]);
 });
+
+test("new employer from evidence is added to the tracker, then deleted", async ({
+  page,
+}) => {
+  test.setTimeout(60000);
+  await page.goto("/#signup");
+  await page.getByLabel("Your name").fill("Adder");
+  await page
+    .getByLabel("Email address", { exact: true })
+    .fill(`adder-${Date.now()}-${Math.random()}@example.com`);
+  await page
+    .getByLabel("Password", { exact: true })
+    .fill("review-browser-password");
+  await page.getByRole("button", { name: "Create workspace" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Make your next move, Adder." }),
+  ).toBeVisible();
+  await navigate(page, "Reviews");
+  await page.getByLabel("Source identifier").fill("new-employer-1");
+  await page
+    .getByLabel("Evidence time (ISO timestamp with UTC offset)")
+    .fill("2026-11-10T10:00:00-05:00");
+  await page
+    .getByLabel("Evidence excerpt", { exact: true })
+    .fill("Thank you for applying to Newco for the Platform Engineer role.");
+  await page.getByLabel("Possible company").fill("Newco");
+  await page.getByLabel("Possible role").fill("Platform Engineer");
+  await page
+    .getByLabel("User-proposed stage", { exact: true })
+    .selectOption("Submitted");
+  await page.getByRole("button", { name: "Queue evidence for review" }).click();
+  const review = page.getByRole("article", { name: "Review new-employer-1" });
+  const form = review.getByRole("form", {
+    name: "Add this employer to your tracker",
+  });
+  await expect(form).toBeVisible({ timeout: 10000 });
+  await expect(form.getByLabel("Company")).toHaveValue("Newco");
+  await expect(form.getByLabel("Role")).toHaveValue("Platform Engineer");
+  await form.getByRole("button", { name: /Add to tracker/ }).click();
+  await expect(review.locator(".wire-status")).toHaveText("accepted");
+
+  await navigate(page, "Applications");
+  await page.getByText("Platform Engineer").first().click();
+  const drawer = page.getByRole("dialog", { name: "Application details" });
+  await expect(drawer).toContainText("Submitted");
+  await drawer.getByRole("button", { name: "Delete", exact: true }).click();
+  await drawer.getByRole("button", { name: "Delete permanently" }).click();
+  await expect(drawer).toBeHidden();
+  await expect(page.getByText("Application deleted")).toBeVisible();
+  await expect(page.getByText("Platform Engineer")).toHaveCount(0);
+});

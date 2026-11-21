@@ -1251,3 +1251,59 @@ test("quota failures during bulk edits and merges roll back every earlier write"
     0,
   );
 });
+test("deleting an application removes its records and unlinks contacts", async (t) => {
+  const { request, register } = await setup(t);
+  const a = await register("del@example.com"),
+    b = await register("other@example.com");
+  const app = (
+    await request(
+      "/records/application",
+      "POST",
+      { company: "Acme", title: "Engineer", stage: "Saved" },
+      a,
+    )
+  ).data;
+  const keep = (
+    await request(
+      "/records/application",
+      "POST",
+      { company: "Beta", title: "Engineer", stage: "Saved" },
+      a,
+    )
+  ).data;
+  const task = (
+    await request(
+      "/records/task",
+      "POST",
+      { title: "Follow up", applicationId: app.id, due: "2026-12-01" },
+      a,
+    )
+  ).data;
+  const person = (
+    await request(
+      "/records/contact",
+      "POST",
+      { name: "Recruiter", applicationIds: [app.id, keep.id] },
+      a,
+    )
+  ).data;
+  const path = "/records/application/" + app.id;
+  assert.equal((await request(path, "DELETE", { version: 1 }, b)).status, 404);
+  assert.equal((await request(path, "DELETE", { version: 9 }, a)).status, 409);
+  const done = await request(path, "DELETE", { version: app.version }, a);
+  assert.equal(done.status, 200);
+  assert.equal(done.data.removed, 2);
+  const w = (await request("/workspace", "GET", undefined, a)).data;
+  assert.deepEqual(
+    w.applications.map((x) => x.id),
+    [keep.id],
+  );
+  assert.ok(!w.tasks.some((x) => x.id === task.id));
+  assert.deepEqual(w.contacts.find((x) => x.id === person.id).applicationIds, [
+    keep.id,
+  ]);
+  assert.equal(
+    (await request("/events/" + app.id, "GET", undefined, a)).data.length ?? 0,
+    0,
+  );
+});

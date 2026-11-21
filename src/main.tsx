@@ -26,6 +26,7 @@ import {
   Leaf,
   Clock,
   Archive,
+  Trash2,
 } from "lucide-react";
 import "@fontsource-variable/archivo/wdth.css";
 import "@fontsource-variable/martian-mono/wdth.css";
@@ -331,6 +332,7 @@ function App() {
     [applicationPage, setApplicationPage] = useState(0),
     [boardLimits, setBoardLimits] = useState<Record<string, number>>({}),
     [detailTab, setDetailTab] = useState("Overview"),
+    [confirmDelete, setConfirmDelete] = useState(false),
     [busy, setBusy] = useState(false);
   useEffect(() => {
     setQuery("");
@@ -561,6 +563,7 @@ function App() {
       detailId.current = found?.id || null;
       setDetailState(found || null);
       setDetailTab("Overview");
+      setConfirmDelete(false);
       setEvents([]);
       if (found) void loadEvents(found.id).catch((e) => setError(e.message));
     } else if (found) setDetailState(found);
@@ -2048,7 +2051,54 @@ function App() {
                   <Archive size={16} />
                   {detail.archived ? "Restore" : "Archive"}
                 </button>
+                {!confirmDelete && (
+                  <button
+                    className="secondary danger"
+                    onClick={() => setConfirmDelete(true)}
+                  >
+                    <Trash2 size={16} />
+                    Delete
+                  </button>
+                )}
               </div>
+              {confirmDelete && (
+                <div className="delete-confirm" role="alert">
+                  <p>
+                    Permanently delete {detail.company} · {detail.title}? Its
+                    interviews, tasks, assessments, reminders and history go
+                    too. Contacts and documents are kept. This cannot be undone.
+                  </p>
+                  <div className="actions">
+                    <button
+                      className="danger"
+                      disabled={busy}
+                      onClick={() =>
+                        run(async () => {
+                          await api(
+                            "/records/application/" +
+                              encodeURIComponent(detail.id),
+                            "DELETE",
+                            { version: detail.version },
+                          );
+                          setConfirmDelete(false);
+                          setDetail(null);
+                          await refresh();
+                          setNotice("Application deleted");
+                        })
+                      }
+                    >
+                      Delete permanently
+                    </button>
+                    <button
+                      className="secondary"
+                      autoFocus
+                      onClick={() => setConfirmDelete(false)}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
               <div
                 className="detail-tabs"
                 role="group"

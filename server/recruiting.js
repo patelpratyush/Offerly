@@ -122,15 +122,17 @@ async function match(store, user, evidence) {
     );
     return {
       candidateApplicationIds: candidates.map((a) => a.id),
-      matchingRationale:
-        "Exact normalized company and requisition match; review required",
+      matchingRationale: candidates.length
+        ? "Exact normalized company and requisition match; review required"
+        : "No application matches this company and requisition; choose the target yourself",
     };
   }
   candidates = candidates.filter((a) => norm(a.title) === norm(evidence.title));
   return {
     candidateApplicationIds: candidates.map((a) => a.id),
-    matchingRationale:
-      "Exact normalized company and role match; review required",
+    matchingRationale: candidates.length
+      ? "Exact normalized company and role match; review required"
+      : "No application matches this company and role; choose the target yourself",
   };
 }
 export async function recordManualLocks(

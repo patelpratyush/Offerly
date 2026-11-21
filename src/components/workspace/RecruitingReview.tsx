@@ -495,7 +495,33 @@ function ReviewCard({
     [owner, setOwner] = useState(review.proposedChanges?.owner || ""),
     [override, setOverride] = useState(false);
   const operation = useOperation(request, onChanged);
+  const [newCompany, setNewCompany] = useState(evidence?.company || ""),
+    [newTitle, setNewTitle] = useState(evidence?.title || ""),
+    [createError, setCreateError] = useState("");
   const application = applications.find((item) => item.id === applicationId);
+  // Creates the application from the email, then accepts this proposal onto it.
+  async function addToTracker() {
+    setCreateError("");
+    let created: Item;
+    try {
+      created = await request("/records/application", "POST", {
+        company: newCompany.trim(),
+        title: newTitle.trim(),
+        stage: stages[0],
+      });
+    } catch (error) {
+      setCreateError(message(error));
+      return;
+    }
+    setApplicationId(created.id);
+    await operation.run(`/recruiting/reviews/${review.id}/decide`, {
+      version: review.version,
+      decision: "accept",
+      applicationId: created.id,
+      applicationVersion: created.version,
+      override: false,
+    });
+  }
   useEffect(() => {
     setOverride(false);
   }, [application?.version]);
@@ -558,9 +584,56 @@ function ReviewCard({
         </p>
       )}
       {candidates.length === 0 && !application && pending && (
-        <p className="wire-banner" data-kind="ambiguity">
-          <strong>No match found.</strong> Select the application yourself.
-        </p>
+        <form
+          className="wire-banner wire-create"
+          data-kind="ambiguity"
+          aria-label="Add this employer to your tracker"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void addToTracker();
+          }}
+        >
+          <p>
+            <strong>Not in your tracker yet.</strong> Check the company and role
+            from the email, then add it. Or pick an existing application below.
+          </p>
+          <div className="filter-grid">
+            <label>
+              Company
+              <input
+                required
+                maxLength={200}
+                value={newCompany}
+                disabled={operation.busy}
+                onChange={(event) => setNewCompany(event.target.value)}
+              />
+            </label>
+            <label>
+              Role
+              <input
+                required
+                maxLength={200}
+                value={newTitle}
+                disabled={operation.busy}
+                onChange={(event) => setNewTitle(event.target.value)}
+              />
+            </label>
+          </div>
+          <button
+            type="submit"
+            disabled={operation.busy || !newCompany.trim() || !newTitle.trim()}
+          >
+            Add to tracker
+            {review.proposedChanges?.stage
+              ? ` as ${review.proposedChanges.stage}`
+              : ""}
+          </button>
+          {createError && (
+            <p className="error" role="alert">
+              {createError}
+            </p>
+          )}
+        </form>
       )}
       <div className="wire-body">
         <section className="wire-source" aria-label="Source evidence">

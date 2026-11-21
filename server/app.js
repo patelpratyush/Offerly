@@ -10,6 +10,7 @@ import { mountReminderRules } from "./reminder-rules.js";
 import { mountInsights } from "./insights.js";
 import { mountCalendar } from "./calendar.js";
 import { z } from "zod";
+import { guessEmployer } from "./integrations/gmail-extraction.js";
 import {
   securityConfig,
   installSecurity,
@@ -264,7 +265,20 @@ export async function createApp(store, options = {}) {
       documentUsages: r.document_usage,
       listingSnapshots: r.listing_snapshot,
       assessments: r.assessment,
-      evidence: r.recruiting_evidence,
+      // Older Gmail evidence was stored without an employer guess; derive one for the prefill.
+      evidence: r.recruiting_evidence.map((e) => {
+        if (e.company || e.sourceType !== "gmail" || e.applicationId) return e;
+        const [subject = "", ...rest] = String(e.excerpt || "").split("\n");
+        const sender = e.contacts?.[0];
+        return {
+          ...e,
+          ...guessEmployer({
+            subject,
+            current: rest.join("\n"),
+            from: sender ? `${sender.name || ""} <${sender.email}>` : "",
+          }),
+        };
+      }),
       recruitingJobs: r.recruiting_job,
       reviews: r.recruiting_review,
       fieldLocks: r.field_lock,
@@ -438,6 +452,53 @@ export async function createApp(store, options = {}) {
           z.number().int().positive().parse(req.body.version),
         ),
       );
+    } catch (e) {
+      next(e);
+    }
+  });
+  // Contacts and documents outlive an application; everything else tied to it goes.
+  // Recruiting evidence/reviews stay as audit history and show the target as unavailable.
+  const UNLINK_KINDS = ["contact", "document"];
+  app.delete("/api/records/application/:id", async (req, res, next) => {
+    try {
+      const version = z.number().int().positive().parse(req.body?.version);
+      const removed = await db.atomic(async () => {
+        const record = await get(req.user.id, req.params.id);
+        if (!record || record.kind !== "application")
+          throw new HttpError(404, "Record not found");
+        if (record.version !== version)
+          throw new HttpError(
+            409,
+            "Changed in another window. Refresh before deleting.",
+          );
+        const id = record.id;
+        const rows = await db
+          .prepare(
+            "SELECT id,kind,data,version FROM records WHERE user_id=? AND id<>? AND data LIKE ?",
+          )
+          .all(req.user.id, id, `%${id}%`);
+        const drop = [id];
+        for (const row of rows) {
+          if (row.kind.startsWith("recruiting_")) continue;
+          const data = JSON.parse(row.data);
+          const linked = data.applicationIds?.includes(id);
+          if (data.applicationId !== id && !linked) continue;
+          if (UNLINK_KINDS.includes(row.kind) && data.applicationId !== id) {
+            data.applicationIds = data.applicationIds.filter((v) => v !== id);
+            await save(req.user.id, row.kind, data, row.id, row.version);
+          } else drop.push(row.id);
+        }
+        for (const recordId of drop) {
+          await db
+            .prepare("DELETE FROM records WHERE user_id=? AND id=?")
+            .run(req.user.id, recordId);
+          await db
+            .prepare("DELETE FROM events WHERE user_id=? AND record_id=?")
+            .run(req.user.id, recordId);
+        }
+        return drop.length;
+      });
+      res.json({ ok: true, removed });
     } catch (e) {
       next(e);
     }

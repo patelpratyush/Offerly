@@ -1,25 +1,119 @@
 import { guardApplicationLink } from "./recruiting-match-guard.js";
 
 // Deterministic proposals only. This is not a validated production AI extractor.
+const ENTITIES = {
+  nbsp: " ",
+  amp: "&",
+  lt: "<",
+  gt: ">",
+  quot: '"',
+  "#39": "'",
+  apos: "'",
+};
+export const htmlText = (html) =>
+  html
+    .replace(/<(script|style|head)\b[\s\S]*?<\/\1>/gi, "")
+    .replace(/<br\s*\/?>|<\/(?:p|div|tr|li|h[1-6])>/gi, "\n")
+    .replace(/<[^>]*>/g, "")
+    .replace(
+      /&(nbsp|amp|lt|gt|quot|#39|apos);/gi,
+      (_, e) => ENTITIES[e.toLowerCase()],
+    )
+    .replace(/[ \t]+/g, " ")
+    .replace(/\n\s*\n+/g, "\n\n")
+    .trim();
+const ATS =
+  /(?:myworkday|workday|icims|smartrecruiters|greenhouse|lever|ashbyhq|jobvite|taleo|successfactors|avature|hackerrank\w*)\./i;
+const FREE_MAIL =
+  /^(?:gmail|googlemail|outlook|hotmail|yahoo|icloud|aol|proton(?:mail)?)\./i;
+const TEAM =
+  /\s*(?:[-|@·,]\s*)?(?:@\s*\w+|talent acquisition(?: group| team)?|recruiting(?: team)?|recruitment(?: team)?|hiring team|careers|jobs|hr)\s*$/i;
+const clean = (value = "") => {
+  const v = value
+    .replace(/\s+/g, " ")
+    .replace(/^(?:the|our)\s+/i, "")
+    .replace(/[\s!.,:;*]+$/, "")
+    .trim();
+  return v.length > 1 && v.length <= 120 && v.split(" ").length <= 10 ? v : "";
+};
+const first = (text, patterns) => {
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m?.[1] && clean(m[1])) return clean(m[1]);
+  }
+  return "";
+};
+// Prefill for a new application; the user confirms or edits before it is saved.
+export function guessEmployer({ subject = "", current = "", from = "" }) {
+  const text = `${subject}\n${current}`;
+  const atRole = text.match(
+    /(?:for|to) the ([^\n]{2,100}?) (?:role|position|opening) (?:at|with) ([^\n.!,]{2,80})/i,
+  );
+  const possessive = text.match(
+    /applying (?:to|at) ([^\n'’]{2,60})['’]s ([^\n]{2,100}?) (?:opening|position|role)/i,
+  );
+  let company =
+    clean(atRole?.[2]) ||
+    clean(possessive?.[1]) ||
+    first(text, [
+      /(?:applying|applied|application) (?:to|at|with) ([^\n!.,]{2,80})/i,
+      /interest in (?:joining )?([^\n!.,]{2,80})/i,
+      /^update from ([^\n!.,]{2,80})/im,
+      /\b(?:join|joining) ([A-Z][^\n!.,]{1,60})/,
+    ]);
+  const title =
+    clean(atRole?.[1]) ||
+    clean(possessive?.[2]) ||
+    first(text, [
+      /\bposition:\**\s*([^\n]{2,100})/i,
+      /position of ([^\n]{2,100}?)(?:\.\s|\.$|\n|$)/im,
+      /(?:to|for) the ([^\n]{2,100}?) (?:role|position|opening)\b/i,
+      /(?:apply|applying) (?:to|for) our ([^\n]{2,100}?)(?:\.\s|\.$|\n|$)/im,
+      /received for ([^\n]{2,100}?)(?:\.\s|\.$|\n|$)/im,
+    ]);
+  if (!company) {
+    const email = from.match(/<([^>]+)>/)?.[1] || from.trim();
+    const domain = email.split("@")[1] || "";
+    const name = from.includes("<")
+      ? from.split("<")[0].trim().replace(/^"|"$/g, "").trim()
+      : "";
+    const stripped = name.replace(TEAM, "").trim();
+    if (stripped && (ATS.test(domain) || stripped !== name))
+      company = clean(stripped);
+    else if (domain && !ATS.test(domain) && !FREE_MAIL.test(domain)) {
+      const label = domain.split(".").slice(-2)[0];
+      company =
+        label.length <= 4
+          ? label.toUpperCase()
+          : label[0].toUpperCase() + label.slice(1);
+    }
+  }
+  if (company && /^(?:us|you|this|a|an)$/i.test(company)) company = "";
+  return { company, title };
+}
 export function parseGmailMessage(message) {
   const headers = message.payload?.headers || [];
   const header = (name) =>
     headers.find((h) => h.name?.toLowerCase() === name)?.value || "";
   const subject = header("subject").slice(0, 4096);
   let bytes = 0;
-  function body(part, depth = 0) {
+  function body(part, mime, depth = 0) {
     if (!part || depth > 12 || bytes > 100000 || part.filename) return "";
-    if (part.mimeType === "text/plain" && part.body?.data) {
+    if (part.mimeType === mime && part.body?.data) {
       const text = Buffer.from(part.body.data, "base64url").toString("utf8");
       bytes += text.length;
       return text.slice(0, 100000);
     }
     return (part.parts || [])
       .slice(0, 30)
-      .map((p) => body(p, depth + 1))
+      .map((p) => body(p, mime, depth + 1))
       .join("\n");
   }
-  const current = body(message.payload)
+  // Many ATS mails (Workday, iCIMS) are HTML-only; fall back to visible text.
+  const plain =
+    body(message.payload, "text/plain").trim() ||
+    htmlText(body(message.payload, "text/html"));
+  const current = plain
     .split(
       /\n\s*(?:On .{1,500}wrote:|[-]{2,}\s*(?:Original|Forwarded) message|Begin forwarded message:)/i,
     )[0]
@@ -43,23 +137,28 @@ export function parseGmailMessage(message) {
           {
             email,
             name: from.includes("<")
-              ? from.split("<")[0].replace(/^"|"$/g, "").trim().slice(0, 200)
+              ? from
+                  .split("<")[0]
+                  .trim()
+                  .replace(/^"|"$/g, "")
+                  .trim()
+                  .slice(0, 200)
               : "",
             verified: false,
             source: "Gmail From header",
           },
         ]
       : [];
-  return { subject, current, source, timestamp, contacts };
+  return { subject, current, source, timestamp, contacts, from };
 }
 export function extractRecruitingMessage(message, applications) {
   const parsed = parseGmailMessage(message);
   if (!parsed) return null;
-  const { subject, current, source, timestamp, contacts } = parsed;
+  const { subject, current, source, timestamp, contacts, from } = parsed;
   const rules = [
     [
       "rejection",
-      /(?:not (?:be )?moving forward|will not be proceeding|decided to pursue other candidates)/i,
+      /(?:not (?:be )?moving forward|(?:will|would) not be proceeding|decided to pursue other candidates|(?:decided|chosen) to (?:move|proceed) forward with other candidates|filled (?:this|the) (?:position|role))/i,
       "Rejected",
       "Nobody",
     ],
@@ -101,7 +200,10 @@ export function extractRecruitingMessage(message, applications) {
       "You",
     ],
   ];
-  const matched = rules.filter(([, pattern]) => pattern.test(source));
+  let matched = rules.filter(([, pattern]) => pattern.test(source));
+  // Rejections almost always open with "thank you for applying"; the rejection wins.
+  if (matched.some(([type]) => type === "rejection"))
+    matched = matched.filter(([type]) => type !== "confirmation");
   if (matched.length !== 1) return null;
   const [eventType, , stage, owner] = matched[0];
   const candidates = applications.filter(
@@ -119,8 +221,9 @@ export function extractRecruitingMessage(message, applications) {
     sourceUrl: `https://mail.google.com/mail/u/0/#all/${message.id}`,
     effectiveAt: new Date(timestamp).toISOString(),
     effectiveAtBasis: "message_received",
-    company: application?.company || "",
-    title: application?.title || "",
+    ...(application
+      ? { company: application.company, title: application.title }
+      : guessEmployer({ subject, current, from })),
     requisition: application?.requisition || "",
     ...(application ? { applicationId: application.id } : {}),
     changes: { ...(stage ? { stage } : {}), owner },

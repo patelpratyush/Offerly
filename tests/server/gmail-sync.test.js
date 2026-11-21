@@ -43,6 +43,20 @@ test("deterministic proposals abstain on ambiguous application and conflicting e
     extractRecruitingMessage(
       message("Thank you for applying; not moving forward"),
       apps,
+    ).changes.stage,
+    "Rejected",
+  );
+  assert.equal(
+    extractRecruitingMessage(
+      message("Thank you for applying. We've recently filled this position."),
+      apps,
+    ).eventType,
+    "rejection",
+  );
+  assert.equal(
+    extractRecruitingMessage(
+      message("Please complete the assessment. We are not moving forward."),
+      apps,
     ),
     null,
   );
@@ -53,6 +67,33 @@ test("deterministic proposals abstain on ambiguous application and conflicting e
     ),
     null,
   );
+});
+test("HTML-only mail yields visible text and quoted display names are cleaned", () => {
+  const html = message("");
+  html.payload = {
+    mimeType: "multipart/alternative",
+    headers: [
+      { name: "Subject", value: "Thank You For Applying!" },
+      { name: "From", value: '"Mancillas, Paul" <p@example.com>' },
+    ],
+    parts: [
+      {
+        mimeType: "text/html",
+        body: {
+          data: Buffer.from(
+            "<html><head><style>p{}</style></head><body><p>Hi&nbsp;Pat,</p><p>We received your application &amp; will review it.</p><script>x()</script></body></html>",
+          ).toString("base64url"),
+        },
+      },
+    ],
+  };
+  const result = extractRecruitingMessage(html, apps);
+  assert.match(
+    result.excerpt,
+    /Hi Pat,\nWe received your application & will review it\./,
+  );
+  assert.doesNotMatch(result.excerpt, /<|style|x\(\)/);
+  assert.equal(result.contacts[0].name, "Mancillas, Paul");
 });
 async function setup(t) {
   const store = await createStore(":memory:");
@@ -365,4 +406,47 @@ test("AI extraction failure retries without recording message as handled", async
     ).length,
     0,
   );
+});
+test("employer guess prefills company and role from the email", async () => {
+  const { guessEmployer } =
+    await import("../../server/integrations/gmail-extraction.js");
+  const cases = [
+    [
+      {
+        subject: "Update from Mercury",
+        current:
+          "Thank you for applying to the Frontend Engineer - Design Systems role at Mercury.",
+      },
+      { company: "Mercury", title: "Frontend Engineer - Design Systems" },
+    ],
+    [
+      {
+        subject:
+          "Thank you for applying to HII's Early Career Software Engineer - 30877 opening!",
+      },
+      { company: "HII", title: "Early Career Software Engineer - 30877" },
+    ],
+    [
+      {
+        subject: "Thank you for applying to Western Digital",
+        current:
+          "your application for the position of Software Engineer. Our team",
+        from: "Western Digital <notification@smartrecruiters.com>",
+      },
+      { company: "Western Digital", title: "Software Engineer" },
+    ],
+    [
+      {
+        subject: "We’ve received your application!",
+        from: "Cognizant Talent Acquisition Group <ta@cognizant.com>",
+      },
+      { company: "Cognizant", title: "" },
+    ],
+    [
+      { subject: "Hello", from: "Pat <pat@gmail.com>" },
+      { company: "", title: "" },
+    ],
+  ];
+  for (const [input, expected] of cases)
+    assert.deepEqual(guessEmployer(input), expected);
 });
