@@ -1,13 +1,14 @@
 // Personalized views over the shared catalog. All user-specific state is read
 // by user id; the catalog itself is shared and read-only here.
 import { z } from "zod";
-import { HttpError } from "../security.js";
+import { HttpError, isoDate } from "../security.js";
 import { describeSize, sizeMatches } from "./size.js";
 import { getProfile } from "./profile.js";
 import { checkEligibility } from "./eligibility.js";
 import { scoreJob, jobLevel } from "./scoring.js";
 import { normRequisition, normText, normalizeUrl } from "./normalize.js";
 import { CHUNK, loadCatalogFor, escapeLike } from "./catalog.js";
+import { WINDOW_MS } from "./digest-rules.js";
 export const VIEWS = [
   "best",
   "latest",
@@ -17,13 +18,7 @@ export const VIEWS = [
   "saved",
   "applied",
 ];
-const WINDOW_MS = {
-  "24h": 864e5,
-  "3d": 3 * 864e5,
-  "7d": 7 * 864e5,
-  "30d": 30 * 864e5,
-};
-const day = z.string().regex(/^\d{4}-\d{2}-\d{2}$/);
+const day = isoDate;
 export const filterSchema = z
   .object({
     q: z.string().trim().max(100).default(""),

@@ -95,6 +95,23 @@ test("HTML-only mail yields visible text and quoted display names are cleaned", 
   assert.doesNotMatch(result.excerpt, /<|style|x\(\)/);
   assert.equal(result.contacts[0].name, "Mancillas, Paul");
 });
+test("HTML to text stays linear on crafted markup", async () => {
+  const { htmlText } =
+    await import("../../server/integrations/gmail-extraction.js");
+  for (const attack of [
+    "<style".repeat(16000),
+    "<a ".repeat(30000),
+    "<p>x</p>".repeat(12000),
+  ]) {
+    const started = performance.now();
+    htmlText(attack);
+    assert.ok(performance.now() - started < 100, attack.slice(0, 10));
+  }
+  assert.equal(
+    htmlText("<b>A</b>&amp;<br/>B<style>x</style><script>y</script>"),
+    "A&\nB",
+  );
+});
 async function setup(t) {
   const store = await createStore(":memory:");
   t.after(() => store.db.close());

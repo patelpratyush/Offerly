@@ -85,6 +85,7 @@ import {
 } from "./components/applications/dispatch";
 import { DiscoverPage } from "./components/discover/DiscoverPage";
 import { CompaniesPage } from "./components/discover/CompaniesPage";
+import { api, session, sessionChannel, resetSession } from "./lib/api";
 const APPLICATION_PAGE_SIZE = 25;
 type Item = { id: string; version: number; [key: string]: any };
 type Workspace = {
@@ -107,11 +108,6 @@ type Workspace = {
   duplicates: any[];
   duplicateReviews: Item[];
 };
-let sessionGeneration = 0;
-const sessionChannel =
-  typeof BroadcastChannel === "undefined"
-    ? null
-    : new BroadcastChannel("offerly-session");
 // "2026-11-05" -> "Nov 5" (adds the year when it differs from this year).
 function shortDate(iso: string) {
   const [y, m, d] = iso.split("-").map(Number);
@@ -123,46 +119,6 @@ function shortDate(iso: string) {
     year: y === new Date().getFullYear() ? undefined : "numeric",
     timeZone: "UTC",
   }).format(date);
-}
-function resetSession(notifyOtherTabs = true) {
-  const requested = safeReturnTo(
-    window.location.pathname + window.location.search + window.location.hash,
-  );
-  window.history.replaceState(
-    null,
-    "",
-    "/signin?returnTo=" + encodeURIComponent(requested),
-  );
-  window.dispatchEvent(new PopStateEvent("popstate"));
-  sessionGeneration++;
-  window.dispatchEvent(new Event("offerly:session-reset"));
-  if (notifyOtherTabs) sessionChannel?.postMessage("reset");
-}
-if (sessionChannel)
-  sessionChannel.onmessage = (event) => {
-    if (event.data === "reset") resetSession(false);
-  };
-async function api(path: string, method = "GET", body?: any) {
-  const generation = sessionGeneration;
-  const res = await fetch("/api" + path, {
-    method,
-    headers: { "Content-Type": "application/json", "X-Offerly-Request": "1" },
-    body:
-      body === undefined
-        ? ["GET", "HEAD"].includes(method)
-          ? undefined
-          : "{}"
-        : JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({ error: "Request failed" }));
-  if (generation !== sessionGeneration)
-    throw new Error("Session changed. Request discarded.");
-  if (!res.ok) {
-    if (res.status === 401 && data.code === "SESSION_REQUIRED")
-      window.dispatchEvent(new Event("offerly:session-expired"));
-    throw new Error(data.error);
-  }
-  return data;
 }
 const emptyApp = {
   company: "",
@@ -3351,9 +3307,9 @@ function SettingsPage({
   );
 }
 function SessionRoot() {
-  const [generation, setGeneration] = useState(sessionGeneration);
+  const [generation, setGeneration] = useState(session.generation);
   useEffect(() => {
-    const reset = () => setGeneration(sessionGeneration);
+    const reset = () => setGeneration(session.generation);
     window.addEventListener("offerly:session-reset", reset);
     return () => window.removeEventListener("offerly:session-reset", reset);
   }, []);

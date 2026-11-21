@@ -1,11 +1,10 @@
+import {
+  sensitiveCategories,
+  findPlaceholders,
+} from "../shared/prepare-rules.js";
 import { z } from "zod";
 import { HttpError } from "./security.js";
-import {
-  templates,
-  tones,
-  generateDraft,
-  findPlaceholders,
-} from "./message-templates.js";
+import { templates, tones, generateDraft } from "./message-templates.js";
 
 // Phase 4 preparation records. Everything is owner-scoped, version-checked and
 // manually authored: no model, no sending, no email scopes.
@@ -28,13 +27,6 @@ const optionalUrl = z
       }, "Use an HTTP or HTTPS URL without embedded credentials"),
   ])
   .default("");
-export const sensitiveCategories = [
-  "eligibility",
-  "sponsorship",
-  "salary",
-  "relocation",
-  "start_date",
-];
 export const answerSchema = z.object({
   clientId: uuid.optional(),
   question: text(500).min(1),
@@ -258,7 +250,6 @@ const definitions = {
     validate: validateDraft,
   },
 };
-export const preparationKinds = Object.values(definitions).map((d) => d.kind);
 
 export function mountPreparation(app, store, limit) {
   const { list, save, atomic } = store;

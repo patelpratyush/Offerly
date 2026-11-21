@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { createHash } from "node:crypto";
 import { HttpError } from "./security.js";
+import { httpLink } from "./calendar.js";
 import { createDisabledEmailProvider } from "./notification-provider.js";
 import { addDays, localDateOf, zonedToUtc } from "./zoned-time.js";
 // TASK 02 P1: user-configurable reminder rules and delivery state. Reminders
@@ -452,7 +453,6 @@ export async function processDeliveries(store, options = {}) {
     ...(await dispatchDeliveries(store, { ...options, now, deadline })),
   };
 }
-const httpUrl = (v) => (/^https?:\/\/[^\s]+$/i.test(v || "") ? v : "");
 const publicDelivery = (d, urls = new Map()) => ({
   id: d.id,
   sourceKind: d.sourceKind,
@@ -478,7 +478,7 @@ export function mountReminderRules(app, store, options = {}) {
       .sort((a, b) => a.fireAt.localeCompare(b.fireAt))
       .slice(-100);
     const urls = new Map(
-      (await store.list(userId, "round")).map((r) => [r.id, httpUrl(r.url)]),
+      (await store.list(userId, "round")).map((r) => [r.id, httpLink(r.url)]),
     );
     return {
       settings: await loadSettings(store, userId),

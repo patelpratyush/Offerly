@@ -1,3 +1,4 @@
+import { findPlaceholders } from "../../../../shared/prepare-rules.js";
 import { useEffect, useState } from "react";
 import { Item, appLabel, prepApi, newId, copyText } from "./prepareApi";
 import type { DraftSeed } from "./PrepareHub";
@@ -15,10 +16,6 @@ const toneLabels: Record<string, string> = {
   warm: "Warm",
   formal: "Formal",
 };
-const placeholderPattern = /\[\[[^\]\n]{1,200}\]\]/g;
-const findPlaceholders = (...parts: string[]) => [
-  ...new Set(parts.join("\n").match(placeholderPattern) || []),
-];
 type Form = {
   id?: string;
   version?: number;

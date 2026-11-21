@@ -16,7 +16,7 @@ import {
   installSecurity,
   createLimiter,
   HttpError,
-  isIsoDate,
+  optionalIsoDate,
 } from "./security.js";
 import { mountAuth } from "./auth.js";
 import { mountFiles, readDocumentBody } from "./files.js";
@@ -37,15 +37,7 @@ import { mountTailored } from "./tailored.js";
 import { mountContactImport } from "./contact-import.js";
 import { stringify } from "csv-stringify/sync";
 const text = z.string().trim().max(10000);
-const date = z
-  .union([
-    z.literal(""),
-    z
-      .string()
-      .regex(/^\d{4}-\d{2}-\d{2}$/)
-      .refine(isIsoDate),
-  ])
-  .default("");
+const date = optionalIsoDate;
 const url = z
   .union([z.literal(""), z.url().refine((v) => /^https?:\/\//.test(v))])
   .default("");

@@ -1,3 +1,4 @@
+import { findPlaceholders } from "../shared/prepare-rules.js";
 // Deterministic message templates (COM 01). No model is involved. Text is built
 // only from the selected application, contacts, round and the signed-in user's
 // name. Anything unknown becomes an explicit [[placeholder]] the user must fill.
@@ -38,10 +39,6 @@ const toneWords = {
     thanks: "Thank you for your time and consideration.",
   },
 };
-export const placeholderPattern = /\[\[[^\]\n]{1,200}\]\]/g;
-export const findPlaceholders = (...parts) => [
-  ...new Set(parts.join("\n").match(placeholderPattern) || []),
-];
 const firstName = (contact) => contact.name.trim().split(/\s+/)[0];
 function greeting(contacts, hi = "Hi") {
   const names = contacts.map(firstName).filter(Boolean);

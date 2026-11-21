@@ -6,6 +6,7 @@ export default [
     ...js.configs.recommended,
     files: [
       "server/**/*.js",
+      "shared/**/*.js",
       "api/**/*.js",
       "scripts/**/*.js",
       "tests/**/*.js",

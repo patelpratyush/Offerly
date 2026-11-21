@@ -1,10 +1,7 @@
 import { z } from "zod";
-import { HttpError, isIsoDate } from "./security.js";
+import { HttpError, isoDate } from "./security.js";
 import { cancelStaleDeliveries } from "./reminder-rules.js";
-const date = z
-  .string()
-  .regex(/^\d{4}-\d{2}-\d{2}$/)
-  .refine(isIsoDate);
+const date = isoDate;
 const sourceKinds = ["application", "round", "assessment", "task"];
 const createSchema = z
   .object({

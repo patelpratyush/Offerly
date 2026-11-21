@@ -37,7 +37,7 @@ const utcStamp = (ms) =>
     .replace(/[-:]/g, "")
     .replace(/\.\d{3}Z$/, "Z");
 const dateStamp = (d) => d.replaceAll("-", "");
-const safeUrl = (v) => (/^https?:\/\/[^\s]+$/i.test(v || "") ? v : "");
+export const httpLink = (v) => (/^https?:\/\/[^\s]+$/i.test(v || "") ? v : "");
 // No end times are recorded, so conflict checks assume this block length and
 // say so wherever a conflict is shown.
 export const ASSUMED_MINUTES = 60;
@@ -90,7 +90,7 @@ export async function calendarEvents(store, userId, { applicationId } = {}) {
     const base = {
       uid: `${kind}-${item.id}@offerly.app`,
       sequence: Math.max(0, (item.version || 1) - 1),
-      url: safeUrl(item.url),
+      url: httpLink(item.url),
       applicationId: application.id,
       kind,
       itemId: item.id,

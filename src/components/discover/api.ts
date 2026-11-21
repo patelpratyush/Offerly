@@ -1,3 +1,4 @@
+import { api } from "../../lib/api";
 // Small fetch wrapper for discovery endpoints. Kept separate from main.tsx so
 // discovery components stay self-contained.
 export type Size = {
@@ -76,29 +77,11 @@ export type Job = {
   dismissed: boolean;
   watched: boolean;
 };
-export async function discoveryApi<T = any>(
+export const discoveryApi = <T = any>(
   path: string,
   method = "GET",
   body?: unknown,
-): Promise<T> {
-  const res = await fetch("/api/discovery" + path, {
-    method,
-    headers: { "Content-Type": "application/json", "X-Offerly-Request": "1" },
-    body:
-      body === undefined
-        ? ["GET", "HEAD"].includes(method)
-          ? undefined
-          : "{}"
-        : JSON.stringify(body),
-  });
-  const data = await res.json().catch(() => ({ error: "Request failed" }));
-  if (!res.ok) {
-    if (res.status === 401 && data.code === "SESSION_REQUIRED")
-      window.dispatchEvent(new Event("offerly:session-expired"));
-    throw new Error(data.error || "Request failed");
-  }
-  return data as T;
-}
+): Promise<T> => api<T>("/discovery" + path, method, body);
 export const when = (value: string | null | undefined, dateOnly = false) => {
   if (!value) return "Unknown";
   const date = new Date(dateOnly ? value + "T00:00:00Z" : value);

@@ -1,4 +1,5 @@
 import { isIP } from "node:net";
+import { z } from "zod";
 import { createHash, randomUUID } from "node:crypto";
 export class HttpError extends Error {
   constructor(status, message) {
@@ -40,6 +41,13 @@ export const isIsoDate = (v) =>
   /^\d{4}-\d{2}-\d{2}$/.test(v) &&
   Number.isFinite(Date.parse(v)) &&
   new Date(v).toISOString().slice(0, 10) === v;
+export const isoDate = z
+  .string()
+  .refine(isIsoDate, "Use a valid calendar date");
+export const optionalIsoDate = z
+  .string()
+  .refine((v) => !v || isIsoDate(v), "Use a valid calendar date")
+  .default("");
 export async function createLimiter(db) {
   if (!db.hosted)
     await db.exec(

@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { CalendarDays } from "lucide-react";
+import { api, apiResponse } from "../../lib/api";
 import "../../styles/insights-reminders.css";
 
 // Explicit user action only: downloads an .ics file. No calendar account is
@@ -28,8 +29,7 @@ export function CalendarExport() {
   const [agenda, setAgenda] = useState<Agenda | null>(null);
   useEffect(() => {
     let alive = true;
-    fetch("/api/calendar/agenda", { headers: { "X-Offerly-Request": "1" } })
-      .then((r) => (r.ok ? r.json() : null))
+    api<Agenda>("/calendar/agenda")
       .then((v) => alive && setAgenda(v))
       .catch(() => undefined);
     return () => {
@@ -46,10 +46,9 @@ export function CalendarExport() {
     setMessage("");
     setError("");
     try {
-      const res = await fetch("/api/calendar.ics", {
-        headers: { "X-Offerly-Request": "1" },
+      const res = await apiResponse("/calendar.ics").catch(() => {
+        throw new Error("Calendar export failed. Try again later.");
       });
-      if (!res.ok) throw new Error("Calendar export failed. Try again later.");
       const count = Number(res.headers.get("X-Offerly-Event-Count") || 0);
       const skipped = Number(res.headers.get("X-Offerly-Skipped-Count") || 0);
       const url = URL.createObjectURL(await res.blob());

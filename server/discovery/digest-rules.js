@@ -1,13 +1,12 @@
 // Pure helpers for digest cadence: interval, recency-window warning and the
 // "latest scheduled send" in the user's own time zone. No database access.
-export const CADENCES = ["immediate", "daily", "weekly"];
-export const INTERVAL_MS = { daily: 864e5, weekly: 7 * 864e5 };
-const WINDOW_MS = {
+export const WINDOW_MS = {
   "24h": 864e5,
   "3d": 3 * 864e5,
   "7d": 7 * 864e5,
   "30d": 30 * 864e5,
 };
+export const INTERVAL_MS = { daily: 864e5, weekly: 7 * 864e5 };
 const LABEL = { daily: "daily (24 hours)", weekly: "weekly (7 days)" };
 /**
  * A recency window shorter than the digest interval means a job can match when

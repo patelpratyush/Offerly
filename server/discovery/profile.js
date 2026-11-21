@@ -1,7 +1,6 @@
 // Candidate profile: user-approved facts, kept separate from eligibility answers
 // and preferences. Only approved facts are ever used for scoring.
 import { z } from "zod";
-import { HttpError } from "../security.js";
 const short = (max) => z.string().trim().min(1).max(max);
 export const LEVELS = [
   "intern",
@@ -147,8 +146,4 @@ export async function saveProfile(store, userId, input, now = new Date()) {
       );
     return { ...value, version, approvedAt: stamp, approved: true };
   });
-}
-export function requireApproved(profile) {
-  if (!profile.approved)
-    throw new HttpError(409, "Approve your candidate profile first");
 }

@@ -1,3 +1,4 @@
+import { api, apiResponse } from "../../../lib/api";
 export type Item = { id: string; version: number; [key: string]: any };
 
 export const categoryLabels: Record<string, string> = {
@@ -10,42 +11,17 @@ export const categoryLabels: Record<string, string> = {
   start_date: "Start date",
   other: "Other",
 };
-export const sensitiveCategories = [
-  "eligibility",
-  "sponsorship",
-  "salary",
-  "relocation",
-  "start_date",
-];
+export { sensitiveCategories } from "../../../../shared/prepare-rules.js";
 
-async function send(path: string, method: string, body?: unknown) {
-  const res = await fetch("/api" + path, {
-    method,
-    headers: { "Content-Type": "application/json", "X-Offerly-Request": "1" },
-    body:
-      body === undefined
-        ? ["GET", "HEAD"].includes(method)
-          ? undefined
-          : "{}"
-        : JSON.stringify(body),
-  });
-  if (!res.ok) {
-    const data = await res.json().catch(() => ({ error: "Request failed" }));
-    if (res.status === 401 && data.code === "SESSION_REQUIRED")
-      window.dispatchEvent(new Event("offerly:session-expired"));
-    throw new Error(data.error || "Request failed");
-  }
-  return res;
-}
 export async function prepApi<T = any>(
   path: string,
   method = "GET",
   body?: unknown,
 ): Promise<T> {
-  return (await send(path, method, body)).json();
+  return api<T>(path, method, body);
 }
 export async function prepBlob(path: string, body: unknown): Promise<Blob> {
-  return (await send(path, "POST", body)).blob();
+  return (await apiResponse(path, "POST", body)).blob();
 }
 export function saveBlob(blob: Blob, name: string) {
   const url = URL.createObjectURL(blob);

@@ -500,25 +500,29 @@ function ReviewCard({
     [createError, setCreateError] = useState("");
   const application = applications.find((item) => item.id === applicationId);
   // Creates the application from the email, then accepts this proposal onto it.
+  // The created record is kept so a failed accept retries without a duplicate.
+  const created = useRef<Item | null>(null);
   async function addToTracker() {
     setCreateError("");
-    let created: Item;
-    try {
-      created = await request("/records/application", "POST", {
-        company: newCompany.trim(),
-        title: newTitle.trim(),
-        stage: stages[0],
-      });
-    } catch (error) {
-      setCreateError(message(error));
-      return;
+    if (!created.current) {
+      try {
+        created.current = await request("/records/application", "POST", {
+          company: newCompany.trim(),
+          title: newTitle.trim(),
+          stage: stages[0],
+        });
+      } catch (error) {
+        setCreateError(message(error));
+        return;
+      }
+      setApplicationId(created.current!.id);
     }
-    setApplicationId(created.id);
+    const target = created.current!;
     await operation.run(`/recruiting/reviews/${review.id}/decide`, {
       version: review.version,
       decision: "accept",
-      applicationId: created.id,
-      applicationVersion: created.version,
+      applicationId: target.id,
+      applicationVersion: target.version,
       override: false,
     });
   }

@@ -10,11 +10,31 @@ const ENTITIES = {
   "#39": "'",
   apos: "'",
 };
-export const htmlText = (html) =>
-  html
-    .replace(/<(script|style|head)\b[\s\S]*?<\/\1>/gi, "")
-    .replace(/<br\s*\/?>|<\/(?:p|div|tr|li|h[1-6])>/gi, "\n")
-    .replace(/<[^>]*>/g, "")
+// Single pass over the markup: crafted mail with thousands of unclosed tags
+// must not trigger regex backtracking.
+const BREAK = /^(?:br|\/p|\/div|\/tr|\/li|\/h[1-6])$/;
+export function htmlText(html) {
+  const lower = html.toLowerCase();
+  let out = "",
+    i = 0,
+    skip = "";
+  while (i < html.length) {
+    const open = html.indexOf("<", i);
+    if (open < 0) {
+      if (!skip) out += html.slice(i);
+      break;
+    }
+    if (!skip) out += html.slice(i, open);
+    const close = html.indexOf(">", open);
+    if (close < 0) break;
+    const name = lower.slice(open + 1, close).match(/^\/?[a-z0-9]+/)?.[0] || "";
+    if (skip) {
+      if (name === "/" + skip) skip = "";
+    } else if (["script", "style", "head"].includes(name)) skip = name;
+    else if (BREAK.test(name)) out += "\n";
+    i = close + 1;
+  }
+  return out
     .replace(
       /&(nbsp|amp|lt|gt|quot|#39|apos);/gi,
       (_, e) => ENTITIES[e.toLowerCase()],
@@ -22,6 +42,7 @@ export const htmlText = (html) =>
     .replace(/[ \t]+/g, " ")
     .replace(/\n\s*\n+/g, "\n\n")
     .trim();
+}
 const ATS =
   /(?:myworkdayjobs|myworkday|workday|icims|smartrecruiters|greenhouse|lever|ashbyhq|jobvite|taleo|successfactors|avature|hackerrank\w*)\./i;
 const FREE_MAIL =
