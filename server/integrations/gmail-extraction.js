@@ -23,11 +23,16 @@ export const htmlText = (html) =>
     .replace(/\n\s*\n+/g, "\n\n")
     .trim();
 const ATS =
-  /(?:myworkday|workday|icims|smartrecruiters|greenhouse|lever|ashbyhq|jobvite|taleo|successfactors|avature|hackerrank\w*)\./i;
+  /(?:myworkdayjobs|myworkday|workday|icims|smartrecruiters|greenhouse|lever|ashbyhq|jobvite|taleo|successfactors|avature|hackerrank\w*)\./i;
 const FREE_MAIL =
   /^(?:gmail|googlemail|outlook|hotmail|yahoo|icloud|aol|proton(?:mail)?)\./i;
 const TEAM =
   /\s*(?:[-|@·,]\s*)?(?:@\s*\w+|talent acquisition(?: group| team)?|recruiting(?: team)?|recruitment(?: team)?|hiring team|careers|jobs|hr)\s*$/i;
+// Mailbox and host words that never name an employer.
+const GENERIC =
+  /^(?:no-?reply|do-?not-?reply|donotreply|notifications?|support|jobs?|careers?|talent|recruit(?:ing|ment|er)?|hr|hiring|info|mail|email|system|autoreply|auto|admin|team|apply|applications?|candidates?|www|wd\d*|us|eu|myworkday|myworkdayjobs|workday|icims|smartrecruiters|greenhouse|lever|ashbyhq|jobvite|taleo|successfactors|avature|hackerrank\w*|com|net|org|io|co)$/i;
+const label = (v) =>
+  v.length <= 4 ? v.toUpperCase() : v[0].toUpperCase() + v.slice(1);
 const clean = (value = "") => {
   const v = value
     .replace(/\s+/g, " ")
@@ -72,21 +77,23 @@ export function guessEmployer({ subject = "", current = "", from = "" }) {
       /received for ([^\n]{2,100}?)(?:\.\s|\.$|\n|$)/im,
     ]);
   if (!company) {
-    const email = from.match(/<([^>]+)>/)?.[1] || from.trim();
-    const domain = email.split("@")[1] || "";
+    const email = (from.match(/<([^>]+)>/)?.[1] || from.trim()).toLowerCase();
+    const [local = "", domain = ""] = email.split("@");
     const name = from.includes("<")
       ? from.split("<")[0].trim().replace(/^"|"$/g, "").trim()
       : "";
     const stripped = name.replace(TEAM, "").trim();
     if (stripped && (ATS.test(domain) || stripped !== name))
       company = clean(stripped);
-    else if (domain && !ATS.test(domain) && !FREE_MAIL.test(domain)) {
-      const label = domain.split(".").slice(-2)[0];
-      company =
-        label.length <= 4
-          ? label.toUpperCase()
-          : label[0].toUpperCase() + label.slice(1);
-    }
+    else if (ATS.test(domain)) {
+      // ATS senders often encode the employer: choicehotels@myworkday.com,
+      // iridium+autoreply@talent.icims.com, acme.wd5.myworkdayjobs.com.
+      const tag = local.split("+")[0];
+      const sub = domain.split(".").find((part) => !GENERIC.test(part));
+      const pick = [tag, sub].find((v) => v && !GENERIC.test(v));
+      if (pick) company = label(pick);
+    } else if (domain && !FREE_MAIL.test(domain))
+      company = label(domain.split(".").slice(-2)[0]);
   }
   if (company && /^(?:us|you|this|a|an)$/i.test(company)) company = "";
   return { company, title };

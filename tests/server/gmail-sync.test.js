@@ -443,6 +443,22 @@ test("employer guess prefills company and role from the email", async () => {
       { company: "Cognizant", title: "" },
     ],
     [
+      { subject: "Thank You!", from: "choicehotels@myworkday.com" },
+      { company: "Choicehotels", title: "" },
+    ],
+    [
+      { subject: "Hi", from: "iridium+autoreply@talent.icims.com" },
+      { company: "Iridium", title: "" },
+    ],
+    [
+      { subject: "Hi", from: "<no-reply@acme.wd5.myworkdayjobs.com>" },
+      { company: "ACME", title: "" },
+    ],
+    [
+      { subject: "Hi", from: "notifications@talent.icims.com" },
+      { company: "", title: "" },
+    ],
+    [
       { subject: "Hello", from: "Pat <pat@gmail.com>" },
       { company: "", title: "" },
     ],
