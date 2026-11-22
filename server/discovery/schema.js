@@ -16,10 +16,11 @@ export const DISCOVERY_TABLES = [
   "discovery_digest_settings",
   "discovery_digests",
   "discovery_state",
+  "discovery_leads",
 ];
 export const DISCOVERY_DDL = `
 CREATE TABLE IF NOT EXISTS discovery_companies(id TEXT PRIMARY KEY,canonical_domain TEXT NOT NULL UNIQUE,name TEXT NOT NULL,entity_label TEXT NOT NULL DEFAULT 'employer' CHECK(entity_label IN ('employer','subsidiary','parent')),entity_name TEXT NOT NULL DEFAULT '',size_min INTEGER CHECK(size_min IS NULL OR size_min>=1),size_max INTEGER CHECK(size_max IS NULL OR size_max>=1),size_source_url TEXT NOT NULL DEFAULT '',size_as_of TEXT NOT NULL DEFAULT '',created_at TEXT NOT NULL,updated_at TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS discovery_sources(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES discovery_companies(id) ON DELETE CASCADE,platform TEXT NOT NULL CHECK(platform IN ('greenhouse','lever','ashby')),board_id TEXT NOT NULL,career_url TEXT NOT NULL DEFAULT '',enabled INTEGER NOT NULL DEFAULT 0,permission_status TEXT NOT NULL DEFAULT 'unconfirmed' CHECK(permission_status IN ('unconfirmed','confirmed','revoked')),health TEXT NOT NULL DEFAULT 'unknown' CHECK(health IN ('unknown','healthy','degraded','failing')),last_success_at TEXT,last_attempt_at TEXT,next_fetch_at TEXT,consecutive_failures INTEGER NOT NULL DEFAULT 0,last_error_code TEXT NOT NULL DEFAULT '',listed_count INTEGER NOT NULL DEFAULT 0,UNIQUE(platform,board_id));
+CREATE TABLE IF NOT EXISTS discovery_sources(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES discovery_companies(id) ON DELETE CASCADE,platform TEXT NOT NULL CHECK(platform IN ('greenhouse','lever','ashby','smartrecruiters','workable')),board_id TEXT NOT NULL,career_url TEXT NOT NULL DEFAULT '',enabled INTEGER NOT NULL DEFAULT 0,permission_status TEXT NOT NULL DEFAULT 'unconfirmed' CHECK(permission_status IN ('unconfirmed','confirmed','revoked')),health TEXT NOT NULL DEFAULT 'unknown' CHECK(health IN ('unknown','healthy','degraded','failing')),last_success_at TEXT,last_attempt_at TEXT,next_fetch_at TEXT,consecutive_failures INTEGER NOT NULL DEFAULT 0,last_error_code TEXT NOT NULL DEFAULT '',listed_count INTEGER NOT NULL DEFAULT 0,UNIQUE(platform,board_id));
 CREATE INDEX IF NOT EXISTS idx_disc_sources_company ON discovery_sources(company_id);
 CREATE TABLE IF NOT EXISTS discovery_jobs(id TEXT PRIMARY KEY,company_id TEXT NOT NULL REFERENCES discovery_companies(id) ON DELETE CASCADE,title TEXT NOT NULL,location TEXT NOT NULL DEFAULT '',requisition TEXT NOT NULL DEFAULT '',group_key TEXT NOT NULL,description TEXT NOT NULL DEFAULT '',work_arrangement TEXT NOT NULL DEFAULT 'Unknown',employment_type TEXT NOT NULL DEFAULT 'Unknown',comp_min BIGINT,comp_max BIGINT,comp_currency TEXT NOT NULL DEFAULT '',comp_period TEXT NOT NULL DEFAULT 'Unknown',comp_basis TEXT NOT NULL DEFAULT 'Unknown',employer_posted_at TEXT,posted_precision TEXT NOT NULL DEFAULT 'unknown' CHECK(posted_precision IN ('unknown','date','datetime')),posted_timezone TEXT NOT NULL DEFAULT '',first_discovered_at TEXT NOT NULL,last_checked_at TEXT NOT NULL,last_changed_at TEXT NOT NULL,reopened_at TEXT,reopened_count INTEGER NOT NULL DEFAULT 0,status TEXT NOT NULL DEFAULT 'listed' CHECK(status IN ('listed','not_listed')),content_hash TEXT NOT NULL DEFAULT '');
 CREATE INDEX IF NOT EXISTS idx_disc_jobs_company ON discovery_jobs(company_id,group_key);
@@ -45,6 +46,7 @@ CREATE TABLE IF NOT EXISTS discovery_digests(id TEXT PRIMARY KEY,user_id TEXT NO
 CREATE INDEX IF NOT EXISTS idx_disc_digests_user ON discovery_digests(user_id,delivered_at);
 CREATE TABLE IF NOT EXISTS discovery_state(key TEXT PRIMARY KEY,value TEXT NOT NULL DEFAULT '',updated_at TEXT NOT NULL);
 CREATE INDEX IF NOT EXISTS idx_disc_notes_rule ON discovery_notifications(rule_id,status);
+CREATE TABLE IF NOT EXISTS discovery_leads(platform TEXT NOT NULL,board_id TEXT NOT NULL,url TEXT NOT NULL,origin TEXT NOT NULL CHECK(origin IN ('application','gmail','manual')),status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','promoted','rejected')),seen_count INTEGER NOT NULL DEFAULT 1,first_seen_at TEXT NOT NULL,last_seen_at TEXT NOT NULL,PRIMARY KEY(platform,board_id));
 `;
 export async function initializeDiscovery(store) {
   if (store.db.hosted) return; // Hosted schemas come from supabase/migrations.
@@ -65,4 +67,25 @@ export async function initializeDiscovery(store) {
     "digest_id",
     "digest_id TEXT NOT NULL DEFAULT ''",
   );
+  // SQLite cannot alter a CHECK; rebuild discovery_sources once for new platforms.
+  const sources = await store.db
+    .prepare("SELECT sql FROM sqlite_master WHERE name='discovery_sources'")
+    .get();
+  if (sources && !sources.sql.includes("workable")) {
+    // Create-copy-drop-rename keeps the listing/run foreign keys pointing at the name.
+    const ddl = DISCOVERY_DDL.split("\n")
+      .find((l) =>
+        l.startsWith("CREATE TABLE IF NOT EXISTS discovery_sources("),
+      )
+      .replace("discovery_sources(", "discovery_sources_new(");
+    await store.db.exec(`PRAGMA foreign_keys=OFF;
+BEGIN;
+${ddl}
+INSERT INTO discovery_sources_new SELECT * FROM discovery_sources;
+DROP TABLE discovery_sources;
+ALTER TABLE discovery_sources_new RENAME TO discovery_sources;
+CREATE INDEX IF NOT EXISTS idx_disc_sources_company ON discovery_sources(company_id);
+COMMIT;
+PRAGMA foreign_keys=ON;`);
+  }
 }

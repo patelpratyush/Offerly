@@ -1,7 +1,11 @@
 // Operator CLI for the shared registry. Never run against production without
 // recorded source permission (reference/phase0/access-decision.md).
 //   node server/discovery/admin.js add-company <name> <domain> [sizeMin sizeMax sourceUrl asOf]
-//   node server/discovery/admin.js add-source <domain> <greenhouse|lever|ashby> <boardId>
+//   node server/discovery/admin.js add-source <domain> <platform> <boardId>
+//     platform: greenhouse | lever | ashby | smartrecruiters | workable
+//   node server/discovery/admin.js leads                      (pending review queue)
+//   node server/discovery/admin.js promote <platform> <boardId> <name> <domain>
+//   node server/discovery/admin.js reject <platform> <boardId>
 //   node server/discovery/admin.js approve <platform> <boardId>   (records permission + enables)
 //   node server/discovery/admin.js run         (needs DISCOVERY_COLLECTION_ENABLED=true)
 import { resolve } from "node:path";
@@ -12,6 +16,7 @@ import { createHttpFetcher, createRateLimiter } from "./connectors.js";
 import { processAlerts } from "./alerts.js";
 import { processDigests } from "./digests.js";
 import { canonicalDomain } from "./normalize.js";
+import { listLeads, promoteLead, rejectLead } from "./leads.js";
 const [command, ...args] = process.argv.slice(2);
 const path =
   process.env.DATABASE_URL ||
@@ -38,6 +43,20 @@ try {
     console.log(
       await upsertSource(store, { companyId: company.id, platform, boardId }),
     );
+  } else if (command === "leads") {
+    for (const l of await listLeads(store))
+      console.log(
+        [l.platform, l.board_id, l.url, l.origin, `seen ${l.seen_count}x`].join(
+          "\t",
+        ),
+      );
+  } else if (command === "promote") {
+    const [platform, boardId, name, domain] = args;
+    console.log(await promoteLead(store, { platform, boardId, name, domain }));
+  } else if (command === "reject") {
+    const [platform, boardId] = args;
+    await rejectLead(store, platform, boardId);
+    console.log("rejected");
   } else if (command === "approve") {
     const [platform, boardId] = args;
     const source = await store.db

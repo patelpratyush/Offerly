@@ -11,6 +11,7 @@ import { mountInsights } from "./insights.js";
 import { mountCalendar } from "./calendar.js";
 import { z } from "zod";
 import { guessEmployer } from "./integrations/gmail-extraction.js";
+import { recordLeads } from "./discovery/leads.js";
 import {
   securityConfig,
   installSecurity,
@@ -407,7 +408,10 @@ export async function createApp(store, options = {}) {
           return res.json(existing);
         }
       }
-      res.json(await save(req.user.id, req.params.kind, data));
+      const saved = await save(req.user.id, req.params.kind, data);
+      if (req.params.kind === "application")
+        await recordLeads(store, data.url, "application");
+      res.json(saved);
     } catch (e) {
       next(e);
     }
@@ -435,15 +439,16 @@ export async function createApp(store, options = {}) {
           409,
           "This submission is already recorded. Correct the existing record instead.",
         );
-      res.json(
-        await save(
-          req.user.id,
-          req.params.kind,
-          data,
-          req.params.id,
-          z.number().int().positive().parse(req.body.version),
-        ),
+      const saved = await save(
+        req.user.id,
+        req.params.kind,
+        data,
+        req.params.id,
+        z.number().int().positive().parse(req.body.version),
       );
+      if (req.params.kind === "application")
+        await recordLeads(store, data.url, "application");
+      res.json(saved);
     } catch (e) {
       next(e);
     }

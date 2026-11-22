@@ -34,3 +34,24 @@ Documentation summaries were produced by fetching those pages; wording below is 
 10. **Ashby `publishedAt`.** Treated as a posting date. Earlier Phase 0 notes say it may mean last published; it is stored as the posting date only when present. Whether it resets on republish is unverified.
 11. **Rate limits, caching headers, and permitted polling frequency** for all three are unverified and tied to the unresolved source-permission decision in `reference/phase0/access-decision.md`. Nothing here establishes permission to collect or republish.
 12. **Real-world formats** (HTML structure inside `content`, whitespace, heading styles used by the required/preferred splitter, location strings) are known only from synthetic fixtures.
+
+## SmartRecruiters and Workable (added 2026-11-21)
+
+Response shapes were checked against live public endpoints on 2026-11-21; test fixtures are synthetic copies of those shapes.
+
+- **SmartRecruiters**: `GET https://api.smartrecruiters.com/v1/companies/{id}/postings?limit=100&offset=N`. Paged (`totalFound`); the connector reads every page and fails the run if any page is missing, so a partial board never marks jobs as no longer listed. Boards over 5,000 postings are refused. The list endpoint has **no job description**, so fit scores for these jobs stay "needs more information" until a detail fetch is added.
+- **Workable**: `GET https://apply.workable.com/api/v1/widget/accounts/{account}?details=true`. One response with descriptions. `published_on` is date-only and stays date-only. `telecommuting: true` maps to Remote; `false` stays Unknown (it does not say on-site).
+- Not supported: Workday, iCIMS, Jobvite, BambooHR, JazzHR. None publish a documented public postings API; collecting them would mean scraping internal endpoints.
+
+## Board leads (review queue)
+
+Job-board links found in saved application URLs and Gmail evidence are recorded in `discovery_leads` as the canonical board URL only (no raw link, no user id). Nothing is collected from a lead.
+
+```sh
+npm run discovery:admin -- leads                                  # pending, most seen first
+npm run discovery:admin -- promote lever netflix Netflix netflix.com   # company + disabled source
+npm run discovery:admin -- approve lever netflix                  # after recording permission
+npm run discovery:admin -- reject ashby someboard
+```
+
+Hosted databases need `supabase/migrations/20261121000001_discovery_leads.sql` applied first. Until then lead recording is skipped silently and coverage shows 0 pending leads.

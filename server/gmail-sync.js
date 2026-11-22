@@ -8,6 +8,7 @@ import {
   markGmailRevoked,
 } from "./gmail-account.js";
 import { extractRecruitingMessage } from "./integrations/gmail-extraction.js";
+import { recordLeads } from "./discovery/leads.js";
 const TWO_HOURS = 7200000;
 const RETENTION = 30 * 86400000;
 const date = isoDate;
@@ -439,6 +440,10 @@ export async function processGmailSync(
         await update(store, current, claim);
         processed += count;
       });
+      // Outside the transaction: a lead failure must never roll back evidence.
+      for (const item of proposals)
+        if (item.evidence)
+          await recordLeads(store, item.evidence.excerpt, "gmail");
     } catch (error) {
       if (error.code === "RECRUITING_AI_FAILED") claim.aiStatus = "failed";
       if (error.code === "AI_POLICY_DENIED") claim.aiStatus = "policy_denied";

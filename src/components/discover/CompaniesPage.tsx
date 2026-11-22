@@ -26,6 +26,8 @@ const PLATFORM: Record<string, string> = {
   greenhouse: "Greenhouse",
   lever: "Lever",
   ashby: "Ashby",
+  smartrecruiters: "SmartRecruiters",
+  workable: "Workable",
 };
 const STATUS: Record<string, string> = {
   verified: "Verified recently",
@@ -69,8 +71,10 @@ export function CompaniesPage() {
         <p className="muted">
           {data.summary.companies} companies · {data.summary.sources} registered
           boards · {data.summary.collectingSources} being collected ·{" "}
-          {data.summary.unverifiedSources} not verified recently. A failed check
-          marks a listing "could not verify"; it never closes it.
+          {data.summary.unverifiedSources} not verified recently ·{" "}
+          {data.summary.failingSources ?? 0} failing ·{" "}
+          {data.summary.pendingLeads ?? 0} new boards awaiting review. A failed
+          check marks a listing "could not verify"; it never closes it.
         </p>
       </section>
       {companies.length ? (

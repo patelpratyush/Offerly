@@ -1,4 +1,4 @@
-// Public job-board connectors (Greenhouse, Lever, Ashby). They are pure
+// Public job-board connectors (Greenhouse, Lever, Ashby, SmartRecruiters, Workable). They are pure
 // "fetch and normalize" functions: no database access, and the network client
 // is injected so tests use recorded or synthetic fixtures only. Collection of
 // real boards remains disabled until source permissions are confirmed
@@ -19,17 +19,23 @@ const HOSTS = {
   greenhouse: "boards-api.greenhouse.io",
   lever: "api.lever.co",
   ashby: "api.ashbyhq.com",
+  smartrecruiters: "api.smartrecruiters.com",
+  workable: "apply.workable.com",
 };
-export function boardUrl(platform, boardId) {
+export const PLATFORMS = Object.keys(HOSTS);
+const SR_PAGE = 100;
+export function boardUrl(platform, boardId, offset = 0) {
   if (!HOSTS[platform]) throw new ConnectorError("unsupported_platform");
   if (!BOARD_ID.test(String(boardId)))
     throw new ConnectorError("invalid_board_id");
   const id = encodeURIComponent(boardId);
-  return platform === "greenhouse"
-    ? `https://${HOSTS.greenhouse}/v1/boards/${id}/jobs?content=true`
-    : platform === "lever"
-      ? `https://${HOSTS.lever}/v0/postings/${id}?mode=json`
-      : `https://${HOSTS.ashby}/posting-api/job-board/${id}?includeCompensation=true`;
+  return {
+    greenhouse: `https://${HOSTS.greenhouse}/v1/boards/${id}/jobs?content=true`,
+    lever: `https://${HOSTS.lever}/v0/postings/${id}?mode=json`,
+    ashby: `https://${HOSTS.ashby}/posting-api/job-board/${id}?includeCompensation=true`,
+    smartrecruiters: `https://${HOSTS.smartrecruiters}/v1/companies/${id}/postings?limit=${SR_PAGE}&offset=${offset}`,
+    workable: `https://${HOSTS.workable}/api/v1/widget/accounts/${id}?details=true`,
+  }[platform];
 }
 /** Default network client: HTTPS only, no redirects, bounded time. */
 export function createHttpFetcher({
@@ -227,7 +233,61 @@ function base(fields) {
     ...fields,
   };
 }
+const place = (...parts) =>
+  str(parts.filter((p) => typeof p === "string" && p.trim()).join(", "), 200);
 const PARSERS = {
+  // The list endpoint carries no description; fit stays "needs more information".
+  smartrecruiters(body) {
+    if (!body || !Array.isArray(body.content))
+      throw new ConnectorError("invalid_shape");
+    return body.content.map((job) => {
+      if (!job || typeof job !== "object") return null;
+      const posted = parsePosted(job.releasedDate);
+      const company = str(job.company?.identifier, 100);
+      const id = str(job.id, 100);
+      return base({
+        externalId: id,
+        title: str(job.name),
+        url:
+          company && id
+            ? `https://jobs.smartrecruiters.com/${encodeURIComponent(company)}/${encodeURIComponent(id)}`
+            : "",
+        location: str(job.location?.fullLocation, 200),
+        requisition: str(job.refNumber, 100),
+        postedAt: posted.at,
+        postedPrecision: posted.precision,
+        postedTimezone: posted.timezone,
+        workArrangement: job.location?.remote
+          ? "Remote"
+          : job.location?.hybrid
+            ? "Hybrid"
+            : "Unknown",
+        employmentType: employment(job.typeOfEmployment?.label),
+      });
+    });
+  },
+  workable(body) {
+    if (!body || !Array.isArray(body.jobs))
+      throw new ConnectorError("invalid_shape");
+    return body.jobs.map((job) => {
+      if (!job || typeof job !== "object") return null;
+      const posted = parsePosted(job.published_on);
+      return base({
+        externalId: str(job.shortcode, 100),
+        title: str(job.title),
+        url: httpUrl(job.url),
+        location: place(job.city, job.state, job.country),
+        requisition: str(job.code, 100),
+        postedAt: posted.at,
+        postedPrecision: posted.precision,
+        postedTimezone: posted.timezone,
+        description: htmlToText(job.description),
+        // telecommuting=false does not say on-site, so it stays unknown.
+        workArrangement: job.telecommuting === true ? "Remote" : "Unknown",
+        employmentType: employment(job.employment_type),
+      });
+    });
+  },
   greenhouse(body) {
     if (!body || !Array.isArray(body.jobs))
       throw new ConnectorError("invalid_shape");
@@ -341,23 +401,42 @@ export async function fetchBoard(
   { fetcher, limiter = createRateLimiter() } = {},
 ) {
   if (typeof fetcher !== "function") throw new ConnectorError("no_fetcher");
-  const url = boardUrl(source.platform, source.boardId ?? source.board_id);
-  await limiter.wait(new URL(url).hostname);
-  let res;
-  try {
-    res = await fetcher(url);
-  } catch (error) {
-    if (error instanceof ConnectorError) throw error;
-    throw new ConnectorError("network_error");
+  const boardId = source.boardId ?? source.board_id;
+  async function page(offset) {
+    const url = boardUrl(source.platform, boardId, offset);
+    await limiter.wait(new URL(url).hostname);
+    let res;
+    try {
+      res = await fetcher(url);
+    } catch (error) {
+      if (error instanceof ConnectorError) throw error;
+      throw new ConnectorError("network_error");
+    }
+    if (res.status === 429 || res.status === 503)
+      throw new ConnectorError("rate_limited", "", {
+        retryAfterMs: retryAfter(res),
+      });
+    if (res.status === 404) throw new ConnectorError("board_not_found");
+    if (res.status < 200 || res.status >= 300)
+      throw new ConnectorError("http_" + res.status);
+    return readJson(res);
   }
-  if (res.status === 429 || res.status === 503)
-    throw new ConnectorError("rate_limited", "", {
-      retryAfterMs: retryAfter(res),
-    });
-  if (res.status === 404) throw new ConnectorError("board_not_found");
-  if (res.status < 200 || res.status >= 300)
-    throw new ConnectorError("http_" + res.status);
-  const parsed = PARSERS[source.platform](await readJson(res));
+  let body = await page(0);
+  if (source.platform === "smartrecruiters" && Array.isArray(body?.content)) {
+    // Only a complete enumeration may mark jobs as no longer listed, so any
+    // failed page fails the whole run rather than returning a partial board.
+    const total = Number(body.totalFound) || 0;
+    if (total > MAX_LISTINGS) throw new ConnectorError("too_many_listings");
+    const content = [...body.content];
+    while (content.length < total) {
+      const next = await page(content.length);
+      if (!Array.isArray(next?.content) || !next.content.length)
+        throw new ConnectorError("incomplete_board");
+      content.push(...next.content);
+    }
+    body = { content };
+  }
+  const parsed = PARSERS[source.platform](body);
   if (parsed.length > MAX_LISTINGS)
     throw new ConnectorError("too_many_listings");
   const seen = new Set();
