@@ -72,9 +72,8 @@ export function CompaniesPage() {
           {data.summary.companies} companies · {data.summary.sources} registered
           boards · {data.summary.collectingSources} being collected ·{" "}
           {data.summary.unverifiedSources} not verified recently ·{" "}
-          {data.summary.failingSources ?? 0} failing ·{" "}
-          {data.summary.pendingLeads ?? 0} new boards awaiting review. A failed
-          check marks a listing "could not verify"; it never closes it.
+          {data.summary.failingSources ?? 0} failing. A failed check marks a
+          listing "could not verify"; it never closes it.
         </p>
       </section>
       {companies.length ? (

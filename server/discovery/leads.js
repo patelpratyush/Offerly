@@ -5,6 +5,7 @@
 // candidate tokens), and no user id is kept with the lead.
 import { upsertCompany, upsertSource } from "./registry.js";
 import { PLATFORMS } from "./connectors.js";
+import { canonicalDomain } from "./normalize.js";
 
 const BOARD_ID = /^[A-Za-z0-9][A-Za-z0-9._-]{0,99}$/;
 const HOSTS = {
@@ -83,7 +84,12 @@ export async function listLeads(store) {
 /** Operator decision: register the employer and its board (still disabled). */
 export async function promoteLead(store, { platform, boardId, name, domain }) {
   if (!PLATFORMS.includes(platform)) throw new Error("Unknown platform");
-  const companyId = await upsertCompany(store, { name, domain });
+  // Reuse an existing company so its recorded size evidence is not overwritten.
+  const existing = await store.db
+    .prepare("SELECT id FROM discovery_companies WHERE canonical_domain=?")
+    .get(canonicalDomain(domain) || "");
+  const companyId =
+    existing?.id || (await upsertCompany(store, { name, domain }));
   const sourceId = await upsertSource(store, {
     companyId,
     platform,

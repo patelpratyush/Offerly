@@ -446,7 +446,11 @@ export async function createApp(store, options = {}) {
         req.params.id,
         z.number().int().positive().parse(req.body.version),
       );
-      if (req.params.kind === "application")
+      // Only a changed link is a new sighting; plain edits must not inflate the count.
+      if (
+        req.params.kind === "application" &&
+        data.url !== JSON.parse(old.data).url
+      )
         await recordLeads(store, data.url, "application");
       res.json(saved);
     } catch (e) {

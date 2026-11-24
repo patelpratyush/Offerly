@@ -328,6 +328,7 @@ export async function ingestSource(store, sourceId, options = {}) {
     limiter = createRateLimiter(),
     now = Date.now(),
     force = false,
+    deadline = 0,
     acceptDrop = false,
     env = process.env,
   } = options;
@@ -343,7 +344,7 @@ export async function ingestSource(store, sourceId, options = {}) {
     return { outcome: "skipped", reason: "not_due" };
   let result;
   try {
-    result = await fetchBoard(source, { fetcher, limiter });
+    result = await fetchBoard(source, { fetcher, limiter, deadline });
   } catch (error) {
     const known =
       error instanceof ConnectorError

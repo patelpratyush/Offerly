@@ -197,7 +197,11 @@ test("leads queue, promote into a disabled source, and stay out of the way", asy
   assert.equal(source.permission_status, "unconfirmed");
   await rejectLead(store, "ashby", "openai");
   assert.deepEqual(await listLeads(store), []);
-  assert.equal((await coverage(store, "nobody")).summary.pendingLeads, 0);
+  // Lead activity comes from every user, so user-facing coverage never shows it.
+  assert.equal(
+    "pendingLeads" in (await coverage(store, "nobody")).summary,
+    false,
+  );
   // A missing table (hosted database not migrated yet) never throws.
   await store.db.exec("DROP TABLE discovery_leads");
   assert.equal(await recordLeads(store, "https://jobs.lever.co/x", "gmail"), 0);
@@ -241,6 +245,14 @@ test("saving an application with a board link queues a lead", async (t) => {
   const [lead] = await listLeads(store);
   assert.equal(lead.board_id, "stripe");
   assert.equal(lead.origin, "application");
+  // Editing other fields is not a new sighting of the board.
+  const app = await res.json();
+  await fetch(base + "/records/application/" + app.id, {
+    method: "PUT",
+    headers: { ...headers, Cookie: cookie },
+    body: JSON.stringify({ ...app, title: "Senior Engineer" }),
+  });
+  assert.equal((await listLeads(store))[0].seen_count, 1);
 });
 
 test("older SQLite databases gain the new platforms without losing sources", async (t) => {
@@ -270,4 +282,55 @@ test("older SQLite databases gain the new platforms without losing sources", asy
     )
     .all();
   assert.ok(fk.some((r) => r.table === "discovery_sources"));
+});
+
+test("paged boards stop at the run deadline instead of overrunning", async () => {
+  let pages = 0;
+  const fetcher = async () => {
+    pages++;
+    return respond({
+      totalFound: 3000,
+      content: Array.from({ length: 100 }, (_, i) => srJob(pages * 100 + i)),
+    });
+  };
+  const slow = {
+    async wait() {
+      await new Promise((r) => setTimeout(r, 15));
+    },
+  };
+  await assert.rejects(
+    fetchBoard(
+      { platform: "smartrecruiters", boardId: "Acme" },
+      { fetcher, limiter: slow, deadline: Date.now() + 40 },
+    ),
+    { code: "deadline" },
+  );
+  assert.ok(pages < 30);
+});
+
+test("promoting another board keeps the company's recorded size", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  const { upsertCompany } = await import("../../server/discovery/registry.js");
+  await upsertCompany(store, {
+    name: "Netflix",
+    domain: "netflix.com",
+    sizeMin: 10000,
+    sizeMax: 20000,
+    sizeSourceUrl: "https://example.com/size",
+    sizeAsOf: "2026-11-01",
+  });
+  await promoteLead(store, {
+    platform: "lever",
+    boardId: "netflix",
+    name: "Netflix",
+    domain: "netflix.com",
+  });
+  const company = await store.db
+    .prepare(
+      "SELECT * FROM discovery_companies WHERE canonical_domain='netflix.com'",
+    )
+    .get();
+  assert.equal(company.size_min, 10000);
+  assert.equal(company.size_as_of, "2026-11-01");
 });

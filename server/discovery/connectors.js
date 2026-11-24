@@ -398,13 +398,16 @@ const PARSERS = {
  */
 export async function fetchBoard(
   source,
-  { fetcher, limiter = createRateLimiter() } = {},
+  { fetcher, limiter = createRateLimiter(), deadline = 0 } = {},
 ) {
   if (typeof fetcher !== "function") throw new ConnectorError("no_fetcher");
   const boardId = source.boardId ?? source.board_id;
   async function page(offset) {
     const url = boardUrl(source.platform, boardId, offset);
     await limiter.wait(new URL(url).hostname);
+    // Paged boards must stop inside the run's time budget; a stopped board is a failed run.
+    if (deadline && Date.now() >= deadline)
+      throw new ConnectorError("deadline");
     let res;
     try {
       res = await fetcher(url);

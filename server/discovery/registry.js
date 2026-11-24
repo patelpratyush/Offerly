@@ -181,12 +181,6 @@ export async function coverage(store, userId, now = Date.now()) {
       .map((s) => sourceStatus(s, now)),
   }));
   const collecting = rows.flatMap((c) => c.sources).filter((s) => s.collecting);
-  // Leads table may be absent on a hosted database that has not been migrated yet.
-  const pendingLeads = await store.db
-    .prepare("SELECT COUNT(*) AS n FROM discovery_leads WHERE status='pending'")
-    .get()
-    .then((r) => Number(r.n))
-    .catch(() => 0);
   return {
     companies: rows,
     summary: {
@@ -196,7 +190,6 @@ export async function coverage(store, userId, now = Date.now()) {
       unverifiedSources: collecting.filter((s) => s.verification !== "verified")
         .length,
       failingSources: sources.filter((s) => s.health === "failing").length,
-      pendingLeads,
     },
     statement:
       "Coverage is limited to the employer boards listed here that are being collected. It is not the whole job market.",
