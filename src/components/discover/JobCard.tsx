@@ -13,7 +13,7 @@ const REASONS: [string, string][] = [
   ["not_relevant", "Not relevant"],
   ["wrong_seniority", "Wrong seniority"],
   ["wrong_location", "Wrong location"],
-  ["company", "Not this company"],
+  ["company", "Hide this company"],
   ["compensation", "Compensation"],
   ["already_seen", "Already seen"],
   ["other", "Other"],

@@ -20,6 +20,7 @@ type Company = {
   size: Size;
   openJobs: number;
   watched: boolean;
+  hidden: boolean;
   sources: SourceRow[];
 };
 const PLATFORM: Record<string, string> = {
@@ -103,6 +104,21 @@ export function CompaniesPage() {
                   {c.watched ? "Watching" : "Watch"}
                   <span className="sr-only"> {c.name}</span>
                 </button>
+                {c.hidden && (
+                  <button
+                    className="secondary"
+                    onClick={async () => {
+                      await discoveryApi(
+                        `/companies/${c.id}/hide`,
+                        "DELETE",
+                      ).catch((e) => setError(e.message));
+                      await load();
+                    }}
+                  >
+                    Unhide
+                    <span className="sr-only"> {c.name} in Matches</span>
+                  </button>
+                )}
               </header>
               <ul className="discover-badges" aria-label="Company facts">
                 <li className={c.size.ambiguous ? "is-warn" : ""}>
@@ -114,6 +130,7 @@ export function CompaniesPage() {
                     {c.size.entityName ? `: ${c.size.entityName}` : ""}
                   </li>
                 )}
+                {c.hidden && <li className="is-warn">Hidden from Matches</li>}
                 <li>{c.openJobs} open in catalog</li>
                 <li>
                   {c.sources.length}{" "}

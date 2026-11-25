@@ -157,3 +157,12 @@ export async function deleteSearch(store, userId, id) {
     .prepare("DELETE FROM discovery_saved_searches WHERE id=? AND user_id=?")
     .run(id, userId);
 }
+
+/** Undo "Hide this company": restore every job dismissed for that reason. */
+export async function unhideCompany(store, userId, companyId) {
+  await store.db
+    .prepare(
+      "UPDATE discovery_user_jobs SET dismissed_at=NULL,dismiss_reason='' WHERE user_id=? AND dismiss_reason='company' AND job_id IN (SELECT id FROM discovery_jobs WHERE company_id=?)",
+    )
+    .run(userId, companyId);
+}

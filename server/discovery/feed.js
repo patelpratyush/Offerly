@@ -106,7 +106,7 @@ function freshness(job) {
 }
 /** Loads everything user-specific once so scoring many jobs stays cheap. */
 export async function loadContext(store, userId) {
-  const [profile, userJobs, watch, applications] = await Promise.all([
+  const [profile, userJobs, watch, applications, hidden] = await Promise.all([
     getProfile(store, userId),
     store.db
       .prepare("SELECT * FROM discovery_user_jobs WHERE user_id=?")
@@ -115,12 +115,19 @@ export async function loadContext(store, userId) {
       .prepare("SELECT company_id FROM discovery_watchlist WHERE user_id=?")
       .all(userId),
     store.list(userId, "application"),
+    // Dismissing one job as "Not this company" hides that whole employer.
+    store.db
+      .prepare(
+        "SELECT DISTINCT j.company_id FROM discovery_user_jobs u JOIN discovery_jobs j ON j.id=u.job_id WHERE u.user_id=? AND u.dismiss_reason='company' AND u.dismissed_at IS NOT NULL AND u.dismissed_at<>''",
+      )
+      .all(userId),
   ]);
   return {
     userId,
     profile,
     userJobs: new Map(userJobs.map((r) => [r.job_id, r])),
     watched: new Set(watch.map((r) => r.company_id)),
+    hiddenCompanies: new Set(hidden.map((r) => r.company_id)),
     applications: applications.map((a) => ({
       id: a.id,
       company: normText(a.company),
@@ -256,14 +263,15 @@ export function evaluateJob(ctx, catalog, job, filters, now, basis = "posted") {
       fit,
       applied,
       saved: !!state?.saved_at,
-      dismissed: !!state?.dismissed_at,
+      dismissed:
+        !!state?.dismissed_at || !!ctx.hiddenCompanies?.has(job.company_id),
       watched: ctx.watched.has(job.company_id),
     },
   };
 }
 const iso = (ms) => new Date(ms).toISOString();
 const NOT_DISMISSED =
-  "NOT EXISTS (SELECT 1 FROM discovery_user_jobs u WHERE u.user_id=? AND u.job_id=j.id AND u.dismissed_at IS NOT NULL AND u.dismissed_at<>'')";
+  "NOT EXISTS (SELECT 1 FROM discovery_user_jobs u WHERE u.user_id=? AND u.job_id=j.id AND u.dismissed_at IS NOT NULL AND u.dismissed_at<>'') AND NOT EXISTS (SELECT 1 FROM discovery_user_jobs u JOIN discovery_jobs d ON d.id=u.job_id WHERE u.user_id=? AND u.dismiss_reason='company' AND u.dismissed_at IS NOT NULL AND u.dismissed_at<>'' AND d.company_id=j.company_id)";
 /**
  * SQL pre-filter over discovery_jobs (alias j, discovery_companies alias c).
  * It only encodes conditions that are exact or strictly wider than the
@@ -286,7 +294,7 @@ export function prefilter({
   if (listedOnly) where.push("j.status='listed'");
   if (excludeDismissed) {
     where.push(NOT_DISMISSED);
-    params.push(userId);
+    params.push(userId, userId);
   }
   if (saved) {
     where.push(

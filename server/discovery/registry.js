@@ -160,6 +160,15 @@ export async function coverage(store, userId, now = Date.now()) {
         .all(userId)
     ).map((r) => r.company_id),
   );
+  const hidden = new Set(
+    (
+      await store.db
+        .prepare(
+          "SELECT DISTINCT j.company_id FROM discovery_user_jobs u JOIN discovery_jobs j ON j.id=u.job_id WHERE u.user_id=? AND u.dismiss_reason='company' AND u.dismissed_at IS NOT NULL AND u.dismissed_at<>''",
+        )
+        .all(userId)
+    ).map((r) => r.company_id),
+  );
   const counts = new Map(
     (
       await store.db
@@ -176,6 +185,7 @@ export async function coverage(store, userId, now = Date.now()) {
     size: describeSize(c),
     openJobs: counts.get(c.id) || 0,
     watched: watched.has(c.id),
+    hidden: hidden.has(c.id),
     sources: sources
       .filter((s) => s.company_id === c.id)
       .map((s) => sourceStatus(s, now)),

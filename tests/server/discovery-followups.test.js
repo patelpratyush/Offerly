@@ -43,7 +43,8 @@ import {
   processDiscovery,
   processAlertBatch,
 } from "../../server/discovery/runner.js";
-import { dismissJob } from "../../server/discovery/actions.js";
+import { dismissJob, unhideCompany } from "../../server/discovery/actions.js";
+import { coverage } from "../../server/discovery/registry.js";
 
 const T = (text) => Date.parse(text);
 const iso = (ms) => new Date(ms).toISOString();
@@ -1396,4 +1397,35 @@ test("the API pages the feed, validates cursors and keeps digests private per us
   const proc = await call("/discovery/alerts/process", "POST", {}, a);
   assert.equal(proc.status, 200);
   assert.equal(proc.data.digests, 0);
+});
+
+test("hiding a company removes all its jobs until it is unhidden", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  await addUser(store, "u1");
+  await addUser(store, "u2");
+  const now = T("2026-11-20T12:00:00Z");
+  const acme = await company(store);
+  const beta = await company(store, "Beta", "beta.test");
+  const [a1, a2] = await seedJobs(store, acme, [
+    { posted: "2026-11-19", discovered: iso(now) },
+    { posted: "2026-11-19", discovered: iso(now) },
+  ]);
+  const [b1] = await seedJobs(store, beta, [
+    { posted: "2026-11-19", discovered: iso(now) },
+  ]);
+  const ids = async (user) =>
+    (await listView(store, user, "latest", { window: "" }, { now })).jobs
+      .map((j) => j.id)
+      .sort();
+  await dismissJob(store, "u1", a1, "company");
+  assert.deepEqual(await ids("u1"), [b1]);
+  // Another user is unaffected.
+  assert.deepEqual(await ids("u2"), [a1, a2, b1].sort());
+  const row = (await coverage(store, "u1")).companies.find(
+    (c) => c.id === acme,
+  );
+  assert.equal(row.hidden, true);
+  await unhideCompany(store, "u1", acme);
+  assert.deepEqual(await ids("u1"), [a1, a2, b1].sort());
 });

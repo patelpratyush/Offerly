@@ -11,6 +11,7 @@ import {
   dismissJob,
   restoreJob,
   setWatch,
+  unhideCompany,
   listSearches,
   createSearch,
   updateSearch,
@@ -44,6 +45,10 @@ export function mountDiscovery(app, store) {
   });
   app.delete("/api/discovery/companies/:id/watch", async (req, res) => {
     await setWatch(store, uid(req), id.parse(req.params.id), false);
+    res.json({ ok: true });
+  });
+  app.delete("/api/discovery/companies/:id/hide", async (req, res) => {
+    await unhideCompany(store, uid(req), id.parse(req.params.id));
     res.json({ ok: true });
   });
   app.get("/api/discovery/feed", async (req, res) => {
