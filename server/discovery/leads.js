@@ -111,3 +111,23 @@ export async function rejectLead(store, platform, boardId) {
     )
     .run(platform, boardId);
 }
+
+/** One-time catch-up: scan links already stored before lead recording existed. */
+export async function backfillLeads(store) {
+  const rows = await store.db
+    .prepare(
+      "SELECT kind,data FROM records WHERE kind IN ('application','recruiting_evidence')",
+    )
+    .all();
+  let recorded = 0;
+  for (const row of rows) {
+    const data = JSON.parse(row.data);
+    recorded +=
+      row.kind === "application"
+        ? await recordLeads(store, data.url, "application")
+        : data.sourceType === "gmail"
+          ? await recordLeads(store, data.excerpt, "gmail")
+          : 0;
+  }
+  return { scanned: rows.length, recorded };
+}

@@ -6,6 +6,7 @@
 //   node server/discovery/admin.js leads                      (pending review queue)
 //   node server/discovery/admin.js promote <platform> <boardId> <name> <domain>
 //   node server/discovery/admin.js reject <platform> <boardId>
+//   node server/discovery/admin.js backfill-leads   (one-time scan of stored links)
 //   node server/discovery/admin.js approve <platform> <boardId>   (records permission + enables)
 //   node server/discovery/admin.js run         (needs DISCOVERY_COLLECTION_ENABLED=true)
 import { resolve } from "node:path";
@@ -16,7 +17,7 @@ import { createHttpFetcher, createRateLimiter } from "./connectors.js";
 import { processAlerts } from "./alerts.js";
 import { processDigests } from "./digests.js";
 import { canonicalDomain } from "./normalize.js";
-import { listLeads, promoteLead, rejectLead } from "./leads.js";
+import { listLeads, promoteLead, rejectLead, backfillLeads } from "./leads.js";
 const [command, ...args] = process.argv.slice(2);
 const path =
   process.env.DATABASE_URL ||
@@ -53,6 +54,8 @@ try {
   } else if (command === "promote") {
     const [platform, boardId, name, domain] = args;
     console.log(await promoteLead(store, { platform, boardId, name, domain }));
+  } else if (command === "backfill-leads") {
+    console.log(JSON.stringify(await backfillLeads(store)));
   } else if (command === "reject") {
     const [platform, boardId] = args;
     await rejectLead(store, platform, boardId);

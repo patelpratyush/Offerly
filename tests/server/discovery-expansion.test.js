@@ -12,6 +12,7 @@ import {
   listLeads,
   promoteLead,
   rejectLead,
+  backfillLeads,
 } from "../../server/discovery/leads.js";
 import { coverage } from "../../server/discovery/registry.js";
 import { initializeDiscovery } from "../../server/discovery/schema.js";
@@ -333,4 +334,32 @@ test("promoting another board keeps the company's recorded size", async (t) => {
     .get();
   assert.equal(company.size_min, 10000);
   assert.equal(company.size_as_of, "2026-11-01");
+});
+
+test("backfill scans stored application links and Gmail evidence once", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  await store.db
+    .prepare(
+      "INSERT INTO users(id,email,password,name,timezone,stages) VALUES('u','u@example.com','x','U','UTC','[]')",
+    )
+    .run();
+  const insert = (id, kind, data) =>
+    store.db
+      .prepare("INSERT INTO records(id,user_id,kind,data) VALUES(?,?,?,?)")
+      .run(id, "u", kind, JSON.stringify(data));
+  await insert("a", "application", { url: "https://jobs.lever.co/netflix/1" });
+  await insert("e", "recruiting_evidence", {
+    sourceType: "gmail",
+    excerpt: "Apply https://jobs.ashbyhq.com/openai/2",
+  });
+  await insert("m", "recruiting_evidence", {
+    sourceType: "manual",
+    excerpt: "https://jobs.lever.co/ignored",
+  });
+  assert.deepEqual(await backfillLeads(store), { scanned: 3, recorded: 2 });
+  assert.deepEqual((await listLeads(store)).map((l) => l.board_id).sort(), [
+    "netflix",
+    "openai",
+  ]);
 });
