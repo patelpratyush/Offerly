@@ -113,10 +113,10 @@ export function JobCard({
                 "discover-fit" +
                 (job.fit.score >= STRONG_FIT ? " is-strong" : "")
               }
-              aria-label={`Fit ${job.fit.score} out of 100. Not an interview probability.`}
+              aria-label={`${job.fit.score}% match to your profile. Not an interview probability.`}
             >
-              <strong>{job.fit.score}</strong>
-              <span>fit</span>
+              <strong>{job.fit.score}%</strong>
+              <span>match</span>
             </div>
           ) : (
             <div className="discover-fit is-empty">

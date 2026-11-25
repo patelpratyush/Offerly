@@ -13,6 +13,7 @@ import {
   promoteLead,
   rejectLead,
   backfillLeads,
+  importSimplifyLists,
 } from "../../server/discovery/leads.js";
 import { coverage } from "../../server/discovery/registry.js";
 import { initializeDiscovery } from "../../server/discovery/schema.js";
@@ -364,4 +365,34 @@ test("backfill scans stored application links and Gmail evidence once", async (t
     "netflix",
     "openai",
   ]);
+});
+
+test("Simplify import keeps only active listings on supported boards, once each", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  const rows = [
+    { active: true, url: "https://job-boards.greenhouse.io/stripe/jobs/1" },
+    { active: true, url: "https://job-boards.greenhouse.io/stripe/jobs/2" },
+    { active: true, is_visible: false, url: "https://jobs.lever.co/hidden/1" },
+    { active: false, url: "https://jobs.lever.co/closed/1" },
+    { active: true, url: "https://jobs.apple.com/en-us/details/1" },
+  ];
+  const fetcher = async () => ({ ok: true, json: async () => rows });
+  assert.deepEqual(
+    await importSimplifyLists(store, { fetcher, lists: ["x"] }),
+    {
+      active: 3,
+      boards: 1,
+      recorded: 1,
+    },
+  );
+  const [lead] = await listLeads(store);
+  assert.equal(lead.url, "https://job-boards.greenhouse.io/stripe");
+  await assert.rejects(
+    importSimplifyLists(store, {
+      fetcher: async () => ({ ok: false, status: 404 }),
+      lists: ["x"],
+    }),
+    /unavailable/,
+  );
 });

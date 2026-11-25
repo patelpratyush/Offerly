@@ -111,7 +111,7 @@ test("discovery shows honest coverage, freshness, duplicates, filters and alerts
   await expect(
     page.getByRole("status").filter({ hasText: "Profile approved" }),
   ).toBeVisible();
-  await page.getByRole("button", { name: "Best matches" }).click();
+  await page.getByRole("button", { name: "Matches", exact: true }).click();
   // Roles already applied to are not recommended again.
   await expect(platform).toBeVisible();
   await expect(backend).toHaveCount(0);

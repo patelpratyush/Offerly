@@ -10,7 +10,7 @@ import { SavedSearch, SavedSearches } from "./SavedSearches";
 const VIEWS: [string, string, string][] = [
   [
     "best",
-    "Best matches",
+    "Matches",
     "Highest explainable fit to your approved profile. Not an interview probability.",
   ],
   [

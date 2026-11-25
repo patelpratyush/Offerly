@@ -134,3 +134,39 @@ export async function backfillLeads(store) {
   }
   return { scanned: rows.length, recorded };
 }
+
+// Simplify's public new-grad and internship lists. The repositories carry no
+// license, so only board links are taken from them, as leads for review; no
+// listing text is stored or shown.
+export const SIMPLIFY_LISTS = [
+  "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
+  "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
+];
+export async function importSimplifyLists(
+  store,
+  { fetcher = fetch, lists = SIMPLIFY_LISTS } = {},
+) {
+  const boards = new Map();
+  let active = 0;
+  for (const url of lists) {
+    const res = await fetcher(url);
+    if (!res.ok) throw new Error(`Simplify list unavailable (${res.status})`);
+    const rows = await res.json();
+    if (!Array.isArray(rows))
+      throw new Error("Simplify list has an unexpected shape");
+    for (const row of rows) {
+      if (!row?.active || row.is_visible === false) continue;
+      active++;
+      for (const b of detectBoards(row.url))
+        boards.set(`${b.platform}:${b.boardId}`, b);
+    }
+  }
+  let recorded = 0;
+  for (const { platform, boardId } of boards.values())
+    recorded += await recordLeads(
+      store,
+      BOARD_URL[platform](boardId),
+      "manual",
+    );
+  return { active, boards: boards.size, recorded };
+}
