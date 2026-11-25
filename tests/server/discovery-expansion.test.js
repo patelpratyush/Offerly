@@ -143,6 +143,7 @@ test("board detection keeps only employer boards and canonical URLs", () => {
     https://jobs.lever.co/netflix/abc-def?lever-source=x
     https://jobs.ashbyhq.com/openai/123
     https://jobs.smartrecruiters.com/ServiceNow/744000
+    https://jobs.smartrecruiters.com/my-applications/WesternDigital/2f4dd691?dcr_ci=WesternDigital
     https://apply.workable.com/huggingface/j/81B46579FE
     https://apply.workable.com/j/81B46579FE
     https://jobs.lever.co/netflix/other
@@ -156,6 +157,7 @@ test("board detection keeps only employer boards and canonical URLs", () => {
       "lever:netflix",
       "ashby:openai",
       "smartrecruiters:ServiceNow",
+      "smartrecruiters:WesternDigital",
       "workable:huggingface",
     ],
   );

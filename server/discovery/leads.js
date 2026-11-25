@@ -39,8 +39,11 @@ export function detectBoards(text) {
     }
     const platform = HOSTS[url.hostname.toLowerCase()];
     if (!platform) continue;
-    const boardId =
-      url.searchParams.get("for") || url.pathname.split("/").filter(Boolean)[0];
+    const parts = url.pathname.split("/").filter(Boolean);
+    // SmartRecruiters candidate-portal links carry the employer one level down.
+    if (platform === "smartrecruiters" && parts[0] === "my-applications")
+      parts.shift();
+    const boardId = url.searchParams.get("for") || parts[0];
     if (
       !boardId ||
       RESERVED.has(boardId.toLowerCase()) ||
