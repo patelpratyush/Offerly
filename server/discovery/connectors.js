@@ -464,3 +464,33 @@ export async function fetchBoard(
     throw new ConnectorError("mostly_invalid");
   return { listings, invalid, total: parsed.length };
 }
+
+/** One SmartRecruiters posting's description as inert text ("" when absent). */
+export async function fetchPostingDescription(
+  boardId,
+  postingId,
+  { fetcher, limiter = createRateLimiter(), deadline = 0 } = {},
+) {
+  if (typeof fetcher !== "function") throw new ConnectorError("no_fetcher");
+  if (!BOARD_ID.test(String(boardId)) || !BOARD_ID.test(String(postingId)))
+    throw new ConnectorError("invalid_board_id");
+  const url = `https://${HOSTS.smartrecruiters}/v1/companies/${encodeURIComponent(boardId)}/postings/${encodeURIComponent(postingId)}`;
+  await limiter.wait(HOSTS.smartrecruiters);
+  if (deadline && Date.now() >= deadline) throw new ConnectorError("deadline");
+  let res;
+  try {
+    res = await fetcher(url);
+  } catch (error) {
+    if (error instanceof ConnectorError) throw error;
+    throw new ConnectorError("network_error");
+  }
+  if (res.status === 404) throw new ConnectorError("board_not_found");
+  if (res.status < 200 || res.status >= 300)
+    throw new ConnectorError("http_" + res.status);
+  const sections = (await readJson(res))?.jobAd?.sections || {};
+  return ["jobDescription", "qualifications", "additionalInformation"]
+    .map((k) => htmlToText(sections[k]?.text))
+    .filter(Boolean)
+    .join("\n\n")
+    .slice(0, MAX_DESCRIPTION);
+}

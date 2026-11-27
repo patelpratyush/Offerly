@@ -3,7 +3,12 @@
 // suspicious fetch updates source health and marks listings "could not
 // verify" - it never closes or delists anything.
 import { randomUUID } from "node:crypto";
-import { ConnectorError, fetchBoard, createRateLimiter } from "./connectors.js";
+import {
+  ConnectorError,
+  fetchBoard,
+  fetchPostingDescription,
+  createRateLimiter,
+} from "./connectors.js";
 import {
   contentHash,
   groupKey,
@@ -204,7 +209,7 @@ async function applyListings(store, source, listings, now, keep) {
       // A content update never resets employer_posted_at or first_discovered_at.
       await store.db
         .prepare(
-          "UPDATE discovery_jobs SET title=?,location=?,description=?,work_arrangement=?,employment_type=?,comp_min=?,comp_max=?,comp_currency=?,comp_period=?,comp_basis=?,requisition=CASE WHEN requisition='' THEN ? ELSE requisition END,content_hash=?,last_changed_at=? WHERE id=?",
+          "UPDATE discovery_jobs SET title=?,location=?,description=COALESCE(NULLIF(?,''),description),work_arrangement=?,employment_type=?,comp_min=?,comp_max=?,comp_currency=?,comp_period=?,comp_basis=?,requisition=CASE WHEN requisition='' THEN ? ELSE requisition END,content_hash=?,last_changed_at=? WHERE id=?",
         )
         .run(
           listing.title,
@@ -427,4 +432,39 @@ export async function ingestDue(store, options = {}) {
     });
   }
   return results;
+}
+
+// SmartRecruiters lists postings without descriptions. Fill a few per run from
+// the per-posting endpoint so fit can be scored; failures just wait for the next run.
+export async function fillMissingDescriptions(
+  store,
+  { fetcher, limiter = createRateLimiter(), deadline = 0, limit = 8 } = {},
+) {
+  const rows = await store.db
+    .prepare(
+      "SELECT j.id AS job_id,l.external_id,s.board_id FROM discovery_jobs j JOIN discovery_listings l ON l.job_id=j.id JOIN discovery_sources s ON s.id=l.source_id WHERE s.platform='smartrecruiters' AND s.enabled=1 AND s.permission_status='confirmed' AND l.status='listed' AND j.status='listed' AND j.description='' ORDER BY j.first_discovered_at DESC,j.id LIMIT ?",
+    )
+    .all(limit);
+  let filled = 0;
+  for (const row of rows) {
+    let text;
+    try {
+      text = await fetchPostingDescription(row.board_id, row.external_id, {
+        fetcher,
+        limiter,
+        deadline,
+      });
+    } catch (error) {
+      if (error.code === "board_not_found") continue; // posting gone; the next board refresh closes it
+      break;
+    }
+    if (!text) continue;
+    await store.db
+      .prepare(
+        "UPDATE discovery_jobs SET description=? WHERE id=? AND description=''",
+      )
+      .run(text, row.job_id);
+    filled++;
+  }
+  return { candidates: rows.length, filled };
 }

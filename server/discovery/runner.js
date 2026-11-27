@@ -9,6 +9,7 @@
 import {
   collectionEnabled,
   ingestDue,
+  fillMissingDescriptions,
   pruneSnapshots,
   snapshotKeep,
 } from "./ingest.js";
@@ -96,13 +97,16 @@ export async function processDiscovery(
     return { skipped: true, reason: "discovery_disabled" };
   const out = {};
   if (collect) {
+    const net = {
+      fetcher: fetcher || createHttpFetcher(),
+      limiter: limiter || createRateLimiter({ minIntervalMs: 2000 }),
+    };
     const results = await ingestDue(store, {
       now,
       env,
       deadline,
       limit: maxSources,
-      fetcher: fetcher || createHttpFetcher(),
-      limiter: limiter || createRateLimiter({ minIntervalMs: 2000 }),
+      ...net,
     });
     out.collection = {
       sources: results.length,
@@ -110,6 +114,10 @@ export async function processDiscovery(
       failed: results.filter((r) => ["failed", "rejected"].includes(r.outcome))
         .length,
     };
+    out.descriptions = await fillMissingDescriptions(store, {
+      ...net,
+      deadline,
+    });
     out.snapshots = await pruneSnapshots(store, { keep: snapshotKeep(env) });
   }
   if (alerts)

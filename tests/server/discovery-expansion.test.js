@@ -396,3 +396,104 @@ test("Simplify import keeps only active listings on supported boards, once each"
     /unavailable/,
   );
 });
+
+test("SmartRecruiters descriptions fill in later and survive board refreshes", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  const { upsertCompany, upsertSource, setSourcePolicy } =
+    await import("../../server/discovery/registry.js");
+  const { ingestSource, fillMissingDescriptions } =
+    await import("../../server/discovery/ingest.js");
+  const companyId = await upsertCompany(store, {
+    name: "Acme",
+    domain: "acme.test",
+  });
+  const sourceId = await upsertSource(store, {
+    companyId,
+    platform: "smartrecruiters",
+    boardId: "Acme",
+  });
+  await setSourcePolicy(store, sourceId, {
+    permission: "confirmed",
+    enabled: true,
+  });
+  const board = async () =>
+    respond({ totalFound: 2, content: [srJob(1), srJob(2)] });
+  const env = { DISCOVERY_COLLECTION_ENABLED: "true" };
+  await ingestSource(store, sourceId, { fetcher: board, limiter: noWait, env });
+  const calls = [];
+  const detail = async (url) => {
+    calls.push(url);
+    if (url.endsWith("/2")) return respond({}, 404);
+    return respond({
+      jobAd: {
+        sections: {
+          companyDescription: { text: "<p>About Acme</p>" },
+          jobDescription: { text: "<p>Build <b>Python</b> pipelines</p>" },
+          qualifications: { text: "<ul><li>SQL</li></ul>" },
+        },
+      },
+    });
+  };
+  assert.deepEqual(
+    await fillMissingDescriptions(store, { fetcher: detail, limiter: noWait }),
+    { candidates: 2, filled: 1 },
+  );
+  assert.ok(
+    calls.every((u) => new URL(u).hostname === "api.smartrecruiters.com"),
+  );
+  const described = () =>
+    store.db
+      .prepare("SELECT description FROM discovery_jobs WHERE description<>''")
+      .all();
+  const [job] = await described();
+  assert.match(job.description, /Build Python pipelines/);
+  assert.match(job.description, /SQL/);
+  assert.doesNotMatch(job.description, /About Acme|</);
+  // A refresh whose list has no description (and a changed title) keeps it.
+  const changed = async () =>
+    respond({
+      totalFound: 2,
+      content: [{ ...srJob(1), name: "Engineer 1 (renamed)" }, srJob(2)],
+    });
+  await ingestSource(store, sourceId, {
+    fetcher: changed,
+    limiter: noWait,
+    env,
+    force: true,
+  });
+  assert.equal((await described()).length, 1);
+});
+
+test("promote-file promotes good rows, reports bad ones, and can approve", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  const { promoteLeadsCsv } = await import("../../server/discovery/leads.js");
+  const results = await promoteLeadsCsv(
+    store,
+    'platform,boardId,name,domain\ngreenhouse,stripe,"Stripe, Inc.",stripe.com\nworkday,acme,Acme,acme.com\n',
+    { approve: true },
+  );
+  assert.deepEqual(
+    results.map((r) => [r.boardId, r.ok]),
+    [
+      ["stripe", true],
+      ["acme", false],
+    ],
+  );
+  const source = await store.db
+    .prepare(
+      "SELECT enabled,permission_status FROM discovery_sources WHERE board_id='stripe'",
+    )
+    .get();
+  assert.deepEqual(
+    { ...source },
+    { enabled: 1, permission_status: "confirmed" },
+  );
+  const company = await store.db
+    .prepare(
+      "SELECT name FROM discovery_companies WHERE canonical_domain='stripe.com'",
+    )
+    .get();
+  assert.equal(company.name, "Stripe, Inc.");
+});

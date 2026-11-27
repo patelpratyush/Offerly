@@ -3,7 +3,8 @@
 // collected until it is promoted to a source and its permission is confirmed.
 // Only the canonical board URL is stored, never the raw link (it may carry
 // candidate tokens), and no user id is kept with the lead.
-import { upsertCompany, upsertSource } from "./registry.js";
+import { upsertCompany, upsertSource, setSourcePolicy } from "./registry.js";
+import { parse } from "csv-parse/sync";
 import { PLATFORMS } from "./connectors.js";
 import { canonicalDomain } from "./normalize.js";
 
@@ -169,4 +170,37 @@ export async function importSimplifyLists(
       "manual",
     );
   return { active, boards: boards.size, recorded };
+}
+
+/**
+ * Batch promote from CSV rows "platform,boardId,name,domain" (header optional).
+ * Each row is independent: a bad row is reported and the rest still run.
+ */
+export async function promoteLeadsCsv(store, text, { approve = false } = {}) {
+  const rows = parse(text, {
+    skip_empty_lines: true,
+    trim: true,
+    relax_column_count: true,
+  });
+  const results = [];
+  for (const [platform, boardId, name, domain] of rows) {
+    if (platform === "platform") continue;
+    try {
+      const sourceId = await promoteLead(store, {
+        platform,
+        boardId,
+        name,
+        domain,
+      });
+      if (approve)
+        await setSourcePolicy(store, sourceId, {
+          permission: "confirmed",
+          enabled: true,
+        });
+      results.push({ platform, boardId, ok: true });
+    } catch (error) {
+      results.push({ platform, boardId, ok: false, error: error.message });
+    }
+  }
+  return results;
 }
