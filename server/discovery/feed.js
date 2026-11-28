@@ -20,6 +20,7 @@ export const VIEWS = [
   "applied",
 ];
 const day = isoDate;
+export const MATCH_FLOOR = 40;
 export const filterSchema = z
   .object({
     q: z.string().trim().max(100).default(""),
@@ -456,7 +457,12 @@ export async function listView(
       !(j.fit?.stretch && j.eligibility.status !== "does_not_meet")
     )
       return null;
-    if (view === "best" && (j.fit?.score ?? null) === null) return null;
+    // Matches shows only real matches unless the user set their own minimum.
+    if (
+      view === "best" &&
+      (j.fit?.score ?? -1) < (filters.minFit || MATCH_FLOOR)
+    )
+      return null;
     if (!lookup && j.status === "not_listed") return null;
     if (!["saved", "applied", "latest", "new"].includes(view) && j.applied)
       return null;

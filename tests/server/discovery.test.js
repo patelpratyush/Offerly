@@ -826,8 +826,11 @@ test("best matches need an approved profile, order by fit, and re-evaluate on pr
     1,
     "unchanged resubmission is a no-op",
   );
-  const best = await listView(store, "u1", "best", {}, { now: NOW });
-  assert.ok(best.jobs.length > 0);
+  const all = { minFit: 1 }; // see every scored job, not only real matches
+  const floored = await listView(store, "u1", "best", {}, { now: NOW });
+  assert.ok(floored.jobs.every((j) => j.fit.score >= 40));
+  const best = await listView(store, "u1", "best", all, { now: NOW });
+  assert.ok(best.jobs.length > floored.jobs.length, "floor hides weak matches");
   const scores = best.jobs.map((j) => j.fit.score);
   assert.deepEqual(
     scores,
@@ -842,7 +845,7 @@ test("best matches need an approved profile, order by fit, and re-evaluate on pr
     facts: { ...profile.facts, targetRoles: ["platform engineer"] },
   });
   assert.equal(changed.version, 2);
-  const after = await listView(store, "u1", "best", {}, { now: NOW });
+  const after = await listView(store, "u1", "best", all, { now: NOW });
   assert.ok(
     scoreOf(after, "Platform Engineer") > scoreOf(best, "Platform Engineer"),
   );
