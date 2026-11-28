@@ -8,6 +8,8 @@
 //   node server/discovery/admin.js reject <platform> <boardId>
 //   node server/discovery/admin.js backfill-leads   (one-time scan of stored links)
 //   node server/discovery/admin.js import-simplify  (board leads from Simplify's public lists)
+//   node server/discovery/admin.js collect-simplify [max] ["role, role"]
+//     start collecting boards whose Simplify listings match approved profiles' roles
 //   node server/discovery/admin.js promote-file <file.csv> [--approve]
 //     rows: platform,boardId,name,domain  (--approve also records permission and enables)
 //   node server/discovery/admin.js approve <platform> <boardId>   (records permission + enables)
@@ -28,6 +30,8 @@ import {
   backfillLeads,
   importSimplifyLists,
   promoteLeadsCsv,
+  collectSimplifyBoards,
+  profileKeywords,
 } from "./leads.js";
 const [command, ...args] = process.argv.slice(2);
 const path =
@@ -65,6 +69,23 @@ try {
   } else if (command === "promote") {
     const [platform, boardId, name, domain] = args;
     console.log(await promoteLead(store, { platform, boardId, name, domain }));
+  } else if (command === "collect-simplify") {
+    const [max, match] = args;
+    const keywords = match
+      ? match
+          .split(",")
+          .map((k) => k.trim().toLowerCase())
+          .filter(Boolean)
+      : await profileKeywords(store);
+    console.log("roles:", keywords.join(", ") || "(none)");
+    console.log(
+      JSON.stringify(
+        await collectSimplifyBoards(store, {
+          keywords,
+          maxNew: max ? Number(max) : 50,
+        }),
+      ),
+    );
   } else if (command === "promote-file") {
     const [file, flag] = args;
     const results = await promoteLeadsCsv(store, readFileSync(file, "utf8"), {

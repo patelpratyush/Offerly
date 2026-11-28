@@ -76,6 +76,25 @@ export async function upsertCompany(store, input) {
     );
   return id;
 }
+// Companies found only through a job board have no verified website, so they
+// are keyed by their board. The key is never shown as a domain.
+export const shownDomain = (key) => (key.startsWith("board:") ? "" : key);
+export async function upsertBoardCompany(store, { name, platform, boardId }) {
+  const label = z.string().trim().min(1).max(200).parse(name);
+  const key = `board:${platform}:${boardId}`.toLowerCase();
+  const existing = await store.db
+    .prepare("SELECT id FROM discovery_companies WHERE canonical_domain=?")
+    .get(key);
+  if (existing) return existing.id;
+  const id = randomUUID();
+  const now = iso();
+  await store.db
+    .prepare(
+      "INSERT INTO discovery_companies(id,canonical_domain,name,created_at,updated_at) VALUES(?,?,?,?,?)",
+    )
+    .run(id, key, label, now, now);
+  return id;
+}
 export async function upsertSource(store, input) {
   const v = sourceSchema.parse(input);
   const company = await store.db
@@ -181,7 +200,7 @@ export async function coverage(store, userId, now = Date.now()) {
   const rows = companies.map((c) => ({
     id: c.id,
     name: c.name,
-    domain: c.canonical_domain,
+    domain: shownDomain(c.canonical_domain),
     size: describeSize(c),
     openJobs: counts.get(c.id) || 0,
     watched: watched.has(c.id),

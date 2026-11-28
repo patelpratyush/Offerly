@@ -3,7 +3,12 @@
 // collected until it is promoted to a source and its permission is confirmed.
 // Only the canonical board URL is stored, never the raw link (it may carry
 // candidate tokens), and no user id is kept with the lead.
-import { upsertCompany, upsertSource, setSourcePolicy } from "./registry.js";
+import {
+  upsertCompany,
+  upsertSource,
+  setSourcePolicy,
+  upsertBoardCompany,
+} from "./registry.js";
 import { parse } from "csv-parse/sync";
 import { PLATFORMS } from "./connectors.js";
 import { canonicalDomain } from "./normalize.js";
@@ -143,25 +148,28 @@ export const SIMPLIFY_LISTS = [
   "https://raw.githubusercontent.com/SimplifyJobs/New-Grad-Positions/dev/.github/scripts/listings.json",
   "https://raw.githubusercontent.com/SimplifyJobs/Summer2027-Internships/dev/.github/scripts/listings.json",
 ];
-export async function importSimplifyLists(
-  store,
-  { fetcher = fetch, lists = SIMPLIFY_LISTS } = {},
-) {
-  const boards = new Map();
-  let active = 0;
+async function readSimplify(fetcher, lists) {
+  const active = [];
   for (const url of lists) {
     const res = await fetcher(url);
     if (!res.ok) throw new Error(`Simplify list unavailable (${res.status})`);
     const rows = await res.json();
     if (!Array.isArray(rows))
       throw new Error("Simplify list has an unexpected shape");
-    for (const row of rows) {
-      if (!row?.active || row.is_visible === false) continue;
-      active++;
-      for (const b of detectBoards(row.url))
-        boards.set(`${b.platform}:${b.boardId}`, b);
-    }
+    for (const row of rows)
+      if (row?.active && row.is_visible !== false) active.push(row);
   }
+  return active;
+}
+export async function importSimplifyLists(
+  store,
+  { fetcher = fetch, lists = SIMPLIFY_LISTS } = {},
+) {
+  const rows = await readSimplify(fetcher, lists);
+  const boards = new Map();
+  for (const row of rows)
+    for (const b of detectBoards(row.url))
+      boards.set(`${b.platform}:${b.boardId}`, b);
   let recorded = 0;
   for (const { platform, boardId } of boards.values())
     recorded += await recordLeads(
@@ -169,7 +177,82 @@ export async function importSimplifyLists(
       BOARD_URL[platform](boardId),
       "manual",
     );
-  return { active, boards: boards.size, recorded };
+  return { active: rows.length, boards: boards.size, recorded };
+}
+
+/** Lowercased target roles from every approved profile, each user's needs together. */
+export async function profileKeywords(store) {
+  const rows = await store.db
+    .prepare("SELECT facts FROM discovery_profiles WHERE approved_at<>''")
+    .all();
+  const words = new Set();
+  for (const { facts } of rows)
+    for (const role of JSON.parse(facts || "{}").targetRoles || [])
+      if (String(role).trim()) words.add(String(role).trim().toLowerCase());
+  return [...words];
+}
+
+/**
+ * Start collecting every board that has an active Simplify listing whose title
+ * contains one of the keywords. New boards are approved for collection: these
+ * are the providers' public posting APIs. Busiest boards first, capped per run.
+ */
+export async function collectSimplifyBoards(
+  store,
+  { fetcher = fetch, lists = SIMPLIFY_LISTS, keywords = [], maxNew = 50 } = {},
+) {
+  if (!keywords.length)
+    throw new Error("No target roles: approve a candidate profile first");
+  const rows = await readSimplify(fetcher, lists);
+  const boards = new Map();
+  let matched = 0;
+  for (const row of rows) {
+    const title = String(row.title || "").toLowerCase();
+    if (!keywords.some((k) => title.includes(k))) continue;
+    matched++;
+    for (const b of detectBoards(row.url)) {
+      const key = `${b.platform}:${b.boardId}`;
+      const entry = boards.get(key) || {
+        ...b,
+        name: String(row.company_name || b.boardId).slice(0, 200),
+        hits: 0,
+      };
+      entry.hits++;
+      boards.set(key, entry);
+    }
+  }
+  let created = 0,
+    existing = 0;
+  for (const b of [...boards.values()].sort((x, y) => y.hits - x.hits)) {
+    const known = await store.db
+      .prepare(
+        "SELECT id FROM discovery_sources WHERE platform=? AND board_id=?",
+      )
+      .get(b.platform, b.boardId);
+    if (known) {
+      existing++;
+      continue;
+    }
+    if (created >= maxNew) break;
+    const companyId = await upsertBoardCompany(store, b);
+    const sourceId = await upsertSource(store, {
+      companyId,
+      platform: b.platform,
+      boardId: b.boardId,
+      careerUrl: BOARD_URL[b.platform](b.boardId),
+    });
+    await setSourcePolicy(store, sourceId, {
+      permission: "confirmed",
+      enabled: true,
+    });
+    await store.db
+      .prepare(
+        "UPDATE discovery_leads SET status='promoted' WHERE platform=? AND board_id=?",
+      )
+      .run(b.platform, b.boardId);
+    created++;
+  }
+  return { matched, boards: boards.size, created, existing };
 }
 
 /**

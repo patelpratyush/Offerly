@@ -9,6 +9,7 @@ import { scoreJob, jobLevel } from "./scoring.js";
 import { normRequisition, normText, normalizeUrl } from "./normalize.js";
 import { CHUNK, loadCatalogFor, escapeLike } from "./catalog.js";
 import { WINDOW_MS } from "./digest-rules.js";
+import { shownDomain } from "./registry.js";
 export const VIEWS = [
   "best",
   "latest",
@@ -234,7 +235,7 @@ export function evaluateJob(ctx, catalog, job, filters, now, basis = "posted") {
       company: {
         id: company.id,
         name: company.name,
-        domain: company.canonical_domain,
+        domain: shownDomain(company.canonical_domain),
         size,
       },
       location: job.location,

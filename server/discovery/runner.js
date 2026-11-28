@@ -16,6 +16,7 @@ import {
 import { createHttpFetcher, createRateLimiter } from "./connectors.js";
 import { processAlerts } from "./alerts.js";
 import { processDigests } from "./digests.js";
+import { collectSimplifyBoards, profileKeywords } from "./leads.js";
 const iso = (ms) => new Date(ms).toISOString();
 export function alertProcessingEnabled(env = process.env) {
   return env.DISCOVERY_ALERTS_ENABLED === "true";
@@ -36,6 +37,31 @@ async function setCursor(store, value, now) {
       "INSERT INTO discovery_state(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at",
     )
     .run(CURSOR_KEY, value, iso(now));
+}
+// Once a day, add boards matching what approved users are looking for.
+const SIMPLIFY_KEY = "simplify_last_run";
+export async function dailySimplifyBoards(
+  store,
+  { now = Date.now(), env = process.env, fetcher } = {},
+) {
+  if (env.DISCOVERY_SIMPLIFY_AUTO !== "true") return undefined;
+  const last = await store.db
+    .prepare("SELECT value FROM discovery_state WHERE key=?")
+    .get(SIMPLIFY_KEY);
+  if (last && now - Date.parse(last.value) < 864e5) return undefined;
+  // Record the attempt first so a failing list is retried tomorrow, not every minute.
+  await store.db
+    .prepare(
+      "INSERT INTO discovery_state(key,value,updated_at) VALUES(?,?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value,updated_at=excluded.updated_at",
+    )
+    .run(SIMPLIFY_KEY, iso(now), iso(now));
+  const keywords = await profileKeywords(store);
+  if (!keywords.length) return { skipped: "no_approved_profiles" };
+  return collectSimplifyBoards(store, {
+    keywords,
+    maxNew: 50,
+    ...(fetcher ? { fetcher } : {}),
+  });
 }
 /**
  * Process alerts and digests for at most `maxUsers` users per call, resuming
@@ -101,6 +127,10 @@ export async function processDiscovery(
       fetcher: fetcher || createHttpFetcher(),
       limiter: limiter || createRateLimiter({ minIntervalMs: 2000 }),
     };
+    out.simplify = await dailySimplifyBoards(store, { now, env }).catch(() => {
+      console.error(JSON.stringify({ event: "simplify_boards_failed" }));
+      return undefined;
+    });
     const results = await ingestDue(store, {
       now,
       env,

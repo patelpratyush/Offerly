@@ -497,3 +497,130 @@ test("promote-file promotes good rows, reports bad ones, and can approve", async
     .get();
   assert.equal(company.name, "Stripe, Inc.");
 });
+
+test("collect-simplify starts boards matching approved users' target roles", async (t) => {
+  const store = await createStore(":memory:");
+  t.after(() => store.db.close());
+  await initializeDiscovery(store);
+  const { collectSimplifyBoards, profileKeywords } =
+    await import("../../server/discovery/leads.js");
+  const { dailySimplifyBoards } =
+    await import("../../server/discovery/runner.js");
+  const addUser = async (id, roles, approved) => {
+    await store.db
+      .prepare("INSERT INTO users VALUES(?,?,?,?,?,?)")
+      .run(id, `${id}@example.test`, "hash", id, "UTC", "[]");
+    await store.db
+      .prepare(
+        "INSERT INTO discovery_profiles(user_id,facts,approved_at,updated_at) VALUES(?,?,?,?)",
+      )
+      .run(
+        id,
+        JSON.stringify({ targetRoles: roles }),
+        approved,
+        "2026-11-27T00:00:00Z",
+      );
+  };
+  await addUser("a", ["Data Engineer"], "2026-11-27T00:00:00Z");
+  await addUser("b", ["Backend"], "2026-11-27T00:00:00Z");
+  await addUser("c", ["Designer"], ""); // not approved: ignored
+  assert.deepEqual((await profileKeywords(store)).sort(), [
+    "backend",
+    "data engineer",
+  ]);
+  const rows = [
+    {
+      active: true,
+      title: "Data Engineer, New Grad",
+      company_name: "Stripe",
+      url: "https://boards.greenhouse.io/stripe/jobs/1",
+    },
+    {
+      active: true,
+      title: "Data Engineer II",
+      company_name: "Stripe",
+      url: "https://boards.greenhouse.io/stripe/jobs/2",
+    },
+    {
+      active: true,
+      title: "Backend Engineer",
+      company_name: "Ramp",
+      url: "https://jobs.ashbyhq.com/ramp/abc",
+    },
+    {
+      active: true,
+      title: "Product Designer",
+      company_name: "Figma",
+      url: "https://boards.greenhouse.io/figma/jobs/3",
+    },
+    {
+      active: false,
+      title: "Backend Engineer",
+      company_name: "Old",
+      url: "https://jobs.lever.co/old/x",
+    },
+  ];
+  let fetched = 0;
+  const fetcher = async () => {
+    fetched++;
+    return { ok: true, status: 200, json: async () => rows };
+  };
+  const keywords = await profileKeywords(store);
+  const first = await collectSimplifyBoards(store, {
+    fetcher,
+    lists: ["L"],
+    keywords,
+    maxNew: 1,
+  });
+  assert.deepEqual(first, { matched: 3, boards: 2, created: 1, existing: 0 });
+  // Busiest board first; enabled and approved; no invented domain.
+  const sources = () =>
+    store.db
+      .prepare(
+        "SELECT s.board_id,s.enabled,s.permission_status,c.name,c.canonical_domain FROM discovery_sources s JOIN discovery_companies c ON c.id=s.company_id ORDER BY s.board_id",
+      )
+      .all();
+  assert.deepEqual(
+    (await sources()).map((r) => ({ ...r })),
+    [
+      {
+        board_id: "stripe",
+        enabled: 1,
+        permission_status: "confirmed",
+        name: "Stripe",
+        canonical_domain: "board:greenhouse:stripe",
+      },
+    ],
+  );
+  const second = await collectSimplifyBoards(store, {
+    fetcher,
+    lists: ["L"],
+    keywords,
+  });
+  assert.deepEqual(second, { matched: 3, boards: 2, created: 1, existing: 1 });
+  assert.deepEqual(
+    (await sources()).map((r) => r.board_id),
+    ["ramp", "stripe"],
+  );
+  const { coverage: summary } =
+    await import("../../server/discovery/registry.js");
+  const shown = (await summary(store, "a")).companies.map((c) => c.domain);
+  assert.ok(
+    shown.every((d) => d === ""),
+    "board keys never shown as domains",
+  );
+  // Daily run: off by default, then at most once a day.
+  const now = Date.parse("2026-11-27T12:00:00Z");
+  assert.equal(
+    await dailySimplifyBoards(store, { now, env: {}, fetcher }),
+    undefined,
+  );
+  fetched = 0;
+  const env = { DISCOVERY_SIMPLIFY_AUTO: "true" };
+  assert.ok(await dailySimplifyBoards(store, { now, env, fetcher }));
+  assert.equal(
+    await dailySimplifyBoards(store, { now: now + 3600e3, env, fetcher }),
+    undefined,
+  );
+  assert.equal(fetched, 2); // two default lists, fetched once
+});
