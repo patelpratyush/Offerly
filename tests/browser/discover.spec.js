@@ -104,7 +104,7 @@ test("discovery shows honest coverage, freshness, duplicates, filters and alerts
   await page.getByRole("button", { name: "Candidate profile" }).click();
   await page
     .getByLabel("Target roles (comma separated)")
-    .fill("backend engineer");
+    .fill("backend engineer, platform engineer");
   await page.getByLabel("Approved skills (one per line)").fill("Python");
   await page.getByLabel("Seniority").selectOption("senior");
   await page.getByRole("button", { name: "Approve profile" }).click();
